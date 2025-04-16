@@ -47,7 +47,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
       required: [true, 'Status is Required'],
       default:  USER_ACCESSIBILITY.isProgress as any,
     },
-    photo: { type: String, required: [false, 'photo is not required'] },
+    photo: { type: String, required: [false, 'photo is not required'], default:null },
     isDelete: {
       type: Boolean,
       required: [true, 'isDeleted is Required'],

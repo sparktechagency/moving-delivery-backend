@@ -9,7 +9,6 @@ import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
 import { USER_ACCESSIBILITY } from './user.constant';
 import bcrypt from 'bcrypt';
 import users from './user.model';
-import sendOtpSms from '../../utility/sendOtpSms';
 
 const generateUniqueOTP = async (): Promise<number> => {
   const otp = Math.floor(1000 + Math.random() * 9000);
@@ -81,8 +80,7 @@ const userVarificationIntoDb = async (verificationCode: number) => {
     const updatedUser = await users.findOneAndUpdate(
       { verificationCode },
       {
-         isVerify: true,
-        verificationCode: null, 
+        isVerify: true,
       },
       { new: true },
     );
@@ -111,6 +109,56 @@ const userVarificationIntoDb = async (verificationCode: number) => {
       message: 'User verification successful',
       accessToken,
     };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Verification auth error',
+      error,
+    );
+  }
+};
+
+const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
+  try {
+    const isUserExist = await users.findOne(
+      {
+        $and: [
+          {
+            _id: userId,
+
+            isDelete: false,
+            isVerify: true,
+            status: USER_ACCESSIBILITY.isProgress,
+          },
+        ],
+      },
+      { _id: 1 },
+    );
+    if (!isUserExist) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'user not founded', '');
+    }
+    const result = await users.findOneAndUpdate(
+      { _id: userId },
+      {
+        $set: {
+          name: payload.name,
+          phoneNumber: payload.phoneNumber,
+          password: await bcrypt.hash(
+            payload.password,
+            Number(config.bcrypt_salt_rounds),
+          ),
+          photo: payload.photo,
+          role: payload.role,
+        },
+      },
+      { new: true, upsert: true },
+    );
+    return (
+      result && {
+        status: true,
+        message: 'user information recorded successfully',
+      }
+    );
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
@@ -205,6 +253,7 @@ const UserServices = {
   createUserIntoDb,
   userVarificationIntoDb,
   chnagePasswordIntoDb,
+  afterVerificUserIntoDb,
 };
 
 export default UserServices;

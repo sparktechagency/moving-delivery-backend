@@ -15,7 +15,6 @@ const createUser: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const userVarification: RequestHandler = catchAsync(async (req, res) => {
-  
   const result = await UserServices.userVarificationIntoDb(
     req.body.verificationCode,
   );
@@ -23,6 +22,19 @@ const userVarification: RequestHandler = catchAsync(async (req, res) => {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Successfully Varified Your Account',
+    data: result,
+  });
+});
+
+const afterVerificUser: RequestHandler = catchAsync(async (req, res) => {
+  const result = await UserServices.afterVerificUserIntoDb(
+    req.body,
+    req.user.id,
+  );
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully  Recorded User Information ',
     data: result,
   });
 });
@@ -41,6 +53,7 @@ const UserController = {
   createUser,
   userVarification,
   chnagePassword,
+  afterVerificUser,
 };
 
 export default UserController;
