@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import mongoose from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import ApiError from '../../app/error/ApiError';
 import { TUser } from './user.interface';
 import sendEmail from '../../utility/sendEmail';
@@ -155,7 +155,6 @@ const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
       { new: true, upsert: true },
     );
 
-    console.log(result);
     return (
       result && {
         status: true,
@@ -178,10 +177,7 @@ const chnagePasswordIntoDb = async (
   },
   id: string,
 ) => {
-
-
-
-  console.log(payload,id)
+  console.log(payload, id);
   try {
     const isUserExist = await users.findOne(
       {
@@ -192,7 +188,7 @@ const chnagePasswordIntoDb = async (
           { isDelete: false },
         ],
       },
-      { provider: 1, password:1 },
+      { provider: 1, password: 1 },
     );
 
     if ([config.googleauth, config.appleauth].includes(isUserExist?.provider)) {
@@ -251,23 +247,229 @@ const chnagePasswordIntoDb = async (
   }
 };
 
-// forgot password 
+// forgot password
 
+const forgotPasswordIntoDb = async (payload: string | { email: string }) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-const forgotPasswordIntoDb=async(email:string)=>{
+  try {
+    let emailString: string;
 
-   return {email}
+    if (typeof payload === 'string') {
+      emailString = payload;
+    } else if (payload && typeof payload === 'object' && 'email' in payload) {
+      emailString = payload.email;
+    } else {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid email format', '');
+    }
 
+    const isExistUser = await users.findOne(
+      {
+        $and: [
+          { email: emailString },
+          { isVerify: true },
+          { status: USER_ACCESSIBILITY.isProgress },
+          { isDelete: false },
+        ],
+      },
+      { _id: 1, provider: 1 },
+      { session },
+    );
 
-}
+    if (!isExistUser) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
+    }
 
+    if ([config.googleauth, config.appleauth].includes(isExistUser.provider)) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'social media auth system forgot password not available',
+        '',
+      );
+    }
+
+    const otp = await generateUniqueOTP();
+
+    const result = await users.findOneAndUpdate(
+      { _id: isExistUser._id },
+      { verificationCode: otp },
+      {
+        new: true,
+        upsert: true,
+        projection: { _id: 1, email: 1 },
+        session,
+      },
+    );
+
+    if (!result) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'OTP forgot section issues', '');
+    }
+
+    try {
+      await sendEmail(
+        emailString,
+        emailcontext.sendvarificationData(
+          emailString,
+          otp,
+          ' Forgot Password Email',
+        ),
+        'Forgot Password Verification OTP Code',
+      );
+    } catch (emailError: any) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.SERVICE_UNAVAILABLE,
+        'Failed to send verification email',
+        emailError,
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return { status: true, message: 'Checked Your Email' };
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Password change failed',
+      error,
+    );
+  }
+};
+
+const verificationForgotUserIntoDb = async (
+  otp: number | { verificationCode: number },
+): Promise<string> => {
+  try {
+    let code: number;
+
+    if (typeof otp === 'object' && typeof otp.verificationCode === 'number') {
+      code = otp.verificationCode;
+    } else if (typeof otp === 'number') {
+      code = otp;
+    } else {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid OTP format', '');
+    }
+
+    const isExistOtp: any = await users.findOne(
+      {
+        $and: [
+          { verificationCode: code },
+          { isVerify: true },
+          { isDelete: false },
+          { status: USER_ACCESSIBILITY.isProgress },
+        ],
+      },
+      { _id: 1, updatedAt: 1, email: 1, role: 1 },
+    );
+
+    if (!isExistOtp) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'OTP not found', '');
+    }
+
+    const updatedAt =
+      isExistOtp.updatedAt instanceof Date
+        ? isExistOtp.updatedAt.getTime()
+        : new Date(isExistOtp.updatedAt).getTime();
+
+    const now = Date.now();
+    const FIVE_MINUTES = 5 * 60 * 1000;
+
+    if (now - updatedAt > FIVE_MINUTES) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'OTP has expired. Please request a new one.',
+        '',
+      );
+    }
+
+    const jwtPayload = {
+      id: isExistOtp._id.toString(),
+      role: isExistOtp.role,
+      email: isExistOtp.email,
+    };
+
+    const accessToken = jwtHelpers.generateToken(
+      jwtPayload,
+      config.jwt_access_secret as string,
+      config.expires_in as string,
+    );
+
+    await users.updateOne(
+      { _id: isExistOtp._id },
+      { $unset: { verificationCode: '' } },
+    );
+
+    return accessToken;
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Password change failed',
+      error,
+    );
+  }
+};
+
+const resetPasswordIntoDb = async (payload: {
+  userId: string;
+  password: string;
+}) => {
+  try {
+    const isExistUser = await users.findOne(
+      {
+        $and: [
+          { _id: payload.userId },
+          { isVerify: true },
+          { isDelete: false },
+          { status: USER_ACCESSIBILITY.isProgress },
+        ],
+      },
+      { _id: 1 },
+    );
+    if (!isExistUser) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'some issues by the  reset password section',
+        '',
+      );
+    }
+    payload.password = await bcrypt.hash(
+      payload.password,
+      Number(config.bcrypt_salt_rounds),
+    );
+
+    const result = await users.findByIdAndUpdate(
+      isExistUser._id,
+      { password: payload.password },
+      { new: true, upsert: true },
+    );
+    return result && { status: true, message: 'successfylly reset password' };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'server unvailable reste password into db function',
+      error,
+    );
+  }
+};
 
 const UserServices = {
   createUserIntoDb,
   userVarificationIntoDb,
   chnagePasswordIntoDb,
   afterVerificUserIntoDb,
-  forgotPasswordIntoDb
+  forgotPasswordIntoDb,
+  verificationForgotUserIntoDb,
+  resetPasswordIntoDb,
 };
 
 export default UserServices;

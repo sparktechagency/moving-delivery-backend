@@ -33,7 +33,23 @@ router.patch(
   UserController.chnagePassword,
 );
 
-router.post("/forgot_password",validationRequest(UserValidationSchema.ForgotPasswordSchema),UserController.forgotPassword)
+router.post(
+  '/forgot_password',
+  validationRequest(UserValidationSchema.ForgotPasswordSchema),
+  UserController.forgotPassword,
+);
+
+router.post(
+  '/verification_forgot_user',
+  validationRequest(UserValidationSchema.verificationCodeSchema),
+  UserController.verificationForgotUser,
+);
+
+router.post(
+  '/reset_password',
+  validationRequest(UserValidationSchema.resetPasswordSchema),
+  UserController.resetPassword,
+);
 
 const UserRouter = router;
 

@@ -59,12 +59,37 @@ const forgotPassword: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const  verificationForgotUser:RequestHandler=catchAsync(async(req , res)=>{
+
+    const result=await UserServices.verificationForgotUserIntoDb(req.body);
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Verify User',
+      data: result,
+    });
+
+});
+
+const  resetPassword:RequestHandler=catchAsync(async(req , res)=>{
+  const result=await UserServices.resetPasswordIntoDb(req.body);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Reset Password',
+    data: result,
+  });
+
+})
+
 const UserController = {
   createUser,
   userVarification,
   chnagePassword,
   afterVerificUser,
-  forgotPassword
+  forgotPassword,
+  verificationForgotUser,
+  resetPassword
 };
 
 export default UserController;
