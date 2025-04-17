@@ -45,9 +45,22 @@ const TUserSchema = new Schema<TUser, UserModel>(
         message: '{VALUE} is not required',
       },
       required: [true, 'Status is Required'],
-      default:  USER_ACCESSIBILITY.isProgress as any,
+      default: USER_ACCESSIBILITY.isProgress as any,
     },
-    photo: { type: String, required: [false, 'photo is not required'], default:null },
+    photo: {
+      type: String,
+      required: [false, 'photo is not required'],
+      default: null,
+    },
+    provider: {
+      type: String,
+      enum: {
+        values: [config.googleauth, config.appleauth],
+        message: '{VALUE} is Not Required',
+      },
+      required: [false, 'Provider is not Required'],
+      default: '',
+    },
     isDelete: {
       type: Boolean,
       required: [true, 'isDeleted is Required'],
@@ -55,7 +68,8 @@ const TUserSchema = new Schema<TUser, UserModel>(
     },
   },
   {
-    timestamps: true, versionKey: false 
+    timestamps: true,
+    versionKey: false,
   },
 );
 

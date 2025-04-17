@@ -53,6 +53,9 @@ const createUserZodSchema = z.object({
         .default(USER_ACCESSIBILITY.isProgress),
 
       photo: z.string({ required_error: 'phone is not require' }).optional(),
+      provider: z
+        .string({ required_error: 'provider  is not require' })
+        .optional(),
     })
     .optional(),
 });

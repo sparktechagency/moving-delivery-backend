@@ -111,7 +111,10 @@ const refreshTokenIntoDb = async (token: string) => {
 };
 
 const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
-  payload.password = config.googleauth;
+  if (![config.googleauth, config.appleauth].includes(payload.provider)) {
+    throw new ApiError(httpStatus.FORBIDDEN, 'provided is not nfounded', '');
+  }
+
   const isUserExist = await users.findOne(
     {
       email: payload.email,
@@ -125,7 +128,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
   let jwtPayload;
 
   if (!isUserExist) {
-    const otp = Number(Math.floor(100000 + Math.random() * 900000).toString());
+    const otp = Number(Math.floor(100000 + Math.random() * 9000).toString());
     payload.verificationCode = otp;
     payload.isVerify = true;
     const newUser = await new users(payload).save();

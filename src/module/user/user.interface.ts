@@ -13,6 +13,7 @@ export type TUser = {
   isVerify:boolean;
   status: 'isProgress' | 'Blocked';
   photo?:string;
+  provider?: 'googleauth' | 'appleauth'
   isDelete: boolean;
 };
 

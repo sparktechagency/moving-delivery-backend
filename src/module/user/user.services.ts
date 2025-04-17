@@ -137,6 +137,7 @@ const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
     if (!isUserExist) {
       throw new ApiError(httpStatus.NOT_FOUND, 'user not founded', '');
     }
+
     const result = await users.findOneAndUpdate(
       { _id: userId },
       {
@@ -153,6 +154,8 @@ const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
       },
       { new: true, upsert: true },
     );
+
+    console.log(result);
     return (
       result && {
         status: true,
@@ -175,6 +178,10 @@ const chnagePasswordIntoDb = async (
   },
   id: string,
 ) => {
+
+
+
+  console.log(payload,id)
   try {
     const isUserExist = await users.findOne(
       {
@@ -185,15 +192,10 @@ const chnagePasswordIntoDb = async (
           { isDelete: false },
         ],
       },
-      { password: 1 },
+      { provider: 1, password:1 },
     );
 
-    if (
-      await users.isPasswordMatched(
-        config.googleauth as string,
-        isUserExist?.password as string,
-      )
-    ) {
+    if ([config.googleauth, config.appleauth].includes(isUserExist?.provider)) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
         "social media auth don't allow change password",
@@ -248,6 +250,9 @@ const chnagePasswordIntoDb = async (
     );
   }
 };
+
+// forgot password 
+
 
 const UserServices = {
   createUserIntoDb,
