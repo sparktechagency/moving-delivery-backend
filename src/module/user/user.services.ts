@@ -10,6 +10,8 @@ import { USER_ACCESSIBILITY } from './user.constant';
 import bcrypt from 'bcrypt';
 import users from './user.model';
 
+
+//generate unique otp
 const generateUniqueOTP = async (): Promise<number> => {
   const otp = Math.floor(1000 + Math.random() * 9000);
 
@@ -22,6 +24,7 @@ const generateUniqueOTP = async (): Promise<number> => {
   return otp;
 };
 
+//create user into database
 const createUserIntoDb = async (payload: TUser) => {
   try {
     const otp = await generateUniqueOTP();
@@ -67,6 +70,7 @@ const createUserIntoDb = async (payload: TUser) => {
   }
 };
 
+//check user verification
 const userVarificationIntoDb = async (verificationCode: number) => {
   try {
     if (!verificationCode) {
@@ -118,6 +122,7 @@ const userVarificationIntoDb = async (verificationCode: number) => {
   }
 };
 
+//after user verification
 const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
   try {
     const isUserExist = await users.findOne(
@@ -168,6 +173,7 @@ const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
   }
 };
 
+//change password into db
 const chnagePasswordIntoDb = async (
   payload: {
     newpassword: string;

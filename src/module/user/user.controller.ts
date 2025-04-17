@@ -4,6 +4,7 @@ import UserServices from './user.services';
 import sendRespone from '../../utility/sendRespone';
 import httpStatus from 'http-status';
 
+//create user
 const createUser: RequestHandler = catchAsync(async (req, res) => {
   const result = await UserServices.createUserIntoDb(req.body);
   sendRespone(res, {
@@ -14,6 +15,7 @@ const createUser: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+// user verification
 const userVarification: RequestHandler = catchAsync(async (req, res) => {
   const result = await UserServices.userVarificationIntoDb(
     req.body.verificationCode,
@@ -26,6 +28,7 @@ const userVarification: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+//after verification user
 const afterVerificUser: RequestHandler = catchAsync(async (req, res) => {
   const result = await UserServices.afterVerificUserIntoDb(
     req.body,
@@ -39,6 +42,7 @@ const afterVerificUser: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+//change password of user
 const chnagePassword: RequestHandler = catchAsync(async (req, res) => {
   const result = await UserServices.chnagePasswordIntoDb(req.body, req.user.id);
   sendRespone(res, {
@@ -48,6 +52,7 @@ const chnagePassword: RequestHandler = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
 
 const UserController = {
   createUser,

@@ -11,4 +11,4 @@ router.get('/:id',ContractController.SpecificContractId);
 router.patch("/:id",validationRequest(ContractValidation.UpdateContractValidationSchema),ContractController.UpdateContract);
 router.delete("/:id",ContractController.DeleteContract);
 router.patch("/favorite/:id",ContractController.FavoriteContrcat);
-export const ContructRouter=router;
+export const ContructRouter = router;
