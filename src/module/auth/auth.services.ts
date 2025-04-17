@@ -167,6 +167,8 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
 const myprofileIntoDb = async (id: string) => {
   try {
     const result = await users.findById(id);
+    console.log("rana isalam");
+    console.log("rafi islam")
     return result;
   } catch (error: any) {}
 };
