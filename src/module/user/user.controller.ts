@@ -40,10 +40,6 @@ const afterVerificUser: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const chnagePassword: RequestHandler = catchAsync(async (req, res) => {
-
-  console.log("controller data")
-  console.log(req.body);
-  console.log(req.user);
   const result = await UserServices.chnagePasswordIntoDb(req.body, req.user.id);
   sendRespone(res, {
     success: true,
@@ -53,11 +49,22 @@ const chnagePassword: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const forgotPassword: RequestHandler = catchAsync(async (req, res) => {
+  const result = await UserServices.forgotPasswordIntoDb(req.body);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Send Email',
+    data: result,
+  });
+});
+
 const UserController = {
   createUser,
   userVarification,
   chnagePassword,
   afterVerificUser,
+  forgotPassword
 };
 
 export default UserController;

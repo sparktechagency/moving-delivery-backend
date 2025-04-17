@@ -90,11 +90,28 @@ const UpdateUserProfileSchema = z.object({
   }),
 });
 
+const ForgotPasswordSchema = z.object({
+  body: z.object({
+    email: z
+      .string({ required_error: 'Email is Required' })
+      .email('Invalid email format')
+      .refine(
+        (email) => {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        },
+        {
+          message: 'Invalid email format',
+        },
+      ),
+  }),
+});
+
 const UserValidationSchema = {
   createUserZodSchema,
   UserVerification,
   ChnagePasswordSchema,
   UpdateUserProfileSchema,
+  ForgotPasswordSchema
 };
 
 export default UserValidationSchema;

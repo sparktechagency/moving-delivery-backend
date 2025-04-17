@@ -254,11 +254,20 @@ const chnagePasswordIntoDb = async (
 // forgot password 
 
 
+const forgotPasswordIntoDb=async(email:string)=>{
+
+   return {email}
+
+
+}
+
+
 const UserServices = {
   createUserIntoDb,
   userVarificationIntoDb,
   chnagePasswordIntoDb,
   afterVerificUserIntoDb,
+  forgotPasswordIntoDb
 };
 
 export default UserServices;

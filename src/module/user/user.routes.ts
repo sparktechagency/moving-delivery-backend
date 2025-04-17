@@ -33,6 +33,8 @@ router.patch(
   UserController.chnagePassword,
 );
 
+router.post("/forgot_password",validationRequest(UserValidationSchema.ForgotPasswordSchema),UserController.forgotPassword)
+
 const UserRouter = router;
 
 export default UserRouter;
