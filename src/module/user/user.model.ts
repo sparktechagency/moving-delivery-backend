@@ -26,7 +26,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
     },
     isVerify: {
       type: Boolean,
-      required: [false, 'isVartify is not required'],
+      required: [false, 'isVarify is not required'],
       default: false,
     },
     role: {
@@ -61,7 +61,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
 
 TUserSchema.set('toJSON', {
   virtuals: true,
-  transform: function (doc, ret) {
+  transform: function (_doc, ret) {
     delete ret.password;
     return ret;
   },

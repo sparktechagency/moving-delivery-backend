@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { USER_ACCESSIBILITY, USER_ROLE } from './user.constant';
 
+// create user zod schema
 const createUserZodSchema = z.object({
   body: z
     .object({
@@ -57,6 +58,7 @@ const createUserZodSchema = z.object({
     .optional(),
 });
 
+// user verification schema
 const UserVerification = z.object({
   body: z.object({
     verificationCode: z
@@ -65,7 +67,8 @@ const UserVerification = z.object({
   }),
 });
 
-const ChnagePasswordSchema = z.object({
+// change password schema
+const changePasswordSchema = z.object({
   body: z.object({
     newpassword: z
       .string({ required_error: 'new password is required' })
@@ -76,6 +79,7 @@ const ChnagePasswordSchema = z.object({
   }),
 });
 
+//update user profile schema
 const UpdateUserProfileSchema = z.object({
   body: z.object({
     username: z
@@ -90,7 +94,7 @@ const UpdateUserProfileSchema = z.object({
 const UserValidationSchema = {
   createUserZodSchema,
   UserVerification,
-  ChnagePasswordSchema,
+  changePasswordSchema,
   UpdateUserProfileSchema,
 };
 

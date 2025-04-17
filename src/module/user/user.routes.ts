@@ -1,9 +1,9 @@
 import express from 'express';
-import UserController from './user.controller';
-import validationRequest from '../../middleware/validationRequest';
-import UserValidationSchema from './user.zod.validation';
 import auth from '../../middleware/auth';
+import validationRequest from '../../middleware/validationRequest';
 import { USER_ROLE } from './user.constant';
+import UserController from './user.controller';
+import UserValidationSchema from './user.zod.validation';
 
 const router = express.Router();
 
@@ -29,7 +29,7 @@ router.patch(
 router.patch(
   '/change_password',
   auth(USER_ROLE.user, USER_ROLE.admin, USER_ROLE.driver),
-  validationRequest(UserValidationSchema.ChnagePasswordSchema),
+  validationRequest(UserValidationSchema.changePasswordSchema),
   UserController.chnagePassword,
 );
 

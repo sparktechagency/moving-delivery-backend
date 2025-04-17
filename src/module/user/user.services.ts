@@ -1,15 +1,13 @@
-import httpStatus from 'http-status';
-import mongoose from 'mongoose';
-import ApiError from '../../app/error/ApiError';
-import { TUser } from './user.interface';
-import sendEmail from '../../utility/sendEmail';
-import emailcontext from '../../utility/emailcontex/sendvarificationData';
-import config from '../../app/config';
-import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
-import { USER_ACCESSIBILITY } from './user.constant';
 import bcrypt from 'bcrypt';
+import httpStatus from 'http-status';
+import config from '../../app/config';
+import ApiError from '../../app/error/ApiError';
+import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
+import emailcontext from '../../utility/emailcontex/sendvarificationData';
+import sendEmail from '../../utility/sendEmail';
+import { USER_ACCESSIBILITY } from './user.constant';
+import { TUser } from './user.interface';
 import users from './user.model';
-
 
 //generate unique otp
 const generateUniqueOTP = async (): Promise<number> => {
@@ -84,7 +82,9 @@ const userVarificationIntoDb = async (verificationCode: number) => {
     const updatedUser = await users.findOneAndUpdate(
       { verificationCode },
       {
-        isVerify: true,
+        $set: {
+          isVerify: true,
+        },
       },
       { new: true },
     );
