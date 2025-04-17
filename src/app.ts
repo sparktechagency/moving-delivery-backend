@@ -16,7 +16,7 @@ app.use(cors());
 app.get('/', (req, res) => {
   res.send({
     status: true,
-    message: 'Well Come To ASAP AI Server',
+    message: 'Welcome to moving-delevery-service Api',
   });
 });
 
