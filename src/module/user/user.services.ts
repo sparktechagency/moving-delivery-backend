@@ -174,7 +174,7 @@ const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
 };
 
 //change password into db
-const chnagePasswordIntoDb = async (
+const changePasswordIntoDb = async (
   payload: {
     newpassword: string;
     oldpassword: string;
@@ -258,7 +258,7 @@ const chnagePasswordIntoDb = async (
 const UserServices = {
   createUserIntoDb,
   userVarificationIntoDb,
-  chnagePasswordIntoDb,
+  changePasswordIntoDb,
   afterVerificUserIntoDb,
 };
 

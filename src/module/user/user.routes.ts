@@ -30,7 +30,7 @@ router.patch(
   '/change_password',
   auth(USER_ROLE.user, USER_ROLE.admin, USER_ROLE.driver),
   validationRequest(UserValidationSchema.changePasswordSchema),
-  UserController.chnagePassword,
+  UserController.changePassword,
 );
 
 const UserRouter = router;

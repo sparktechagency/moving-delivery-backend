@@ -1,8 +1,8 @@
 import { RequestHandler } from 'express';
-import catchAsync from '../../utility/catchAsync';
-import UserServices from './user.services';
-import sendRespone from '../../utility/sendRespone';
 import httpStatus from 'http-status';
+import catchAsync from '../../utility/catchAsync';
+import sendRespone from '../../utility/sendRespone';
+import UserServices from './user.services';
 
 //create user
 const createUser: RequestHandler = catchAsync(async (req, res) => {
@@ -43,8 +43,8 @@ const afterVerificUser: RequestHandler = catchAsync(async (req, res) => {
 });
 
 //change password of user
-const chnagePassword: RequestHandler = catchAsync(async (req, res) => {
-  const result = await UserServices.chnagePasswordIntoDb(req.body, req.user.id);
+const changePassword: RequestHandler = catchAsync(async (req, res) => {
+  const result = await UserServices.changePasswordIntoDb(req.body, req.user.id);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -53,11 +53,10 @@ const chnagePassword: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
-
 const UserController = {
   createUser,
   userVarification,
-  chnagePassword,
+  changePassword,
   afterVerificUser,
 };
 
