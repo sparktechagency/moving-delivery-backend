@@ -168,7 +168,79 @@ const myprofileIntoDb = async (id: string) => {
   try {
     const result = await users.findById(id);
     return result;
-  } catch (error: any) {}
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'refresh Token generator error',
+      error,
+    );
+  }
+};
+
+interface RequestWithFile extends Request {
+  file?: Express.Multer.File;
+}
+
+interface ProfileUpdateResponse {
+  status: boolean;
+  message: string;
+}
+
+/**
+ * @param req
+ * @param id
+ * @returns
+ */
+const changeMyProfileIntoDb = async (
+  req: RequestWithFile,
+  id: string,
+): Promise<ProfileUpdateResponse> => {
+  try {
+    const file = req.file;
+    const { name } = req.body as { name?: string };
+
+    const updateData: { name?: string; photo?: string } = {};
+
+    if (name) {
+      updateData.name = name;
+    }
+
+    if (file) {
+      updateData.photo = file.path;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No data provided for update',
+        '',
+      );
+    }
+
+    const result = await users.findByIdAndUpdate(id, updateData, {
+      new: true,
+      upsert: true,
+    });
+
+    if (!result) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
+    }
+
+    return {
+      status: true,
+      message: 'Successfully updated profile',
+    };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Profile update failed',
+      error.message,
+    );
+  }
 };
 
 const AuthServices = {
@@ -176,6 +248,7 @@ const AuthServices = {
   refreshTokenIntoDb,
   social_media_auth_IntoDb,
   myprofileIntoDb,
+  changeMyProfileIntoDb,
 };
 
 export default AuthServices;

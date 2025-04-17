@@ -60,6 +60,16 @@ const refreshToken: RequestHandler = catchAsync(async (req, res) => {
         message: 'Successfully find my profile',
         data: result,
       });
+  });
+
+  const chnageMyProfile:RequestHandler=catchAsync(async(req ,res)=>{
+    const result=await AuthServices.changeMyProfileIntoDb(req as any, req.user.id);
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Change My Profile',
+      data: result,
+    });
   })
 
 
@@ -68,7 +78,8 @@ const refreshToken: RequestHandler = catchAsync(async (req, res) => {
 const AuthController = {
   loginUser,refreshToken,
   social_media_auth,
-  myprofile
+  myprofile,
+  chnageMyProfile
 
 };
 
