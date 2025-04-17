@@ -4,6 +4,7 @@ import { ContractService } from './contract.services';
 import sendRespone from '../../utility/sendRespone';
 import httpStatus from 'http-status';
 
+// create contract
 const createContract: RequestHandler = catchAsync(async (req, res) => {
   const result = await ContractService.createContractIntoDb(req.body);
   sendRespone(res, {
@@ -14,7 +15,8 @@ const createContract: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
-const AllContract: RequestHandler = catchAsync(async (req, res) => {
+//get all contract
+const AllContract: RequestHandler = catchAsync(async (_req, res) => {
   const result = await ContractService.AllContractIntoDb();
   sendRespone(res, {
     success: true,
@@ -24,6 +26,7 @@ const AllContract: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+//get specific contract id
 const SpecificContractId: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await ContractService.SpecificContractIdIntoDb(id);
@@ -35,6 +38,7 @@ const SpecificContractId: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+//update contract
 const UpdateContract: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await ContractService.UpdateContractFromDb(id, req.body);
@@ -46,6 +50,7 @@ const UpdateContract: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+//delete contract
 const DeleteContract: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await ContractService.DeleteContractFromDb(id);
@@ -56,6 +61,8 @@ const DeleteContract: RequestHandler = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+//favourate contract
 const FavoriteContrcat: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await ContractService.FavoriteContrcatFromDb(id);
