@@ -34,10 +34,20 @@ const resetVerification = z.object({
   }),
 });
 
+const changeMyProfileSchema = z.object({
+  body: z
+    .object({
+      name: z.string({ required_error: 'User name is Required' }).optional(),
+      photo: z.string({ required_error: 'photo is require' }).optional(),
+    })
+    .optional(),
+});
+
 const LoginValidationSchema = {
   LoginSchema,
   requestTokenValidationSchema,
   forgetPasswordValidation,
   resetVerification,
+  changeMyProfileSchema,
 };
 export default LoginValidationSchema;

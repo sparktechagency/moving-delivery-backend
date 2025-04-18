@@ -1,0 +1,1 @@
+export const select_truck_search_filed=["truckcategories"];

@@ -90,11 +90,46 @@ const UpdateUserProfileSchema = z.object({
   }),
 });
 
+const ForgotPasswordSchema = z.object({
+  body: z.object({
+    email: z
+      .string({ required_error: 'Email is Required' })
+      .email('Invalid email format')
+      .refine(
+        (email) => {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        },
+        {
+          message: 'Invalid email format',
+        },
+      ),
+  }),
+});
+
+const verificationCodeSchema = z.object({
+  body: z.object({
+    verificationCode: z
+      .number({ required_error: ' verificationCode is require' })
+      .min(4, { message: 'min 4  number accepted' }),
+  }),
+});
+
+const resetPasswordSchema=z.object({
+  body:z.object({
+    userId:z.string({required_error:"userId is require"}),
+    password:z.string({required_error:"password is require"})
+
+  })
+})
+
 const UserValidationSchema = {
   createUserZodSchema,
   UserVerification,
   ChnagePasswordSchema,
   UpdateUserProfileSchema,
+  ForgotPasswordSchema,
+  verificationCodeSchema,
+  resetPasswordSchema
 };
 
 export default UserValidationSchema;
