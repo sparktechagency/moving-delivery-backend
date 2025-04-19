@@ -4,7 +4,6 @@ import { USER_ROLE } from '../user/user.constant';
 import validationRequest from '../../middleware/validationRequest';
 import SelectTruckValidationSchema from './select_truck.zod.validation';
 import SelectTruckController from './select_truck.controller';
-import users from '../user/user.model';
 import upload from '../../utility/uplodeFile';
 import ApiError from '../../app/error/ApiError';
 import httpStatus from 'http-status';

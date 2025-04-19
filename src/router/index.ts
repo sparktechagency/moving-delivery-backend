@@ -6,7 +6,7 @@ import SelectTruckRouter from '../module/select_truck/select_truck.routes';
 import DriverOasisRouter from '../module/driver_oasis/driver_oasis.routes';
 
 const router = express.Router();
-const moduleRouth = [
+const moduleRoute = [
   { path: '/contract', route: ContructRouter },
   { path: '/user', route: UserRouter },
   { path: '/auth', route: AuthRouter },
@@ -14,6 +14,6 @@ const moduleRouth = [
   { path: '/driver_oasis', route: DriverOasisRouter },
 ];
 
-moduleRouth.forEach((v) => router.use(v.path, v.route));
+moduleRoute.forEach((v) => router.use(v.path, v.route));
 
 export default router;
