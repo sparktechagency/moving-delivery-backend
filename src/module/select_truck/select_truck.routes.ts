@@ -13,7 +13,7 @@ router.post(
   '/create_select_truck',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
   upload.single('file'),
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: Request, _res: Response, next: NextFunction) => {
     try {
       if (req.body.data && typeof req.body.data === 'string') {
         req.body = JSON.parse(req.body.data);
