@@ -6,6 +6,7 @@ import {
   DriverVerificationResponse,
   RequestWithMultipleFiles,
 } from './driver_verification.interface';
+import QueryBuilder from '../../app/builder/QueryBuilder';
 
 /**
  * @param req
@@ -42,7 +43,6 @@ const recordDriverVerificationIntoDb = async (
     if (isDriverVerificationExist) {
       try {
         if (isDriverVerificationExist?.driverLicense) {
-
           const licenseExists = await fileExists(
             isDriverVerificationExist.driverLicense,
           );
@@ -112,8 +112,44 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
+const findByDriverVerifictionAdminIntoDb = async (
+  query: Record<string, unknown>,
+) => {
+  try {
+    console.log('findByDriverVerifictionAdminIntoDb called');
+
+    const allDriverVerificationQuery = new QueryBuilder(
+      driververifications.find().populate('userId', {
+        name: 1,
+        email: 1,
+        phoneNumber: 1,
+      }),
+      query,
+    )
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const all_driver_verification = await allDriverVerificationQuery.modelQuery;
+    const meta = await allDriverVerificationQuery.countTotal();
+
+    return { meta, all_driver_verification };
+  } catch (error: any) {
+    console.error('❌ Error in findByDriverVerifictionAdminIntoDb:', error?.message || error);
+    console.error(error?.stack || '');
+
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'findByDriverVerifictionAdminIntoDb server unavailable',
+      error?.message || error,
+    );
+  }
+};
+
 const DriverVerificationServices = {
   recordDriverVerificationIntoDb,
+  findByDriverVerifictionAdminIntoDb,
 };
 
 export default DriverVerificationServices;

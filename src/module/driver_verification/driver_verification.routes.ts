@@ -46,6 +46,12 @@ router.post(
   DriverVerificationController.recordDriverVerification,
 );
 
+router.get(
+  '/find_by_all__driver_verfiction_admin',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  DriverVerificationController.findByDriverVerifictionAdmin,
+);
+
 const DriverVerificationRouter = router;
 
 export default DriverVerificationRouter;

@@ -21,7 +21,23 @@ const recordDriverVerification: RequestHandler = catchAsync(
   },
 );
 
+const findByDriverVerifictionAdmin: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await DriverVerificationServices.findByDriverVerifictionAdminIntoDb(
+        req.query,
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully find all driver verification data ',
+      data: result,
+    });
+  },
+);
+
 const DriverVerificationController = {
   recordDriverVerification,
+  findByDriverVerifictionAdmin,
 };
 export default DriverVerificationController;
