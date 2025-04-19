@@ -9,6 +9,7 @@ const createSelectTruck: RequestHandler = catchAsync(async (req, res) => {
     req as any,
     req.user.id,
   );
+  console.log(req.user)
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.CREATED,

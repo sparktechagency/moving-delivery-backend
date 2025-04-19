@@ -8,7 +8,7 @@ import ApiError from '../app/error/ApiError';
 import users from '../module/user/user.model';
 
 const auth = (...requireRoles: TUserRole[]) => {
-  return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  return catchAsync(async (req: Request, _res: Response, next: NextFunction) => {
     const token = req.headers.authorization;
     if (!token) {
       throw new ApiError(httpStatus.UNAUTHORIZED, 'You are not Authorized', '');

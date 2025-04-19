@@ -1,9 +1,8 @@
 import httpStatus from 'http-status';
-import ApiError from '../../app/error/ApiError';
-import { TSelectTruck } from './select_truck.interface';
-import selecttrucks from './select_truck.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import ApiError from '../../app/error/ApiError';
 import { select_truck_search_filed } from './select_truck.constant';
+import selecttrucks from './select_truck.model';
 
 interface RequestWithFile extends Request {
   file?: Express.Multer.File;
@@ -30,6 +29,7 @@ const createSelectTruckIntoDb = async (
       ...createSelectTruck,
       userId,
     });
+    console.log('select', select_truck_builder);
     const result = await select_truck_builder.save();
 
     // Fix potential undefined return - ensure we always return a CreateSelectedTruckResponse

@@ -11,7 +11,7 @@ import httpStatus from 'http-status';
 
 const router = express.Router();
 router.post(
-  '/create_select_trueck',
+  '/create_select_truck',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
   upload.single('file'),
   (req: Request, res: Response, next: NextFunction) => {
