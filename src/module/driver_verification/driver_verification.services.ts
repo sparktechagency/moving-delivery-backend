@@ -116,7 +116,7 @@ const findByDriverVerifictionAdminIntoDb = async (
   query: Record<string, unknown>,
 ) => {
   try {
-    console.log('findByDriverVerifictionAdminIntoDb called');
+    
 
     const allDriverVerificationQuery = new QueryBuilder(
       driververifications.find().populate('userId', {
@@ -136,9 +136,6 @@ const findByDriverVerifictionAdminIntoDb = async (
 
     return { meta, all_driver_verification };
   } catch (error: any) {
-    console.error('❌ Error in findByDriverVerifictionAdminIntoDb:', error?.message || error);
-    console.error(error?.stack || '');
-
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'findByDriverVerifictionAdminIntoDb server unavailable',
