@@ -12,7 +12,7 @@ const TdriverVerificationSchema = new Schema<
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'users',
-      required: true,
+      required: [true,'userId is required'],
     },
     driverSelectedTruck: {
       type: [String],
