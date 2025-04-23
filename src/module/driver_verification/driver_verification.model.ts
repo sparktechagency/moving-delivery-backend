@@ -3,6 +3,7 @@ import {
   DriverOasisModel,
   TDriverVerification,
 } from './driver_verification.interface';
+import { ListOfFualType } from './driver_verification.constant';
 
 const TdriverVerificationSchema = new Schema<
   TDriverVerification,
@@ -12,13 +13,32 @@ const TdriverVerificationSchema = new Schema<
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'users',
-      required: [true,'userId is required'],
+      required: [true, 'userId is required'],
     },
+    driverLocation: {
+      type: String,
+      required: [true, 'driverLocation is required'],
+    },
+    vehicleNumber: {
+      type: String,
+      required: [true, 'vehicale number is required'],
+    },
+    fuleType: {
+      type: String,
+      enum: {
+        values: ListOfFualType,
+        message: '{VALUE} is Not Required',
+      },
+      required: [true, 'Role is Required'],
+      default: 'Diesel',
+    },
+    vehicleAge: { type: Number, required: [true, 'vehicleAge is Required'] },
+    workingPreferredDate: {
+      type: String,
+      required: [true, 'workingPreferredDate is required'],
+    },
+
     driverSelectedTruck: {
-      type: [String],
-      required: true,
-    },
-    selectedDriverOasis: {
       type: [String],
       required: true,
     },

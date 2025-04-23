@@ -52,6 +52,54 @@ router.get(
   DriverVerificationController.findByDriverVerifictionAdmin,
 );
 
+router.get(
+  '/findB_by_specific_driver_verification/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.driver),
+  DriverVerificationController.findBySpecificDriverVerification,
+);
+
+router.patch(
+  '/update_driver_verification/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.driver),
+  upload.fields([
+    { name: 'driverLicense', maxCount: 1 },
+    { name: 'driverNidCard', maxCount: 1 },
+  ]),
+  (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      if (req.body.data && typeof req.body.data === 'string') {
+        req.body = JSON.parse(req.body.data);
+      }
+
+      const files = req?.files as {
+        [fieldname: string]: Express.Multer.File[];
+      };
+
+      if (files?.driverLicense && files?.driverLicense[0]) {
+        req.body.driverLicense = files.driverLicense[0].path;
+      }
+
+      if (files?.driverNidCard && files?.driverNidCard[0]) {
+        req.body.driverNidCard = files?.driverNidCard[0].path;
+      }
+
+      next();
+    } catch (error: any) {
+      next(new ApiError(httpStatus.BAD_REQUEST, 'Invalid JSON data', error));
+    }
+  },
+  validationRequest(
+    DriverVerificationValidationSchema.updateDriverVerificationSchema,
+  ),
+  DriverVerificationController.updateDriverVerification,
+);
+
+router.delete(
+  '/delete_verified_driver/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  DriverVerificationController.deleteDriverVerification,
+);
+
 const DriverVerificationRouter = router;
 
 export default DriverVerificationRouter;

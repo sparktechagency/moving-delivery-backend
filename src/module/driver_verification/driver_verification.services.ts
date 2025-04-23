@@ -116,8 +116,6 @@ const findByDriverVerifictionAdminIntoDb = async (
   query: Record<string, unknown>,
 ) => {
   try {
-    
-
     const allDriverVerificationQuery = new QueryBuilder(
       driververifications.find().populate('userId', {
         name: 1,
@@ -144,9 +142,94 @@ const findByDriverVerifictionAdminIntoDb = async (
   }
 };
 
+const findBySpecificDriverVerificationIntoDb = async (id: string) => {
+  try {
+    return await driververifications.isDriverVerificationExistByCustomId(id);
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'find By Specific Drive rVerification IntoDb verification service unavailable',
+      error,
+    );
+  }
+};
+
+const updateDriverVerificationIntoDb = async (
+  req: Request,
+  id: string,
+): Promise<DriverVerificationResponse> => {
+  try {
+    const data = req.body;
+    if (!data) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Driver verification data is required',
+        '',
+      );
+    }
+
+    const isDriverVerificationExist = await driververifications.findOne(
+      {
+        $and: [
+          { _id: id },
+          { isDelete: false },
+          { isReadyToDrive: true },
+          { isVerifyDriverLicense: true },
+          { isVerifyDriverNid: true },
+        ],
+      },
+      { _id: 1 },
+    );
+
+    if (!isDriverVerificationExist) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'driver is not verified ', '');
+    }
+
+    const result = await driververifications.findByIdAndUpdate(id, data, {
+      new: true,
+      upsert: true,
+    });
+
+    return (
+      result && {
+        status: true,
+        message: 'successfully updated driver verification profile',
+      }
+    );
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'update driver verificationIntoDb service unavailable',
+      error,
+    );
+  }
+};
+
+const deleteDriverVerificationIntoDb = async (
+  id: string,
+): Promise<DriverVerificationResponse> => {
+  try {
+    console.log(id);
+
+    return {
+      status: true,
+      message: 'successfully updated driver verification profile',
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'delete driver verificationI ntoDb service unavailable',
+      error,
+    );
+  }
+};
+
 const DriverVerificationServices = {
   recordDriverVerificationIntoDb,
   findByDriverVerifictionAdminIntoDb,
+  findBySpecificDriverVerificationIntoDb,
+  updateDriverVerificationIntoDb,
+  deleteDriverVerificationIntoDb,
 };
 
 export default DriverVerificationServices;

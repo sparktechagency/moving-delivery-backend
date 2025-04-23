@@ -36,8 +36,58 @@ const findByDriverVerifictionAdmin: RequestHandler = catchAsync(
   },
 );
 
+const findBySpecificDriverVerification: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await DriverVerificationServices.findBySpecificDriverVerificationIntoDb(
+        req.user.id,
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully  find specific driver verification ',
+      data: result,
+    });
+  },
+);
+
+const updateDriverVerification: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await DriverVerificationServices.updateDriverVerificationIntoDb(
+        req as any,
+        req.params.id,
+      );
+
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully  update driver verification ',
+      data: result,
+    });
+  },
+);
+
+const deleteDriverVerification: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await DriverVerificationServices.deleteDriverVerificationIntoDb(
+        req.params.id,
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully  delete  verified driver',
+      data: result,
+    });
+  },
+);
+
 const DriverVerificationController = {
   recordDriverVerification,
   findByDriverVerifictionAdmin,
+  findBySpecificDriverVerification,
+  updateDriverVerification,
+  deleteDriverVerification,
 };
 export default DriverVerificationController;

@@ -24,6 +24,11 @@ export type TDriverVerification = {
   driverNidCard: string;
   isVerifyDriverNid: boolean;
   isReadyToDrive: boolean;
+  driverLocation:string;
+  vehicleNumber:string;
+  fuleType: 'Diesel' | 'Gasoline' | 'Natural Gas' | 'Hydrogen' | 'Electric' | 'Hybrid Fuels' | 'Dimethyl Ether (DME)' | 'Renewable Diesel'
+  vehicleAge:number;
+  workingPreferredDate:string;
   isDelete?: boolean;
 };
 
