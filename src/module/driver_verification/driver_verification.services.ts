@@ -209,7 +209,24 @@ const deleteDriverVerificationIntoDb = async (
   id: string,
 ): Promise<DriverVerificationResponse> => {
   try {
-    console.log(id);
+    const isDriverVerificationExist = await driververifications.findOne(
+      {
+        $and: [
+          { _id: id },
+          { isDelete: false },
+          { isReadyToDrive: true },
+          { isVerifyDriverLicense: true },
+          { isVerifyDriverNid: true },
+        ],
+      },
+      { _id: 1 },
+    );
+
+    if (!isDriverVerificationExist) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'driver is not verified ', '');
+    }
+
+    //  started delete  code in this section
 
     return {
       status: true,
