@@ -1,13 +1,11 @@
 import mongoose, { Schema, Model, Types } from 'mongoose';
 import {
-  DriverOasisModel,
   TDriverVerification,
 } from './driver_verification.interface';
 import { ListOfFualType } from './driver_verification.constant';
 
 const TdriverVerificationSchema = new Schema<
-  TDriverVerification,
-  DriverOasisModel
+  TDriverVerification
 >(
   {
     userId: {
@@ -103,8 +101,8 @@ TdriverVerificationSchema.statics.isDriverVerificationExistByCustomId =
   };
 
 const driververifications = mongoose.model<
-  TDriverVerification,
-  DriverOasisModel
+  TDriverVerification
+
 >('driververifications', TdriverVerificationSchema);
 
 export default driververifications;

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import {z } from 'zod';
 import { ListOfFualType } from './driver_verification.constant';
 
 const driverVerificationSchema = z.object({
@@ -75,6 +75,7 @@ const updateDriverVerificationSchema = z.object({
     isReadyToDrive: z.boolean().default(false).optional(),
   }).optional(),
 });
+
 
 const DriverVerificationValidationSchema = {
   driverVerificationSchema,
