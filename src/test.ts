@@ -1,1 +1,0 @@
-console.log("new pc with new setpup")

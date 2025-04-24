@@ -1,7 +1,7 @@
-import express from 'express';
 import cors from 'cors';
-import notFound from './middleware/notFound';
+import express from 'express';
 import globalErrorHandelar from './middleware/globalErrorHandelar';
+import notFound from './middleware/notFound';
 import router from './router';
 
 import cookieParser from 'cookie-parser';

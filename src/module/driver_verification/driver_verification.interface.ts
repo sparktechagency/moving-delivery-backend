@@ -29,3 +29,7 @@ export type TDriverVerification = {
   isDelete?: boolean;
 };
 
+export interface DriverOasisModel extends Model<TDriverVerification> {
+  // eslint-disable-next-line no-unused-vars
+  isDriverVerificationExistByCustomId(id: string): Promise<TDriverVerification>;
+}

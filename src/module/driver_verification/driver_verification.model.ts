@@ -1,5 +1,6 @@
 import mongoose, { Schema, Model, Types } from 'mongoose';
 import {
+  DriverOasisModel,
   TDriverVerification,
 } from './driver_verification.interface';
 import { ListOfFualType } from './driver_verification.constant';
@@ -15,11 +16,11 @@ const TdriverVerificationSchema = new Schema<
     },
     driverLocation: {
       type: String,
-      required: [true, 'driverLocation is required'],
+      required: [true, 'driver Location is required'],
     },
     vehicleNumber: {
       type: String,
-      required: [true, 'vehicale number is required'],
+      required: [true, 'vehicle number is required'],
     },
     fuleType: {
       type: String,
@@ -101,7 +102,10 @@ TdriverVerificationSchema.statics.isDriverVerificationExistByCustomId =
   };
 
 const driververifications = mongoose.model<
-  TDriverVerification
+  
+  TDriverVerification,
+  DriverOasisModel
+
 
 >('driververifications', TdriverVerificationSchema);
 
