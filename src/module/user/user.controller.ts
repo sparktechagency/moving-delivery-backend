@@ -3,6 +3,7 @@ import catchAsync from '../../utility/catchAsync';
 import UserServices from './user.services';
 import sendRespone from '../../utility/sendRespone';
 import httpStatus from 'http-status';
+import { string } from 'zod';
 
 const createUser: RequestHandler = catchAsync(async (req, res) => {
   const result = await UserServices.createUserIntoDb(req.body);
@@ -59,37 +60,62 @@ const forgotPassword: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
-const  verificationForgotUser:RequestHandler=catchAsync(async(req , res)=>{
-
-    const result=await UserServices.verificationForgotUserIntoDb(req.body);
-    sendRespone(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      message: 'Successfully Verify User',
-      data: result,
-    });
-
+const verificationForgotUser: RequestHandler = catchAsync(async (req, res) => {
+  const result = await UserServices.verificationForgotUserIntoDb(req.body);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Verify User',
+    data: result,
+  });
 });
 
-const  resetPassword:RequestHandler=catchAsync(async(req , res)=>{
-  const result=await UserServices.resetPasswordIntoDb(req.body);
+const resetPassword: RequestHandler = catchAsync(async (req, res) => {
+  const result = await UserServices.resetPasswordIntoDb(req.body);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Successfully Reset Password',
     data: result,
   });
+});
 
+const autoMaticallyDetectLocation: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result = await UserServices.autoMaticallyDetectLocationIntoDb(
+      req.body,
+      req.user.id,
+    );
+
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Recoed Detect Location',
+      data: result,
+    });
+  },
+);
+
+const recentSearchingLocation:RequestHandler=catchAsync(async(req , res)=>{
+
+  const  result=await UserServices.recentSearchingLocationIntoDb(req.user.id);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Find Recent Location',
+    data: result,
+  });
 })
 
 const UserController = {
   createUser,
   userVarification,
   chnagePassword,
-
   forgotPassword,
   verificationForgotUser,
-  resetPassword
+  resetPassword,
+  autoMaticallyDetectLocation,
+  recentSearchingLocation
 };
 
 export default UserController;

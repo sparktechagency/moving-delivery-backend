@@ -6,6 +6,11 @@ export interface IGeoLocation {
   coordinates: [number, number]; // [longitude, latitude]
 }
 
+export interface UserResponse {
+  status: boolean;
+  message: string;
+}
+
 export type TUser = {
   id: string;
   role: 'user' | 'driver' | 'admin' | 'superAdmin';

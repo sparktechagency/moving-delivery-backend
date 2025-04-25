@@ -110,6 +110,8 @@ TUserSchema.set('toJSON', {
   },
 });
 
+TUserSchema.index({ 'from.coordinates': '2dsphere' });
+
 // mongoose middleware
 TUserSchema.pre('save', async function (next) {
   const user = this;

@@ -35,7 +35,7 @@ const getSocketIO = () => {
       throw new Error(
         'socket.io is not initialized',
       );
-    }0
+    }
     return io;
   };
   

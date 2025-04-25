@@ -6,6 +6,8 @@ import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
 import config from '../../app/config';
 import { TUser } from '../user/user.interface';
 import users from '../user/user.model';
+import QueryBuilder from '../../app/builder/QueryBuilder';
+import { user_search_filed } from './auth.constant';
 
 const loginUserIntoDb = async (payload: {
   email: string;
@@ -131,6 +133,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
     const otp = Number(Math.floor(100000 + Math.random() * 9000).toString());
     payload.verificationCode = otp;
     payload.isVerify = true;
+    payload.phoneNumber = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const newUser = await new users(payload).save();
     jwtPayload = {
       id: newUser._id.toString(),
@@ -244,12 +247,40 @@ const changeMyProfileIntoDb = async (
   }
 };
 
+const findByAllUsersAdminIntoDb=async(query: Record<string, unknown>)=>{
+
+  try {
+    const allUsersdQuery = new QueryBuilder(
+      users.find(),
+      query,
+    )
+      .search( user_search_filed)
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const all_users = await allUsersdQuery.modelQuery;
+    const meta = await allUsersdQuery.countTotal();
+
+    return { meta, all_users };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'find By All Users Admin IntoDb server unavailable',
+      error,
+    );
+  }
+}
+
+
 const AuthServices = {
   loginUserIntoDb,
   refreshTokenIntoDb,
   social_media_auth_IntoDb,
   myprofileIntoDb,
   changeMyProfileIntoDb,
+  findByAllUsersAdminIntoDb
 };
 
 export default AuthServices;

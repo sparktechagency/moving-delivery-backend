@@ -19,12 +19,8 @@ router.patch(
   UserController.userVarification,
 );
 
-// router.patch(
-//   '/after_verification_user',
-//   auth(USER_ROLE.user, USER_ROLE.driver),
-//   validationRequest(UserValidationSchema.createUserZodSchema),
-//   UserController.afterVerificUser,
-// );
+
+
 
 router.patch(
   '/change_password',
@@ -50,6 +46,20 @@ router.post(
   validationRequest(UserValidationSchema.resetPasswordSchema),
   UserController.resetPassword,
 );
+
+router.patch(
+  '/automatically_detect_location',
+  auth(USER_ROLE.driver, USER_ROLE.driver),
+  validationRequest(UserValidationSchema.automaticallyDetectLocationSchema),
+  UserController.autoMaticallyDetectLocation,
+);
+
+router.get(
+  '/recent_searching_location',
+  auth(USER_ROLE.user),
+  UserController.recentSearchingLocation,
+);
+
 
 const UserRouter = router;
 

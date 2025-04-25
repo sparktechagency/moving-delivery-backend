@@ -1,14 +1,19 @@
 import { z } from 'zod';
 import { USER_ACCESSIBILITY, USER_ROLE } from './user.constant';
 
-const geoLocationSchema = z.object({
-  address: z.string({
-    required_error: 'Address is required',
-  }),
-  coordinates: z
-    .array(z.number())
-    .length(2, 'Coordinates must be in format [longitude, latitude]'),
-});
+const geoLocationSchema = z
+  .object({
+    address: z
+      .string({
+        required_error: 'Address is required',
+      })
+      .optional(),
+    coordinates: z
+      .array(z.number())
+      .length(2, 'Coordinates must be in format [longitude, latitude]')
+      .optional(),
+  })
+  .optional();
 
 const createUserZodSchema = z.object({
   body: z.object({
@@ -132,6 +137,13 @@ const resetPasswordSchema = z.object({
   }),
 });
 
+const automaticallyDetectLocationSchema = z.object({
+  body: z.object({
+    from: geoLocationSchema,
+    to: geoLocationSchema,
+  }),
+});
+
 const UserValidationSchema = {
   createUserZodSchema,
   UserVerification,
@@ -140,6 +152,7 @@ const UserValidationSchema = {
   ForgotPasswordSchema,
   verificationCodeSchema,
   resetPasswordSchema,
+  automaticallyDetectLocationSchema,
 };
 
 export default UserValidationSchema;

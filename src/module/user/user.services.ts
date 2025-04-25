@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import mongoose, { HydratedDocument } from 'mongoose';
 import ApiError from '../../app/error/ApiError';
-import { TUser } from './user.interface';
+import { TUser, UserResponse } from './user.interface';
 import sendEmail from '../../utility/sendEmail';
 import emailcontext from '../../utility/emailcontex/sendvarificationData';
 import config from '../../app/config';
@@ -9,6 +9,8 @@ import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
 import { USER_ACCESSIBILITY } from './user.constant';
 import bcrypt from 'bcrypt';
 import users from './user.model';
+import { string } from 'zod';
+import { calculateBearing, calculateDistance, classifyRouteType } from '../../utility/math/calculateDistance';
 
 const generateUniqueOTP = async (): Promise<number> => {
   const otp = Math.floor(1000 + Math.random() * 9000);
@@ -29,7 +31,6 @@ const createUserIntoDb = async (payload: TUser) => {
   try {
     const otp = await generateUniqueOTP();
 
-  
     const isExistUser = await users.findOne(
       {
         $or: [
@@ -42,7 +43,6 @@ const createUserIntoDb = async (payload: TUser) => {
 
     payload.verificationCode = otp;
 
-  
     if (isExistUser) {
       // await session.abortTransaction();
       // session.endSession();
@@ -129,58 +129,6 @@ const userVarificationIntoDb = async (verificationCode: number) => {
   }
 };
 
-// const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
-//   try {
-//     const isUserExist = await users.findOne(
-//       {
-//         $and: [
-//           {
-//             _id: userId,
-
-//             isDelete: false,
-//             isVerify: true,
-//             status: USER_ACCESSIBILITY.isProgress,
-//           },
-//         ],
-//       },
-//       { _id: 1 },
-//     );
-//     if (!isUserExist) {
-//       throw new ApiError(httpStatus.NOT_FOUND, 'user not founded', '');
-//     }
-
-//     const result = await users.findOneAndUpdate(
-//       { _id: userId },
-//       {
-//         $set: {
-//           name: payload.name,
-//           phoneNumber: payload.phoneNumber,
-//           password: await bcrypt.hash(
-//             payload.password,
-//             Number(config.bcrypt_salt_rounds),
-//           ),
-//           photo: payload.photo,
-//           role: payload.role,
-//         },
-//       },
-//       { new: true, upsert: true },
-//     );
-
-//     return (
-//       result && {
-//         status: true,
-//         message: 'user information recorded successfully',
-//       }
-//     );
-//   } catch (error: any) {
-//     throw new ApiError(
-//       httpStatus.SERVICE_UNAVAILABLE,
-//       'Verification auth error',
-//       error,
-//     );
-//   }
-// };
-
 const chnagePasswordIntoDb = async (
   payload: {
     newpassword: string;
@@ -188,7 +136,6 @@ const chnagePasswordIntoDb = async (
   },
   id: string,
 ) => {
-  console.log(payload, id);
   try {
     const isUserExist = await users.findOne(
       {
@@ -291,7 +238,7 @@ const forgotPasswordIntoDb = async (payload: string | { email: string }) => {
     if (!isExistUser) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
     }
-  
+
     if ([config.googleauth, config.appleauth].includes(isExistUser.provider)) {
       throw new ApiError(
         httpStatus.FORBIDDEN,
@@ -473,6 +420,124 @@ const resetPasswordIntoDb = async (payload: {
   }
 };
 
+const autoMaticallyDetectLocationIntoDb = async (
+  payload: TUser,
+  userId: string,
+): Promise<UserResponse> => {
+  try {
+    const isExistUser = await users.findOne(
+      {
+        $and: [
+          { _id: userId },
+          { isVerify: true },
+          { isDelete: false },
+          { status: USER_ACCESSIBILITY.isProgress },
+        ],
+      },
+      { _id: 1 },
+    );
+    if (!isExistUser) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'some issues by the  reset password section',
+        '',
+      );
+    }
+
+    const result = await users.findByIdAndUpdate(userId, payload, {
+      new: true,
+      upsert: true,
+    });
+
+    if (!result) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'some issues by the  driver and user geolocation updated section',
+        '',
+      );
+    }
+
+    return { status: true, message: 'successfully recorded' };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'server unvailable reste password into db function',
+      error,
+    );
+  }
+};
+
+/**
+ * @param userId
+ * @returns
+ */
+const recentSearchingLocationIntoDb = async (userId: string) => {
+  try {
+    const userData = await users.find({ _id: userId });
+    if (!userData || userData.length === 0) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'User not found or no recent locations available',
+        '',
+      );
+    }
+
+    const processedData =  userData && userData?.map((user) => {
+      let distanceKm = null;
+      let estimatedDurationMin = null;
+      if (
+        user?.from?.coordinates?.length === 2 &&
+        user?.to?.coordinates?.length === 2
+      ) {
+        const fromLng = user?.from?.coordinates[0];
+        const fromLat = user?.from?.coordinates[1];
+        const toLng = user?.to?.coordinates[0];
+        const toLat = user?.to?.coordinates[1];
+
+        distanceKm = calculateDistance(fromLat, fromLng, toLat, toLng);
+        estimatedDurationMin = (distanceKm / 50) * 60;
+      }
+
+      const userWithGeoData: any = {
+        ...(user.toObject
+          ? user.toObject()
+          : { from: user?.from?.address, to: user?.to?.address }),
+        geoMetrics: {
+          distanceKm:
+            distanceKm !== null ? parseFloat(distanceKm?.toFixed(2)) : null,
+          estimatedDurationMin:
+            estimatedDurationMin !== null
+              ? parseFloat(estimatedDurationMin?.toFixed(1))
+              : null,
+          bearingDegrees: calculateBearing(user),
+          routeType: classifyRouteType(distanceKm),
+        },
+      };
+
+      return {
+        from: userWithGeoData.from.address as string,
+        to: userWithGeoData.to.address as string,
+        geoMetrics: userWithGeoData.geoMetrics,
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Successfully Found Recent Location with Geospatial Data',
+      data: processedData,
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      error.statusCode || httpStatus.SERVICE_UNAVAILABLE,
+      error.message ||
+        'Server unavailable in recent Searching Location IntoDb function',
+      error,
+    );
+  }
+};
+
+
+
 const UserServices = {
   createUserIntoDb,
   userVarificationIntoDb,
@@ -480,6 +545,8 @@ const UserServices = {
   forgotPasswordIntoDb,
   verificationForgotUserIntoDb,
   resetPasswordIntoDb,
+  autoMaticallyDetectLocationIntoDb,
+  recentSearchingLocationIntoDb,
 };
 
 export default UserServices;

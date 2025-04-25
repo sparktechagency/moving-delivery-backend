@@ -29,7 +29,6 @@ const createSelectTruckIntoDb = async (
       ...createSelectTruck,
       userId,
     });
-    console.log('select', select_truck_builder);
     const result = await select_truck_builder.save();
 
     // Fix potential undefined return - ensure we always return a CreateSelectedTruckResponse
