@@ -19,12 +19,12 @@ router.patch(
   UserController.userVarification,
 );
 
-router.patch(
-  '/after_verification_user',
-  auth(USER_ROLE.user, USER_ROLE.driver),
-  validationRequest(UserValidationSchema.createUserZodSchema),
-  UserController.afterVerificUser,
-);
+// router.patch(
+//   '/after_verification_user',
+//   auth(USER_ROLE.user, USER_ROLE.driver),
+//   validationRequest(UserValidationSchema.createUserZodSchema),
+//   UserController.afterVerificUser,
+// );
 
 router.patch(
   '/change_password',

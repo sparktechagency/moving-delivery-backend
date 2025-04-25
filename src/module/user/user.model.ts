@@ -1,8 +1,28 @@
 import { Schema, model } from 'mongoose';
-import { TUser, UserModel } from './user.interface';
+import { IGeoLocation, TUser, UserModel } from './user.interface';
 import bcrypt from 'bcrypt';
 import config from '../../app/config';
 import { USER_ACCESSIBILITY, USER_ROLE } from './user.constant';
+
+const GeoLocationSchema = new Schema<IGeoLocation>(
+  {
+    address: {
+      type: String,
+      required: [true, 'Address is required'],
+    },
+    coordinates: {
+      type: [Number],
+      required: [true, 'Coordinates are required'],
+      validate: {
+        validator: function (v: number[]) {
+          return Array.isArray(v) && v.length === 2;
+        },
+        message: 'Coordinates must be in format [longitude, latitude]',
+      },
+    },
+  },
+  { _id: false },
+);
 
 const TUserSchema = new Schema<TUser, UserModel>(
   {
@@ -18,7 +38,6 @@ const TUserSchema = new Schema<TUser, UserModel>(
       type: String,
       required: [false, 'phone number is required'],
       unique: true,
-      
     },
     verificationCode: {
       type: Number,
@@ -56,11 +75,20 @@ const TUserSchema = new Schema<TUser, UserModel>(
     provider: {
       type: String,
       enum: {
-        values: [config.googleauth, config.appleauth],
-        message: '{VALUE} is Not Required',
+        values: [config.googleauth, config.appleauth, 'email auth'],
+        message: '{VALUE} is not a valid provider',
       },
       required: [false, 'Provider is not Required'],
-      default: '',
+      default: 'email auth',
+    },
+
+    from: {
+      type: GeoLocationSchema,
+      required: [true, 'Origin location is required'],
+    },
+    to: {
+      type: GeoLocationSchema,
+      required: [true, 'Destination location is required'],
     },
     isDelete: {
       type: Boolean,

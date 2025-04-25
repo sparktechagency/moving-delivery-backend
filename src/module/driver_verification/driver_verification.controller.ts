@@ -83,11 +83,28 @@ const deleteDriverVerification: RequestHandler = catchAsync(
   },
 );
 
+const detected_Driver_Auto_Live_Location: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await DriverVerificationServices.detected_Driver_Auto_Live_Location_IntoDb(
+        req.body,
+        req.user.id,
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully recorded driver live location',
+      data: result,
+    });
+  },
+);
+
 const DriverVerificationController = {
   recordDriverVerification,
   findByDriverVerifictionAdmin,
   findBySpecificDriverVerification,
   updateDriverVerification,
   deleteDriverVerification,
+  detected_Driver_Auto_Live_Location,
 };
 export default DriverVerificationController;

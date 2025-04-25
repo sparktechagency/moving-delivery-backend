@@ -1,63 +1,74 @@
 import { z } from 'zod';
 import { USER_ACCESSIBILITY, USER_ROLE } from './user.constant';
 
+const geoLocationSchema = z.object({
+  address: z.string({
+    required_error: 'Address is required',
+  }),
+  coordinates: z
+    .array(z.number())
+    .length(2, 'Coordinates must be in format [longitude, latitude]'),
+});
+
 const createUserZodSchema = z.object({
-  body: z
-    .object({
-      name: z.string({ required_error: 'User name is Required' }).optional(),
+  body: z.object({
+    name: z.string({ required_error: 'User name is Required' }).optional(),
 
-      password: z.string({ required_error: 'Password is Required' }).optional(),
+    password: z.string({ required_error: 'Password is Required' }).optional(),
 
-      email: z
-        .string({ required_error: 'Email is Required' })
-        .email('Invalid email format')
-        .refine(
-          (email) => {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-          },
-          {
-            message: 'Invalid email format',
-          },
-        )
-        .optional(),
+    email: z
+      .string({ required_error: 'Email is Required' })
+      .email('Invalid email format')
+      .refine(
+        (email) => {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        },
+        {
+          message: 'Invalid email format',
+        },
+      )
+      .optional(),
 
-      phoneNumber: z
-        .string({ required_error: 'Phone number is required' })
-        .refine(
-          (phone) => {
-            return (
-              /^(\+?\d{1,3})?[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,10}$/.test(
-                phone,
-              ) && phone.replace(/[^0-9]/g, '').length >= 7
-            );
-          },
-          {
-            message:
-              'Invalid phone number format. Please include country code for international numbers',
-          },
-        )
-        .optional(),
+    phoneNumber: z
+      .string({ required_error: 'Phone number is required' })
+      .refine(
+        (phone) => {
+          return (
+            /^(\+?\d{1,3})?[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,10}$/.test(phone) &&
+            phone.replace(/[^0-9]/g, '').length >= 7
+          );
+        },
+        {
+          message:
+            'Invalid phone number format. Please include country code for international numbers',
+        },
+      )
+      .optional(),
 
-      role: z
-        .enum(Object.values(USER_ROLE) as [string, ...string[]], {
-          required_error: 'Role is Required',
-          invalid_type_error: 'Invalid role value',
-        })
-        .default(USER_ROLE.user),
+    role: z
+      .enum(Object.values(USER_ROLE) as [string, ...string[]], {
+        required_error: 'Role is Required',
+        invalid_type_error: 'Invalid role value',
+      })
+      .default(USER_ROLE.user),
 
-      status: z
-        .enum(Object.values(USER_ACCESSIBILITY) as [string, ...string[]], {
-          required_error: 'Status is Required',
-          invalid_type_error: 'Invalid status value',
-        })
-        .default(USER_ACCESSIBILITY.isProgress),
+    status: z
+      .enum(Object.values(USER_ACCESSIBILITY) as [string, ...string[]], {
+        required_error: 'Status is Required',
+        invalid_type_error: 'Invalid status value',
+      })
+      .default(USER_ACCESSIBILITY.isProgress),
 
-      photo: z.string({ required_error: 'phone is not require' }).optional(),
-      provider: z
-        .string({ required_error: 'provider  is not require' })
-        .optional(),
-    })
-    .optional(),
+    photo: z.string({ required_error: 'photo is not required' }).optional(),
+
+    provider: z
+      .string({ required_error: 'provider is not required' })
+      .optional(),
+
+    // Move these inside the body object
+    from: geoLocationSchema,
+    to: geoLocationSchema,
+  }),
 });
 
 const UserVerification = z.object({
@@ -114,13 +125,12 @@ const verificationCodeSchema = z.object({
   }),
 });
 
-const resetPasswordSchema=z.object({
-  body:z.object({
-    userId:z.string({required_error:"userId is require"}),
-    password:z.string({required_error:"password is require"})
-
-  })
-})
+const resetPasswordSchema = z.object({
+  body: z.object({
+    userId: z.string({ required_error: 'userId is require' }),
+    password: z.string({ required_error: 'password is require' }),
+  }),
+});
 
 const UserValidationSchema = {
   createUserZodSchema,
@@ -129,7 +139,7 @@ const UserValidationSchema = {
   UpdateUserProfileSchema,
   ForgotPasswordSchema,
   verificationCodeSchema,
-  resetPasswordSchema
+  resetPasswordSchema,
 };
 
 export default UserValidationSchema;

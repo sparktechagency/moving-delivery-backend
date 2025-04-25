@@ -19,6 +19,7 @@ const recordDriverVerificationIntoDb = async (
 ): Promise<DriverVerificationResponse> => {
   try {
     const data = req.body;
+
     if (!data) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -117,11 +118,17 @@ const findByDriverVerifictionAdminIntoDb = async (
 ) => {
   try {
     const allDriverVerificationQuery = new QueryBuilder(
-      driververifications.find().populate('userId', {
-        name: 1,
-        email: 1,
-        phoneNumber: 1,
-      }),
+      driververifications
+        .find()
+        .populate('userId', {
+          name: 1,
+          email: 1,
+          phoneNumber: 1,
+        })
+        .populate('driverSelectedTruck', {
+          truckcategories: 1,
+          photo: 1,
+        }),
       query,
     )
       .filter()
@@ -205,6 +212,85 @@ const updateDriverVerificationIntoDb = async (
   }
 };
 
+/**
+ * It is possible that the app will automatically detect the driver's live location
+ * @param payload
+ * @param userId
+ * @returns
+ */
+const detected_Driver_Auto_Live_Location_IntoDb = async (
+  payload: any,
+  userId: string,
+): Promise<DriverVerificationResponse> => {
+  try {
+    const coordinates = payload.autoDetectLocation;
+
+    if (!coordinates) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Coordinates parameter is missing',
+        '',
+      );
+    }
+    if (!Array.isArray(coordinates)) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Coordinates must be an array',
+        '',
+      );
+    }
+
+    if (coordinates.length === 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Coordinates array cannot be empty',
+        '',
+      );
+    }
+
+    if (!userId) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'User ID is required', '');
+    }
+
+    const query = {
+      userId,
+      isDelete: false,
+      isReadyToDrive: true,
+      isVerifyDriverLicense: true,
+      isVerifyDriverNid: true,
+    };
+
+    const result = await driververifications.findOneAndUpdate(
+      query,
+      { $set: { autoDetectLocation: coordinates } },
+      { new: true },
+    );
+
+    if (!result) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'Driver verification record not found or not eligible',
+        '',
+      );
+    }
+
+    return {
+      status: true,
+      message: 'Successfully recorded live location',
+    };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Location update service is temporarily unavailable',
+      error,
+    );
+  }
+};
+
 const deleteDriverVerificationIntoDb = async (
   id: string,
 ): Promise<DriverVerificationResponse> => {
@@ -240,12 +326,12 @@ const deleteDriverVerificationIntoDb = async (
     );
   }
 };
-
 const DriverVerificationServices = {
   recordDriverVerificationIntoDb,
   findByDriverVerifictionAdminIntoDb,
   findBySpecificDriverVerificationIntoDb,
   updateDriverVerificationIntoDb,
+  detected_Driver_Auto_Live_Location_IntoDb,
   deleteDriverVerificationIntoDb,
 };
 

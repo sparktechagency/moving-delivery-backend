@@ -5,14 +5,18 @@ import {
 } from './driver_verification.interface';
 import { ListOfFualType } from './driver_verification.constant';
 
-const TdriverVerificationSchema = new Schema<
-  TDriverVerification
->(
+const TdriverVerificationSchema = new Schema<TDriverVerification>(
   {
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'users',
       required: [true, 'userId is required'],
+    },
+
+    driverSelectedTruck: {
+      type: Schema.Types.ObjectId,
+      ref: 'selecttrucks',
+      required: [true, 'driver selected truck is required'],
     },
     driverLocation: {
       type: String,
@@ -37,17 +41,17 @@ const TdriverVerificationSchema = new Schema<
       required: [true, 'workingPreferredDate is required'],
     },
 
-    driverSelectedTruck: {
+    autoDetectLocation: {
       type: [String],
-      required: true,
-    },
-    driverLicense: {
-      type: String,
       required: true,
     },
     isVerifyDriverLicense: {
       type: Boolean,
       default: false,
+    },
+    driverLicense: {
+      type: String,
+      required: true,
     },
     driverNidCard: {
       type: String,
@@ -102,11 +106,8 @@ TdriverVerificationSchema.statics.isDriverVerificationExistByCustomId =
   };
 
 const driververifications = mongoose.model<
-  
   TDriverVerification,
   DriverOasisModel
-
-
 >('driververifications', TdriverVerificationSchema);
 
 export default driververifications;

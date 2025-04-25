@@ -94,6 +94,15 @@ router.patch(
   DriverVerificationController.updateDriverVerification,
 );
 
+router.patch(
+  '/auto_detected_driver_location',
+  auth(USER_ROLE.driver),
+  validationRequest(
+    DriverVerificationValidationSchema.detectedDriverAutoLiveLocationSchema,
+  ),
+  DriverVerificationController.detected_Driver_Auto_Live_Location,
+);
+
 router.delete(
   '/delete_verified_driver/:id',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),

@@ -15,7 +15,7 @@ export interface DriverVerificationResponse {
 
 export type TDriverVerification = {
   userId: Types.ObjectId;
-  driverSelectedTruck: string[];
+  driverSelectedTruck:  Types.ObjectId;
   driverLicense: string;
   isVerifyDriverLicense: boolean;
   driverNidCard: string;
@@ -23,7 +23,9 @@ export type TDriverVerification = {
   isReadyToDrive: boolean;
   driverLocation:string;
   vehicleNumber:string;
-  fuleType: 'Diesel' | 'Gasoline' | 'Natural Gas' | 'Hydrogen' | 'Electric' | 'Hybrid Fuels' | 'Dimethyl Ether (DME)' | 'Renewable Diesel'
+  autoDetectLocation:number[];
+
+  fuleType: 'Diesel' | 'Gasoline' | 'Natural Gas' | 'Hydrogen' | 'Electric' | 'Hybrid Fuels' | 'Dimethyl Ether (DME)' | 'Renewable Diesel';
   vehicleAge:number;
   workingPreferredDate:string;
   isDelete?: boolean;

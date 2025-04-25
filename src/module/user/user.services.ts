@@ -23,42 +23,53 @@ const generateUniqueOTP = async (): Promise<number> => {
 };
 
 const createUserIntoDb = async (payload: TUser) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const otp = await generateUniqueOTP();
 
+  
     const isExistUser = await users.findOne(
-      { $or: [{ email: payload.email }, { phoneNumber: payload.phoneNumber }] },
+      {
+        $or: [
+          { email: payload.email, isDelete: false, isVerify: true },
+          { phoneNumber: payload.phoneNumber, isDelete: false, isVerify: true },
+        ],
+      },
       { _id: 1, email: 1, phoneNumber: 1, role: 1 },
     );
 
-    if (!isExistUser) {
-      if (payload.email) {
-        const result = await users.findOneAndUpdate(
-          { email: payload.email },
-          {
-            $set: {
-              email: payload.email,
-              verificationCode: otp,
-            },
-          },
-          { upsert: true, new: true },
-        );
-        await sendEmail(
-          result.email,
-          emailcontext.sendvarificationData(
-            result.email,
-            otp,
-            'User Verification Email',
-          ),
-          'Verification OTP Code',
-        );
-        return (
-          result && { status: true, message: 'Checked Your Email And Verify' }
-        );
-      }
+    payload.verificationCode = otp;
+
+  
+    if (isExistUser) {
+      // await session.abortTransaction();
+      // session.endSession();
+      return 'generate token';
     }
-    return isExistUser;
+
+    const authBuilder = new users(payload);
+
+    const result = await authBuilder.save({ session });
+    await sendEmail(
+      payload.email,
+      emailcontext.sendvarificationData(
+        payload.email,
+        otp,
+        'User Verification Email',
+      ),
+      'Verification OTP Code',
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return result && { status: true, message: 'checked your email box' };
   } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'server unavailable',
@@ -118,57 +129,57 @@ const userVarificationIntoDb = async (verificationCode: number) => {
   }
 };
 
-const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
-  try {
-    const isUserExist = await users.findOne(
-      {
-        $and: [
-          {
-            _id: userId,
+// const afterVerificUserIntoDb = async (payload: TUser, userId: string) => {
+//   try {
+//     const isUserExist = await users.findOne(
+//       {
+//         $and: [
+//           {
+//             _id: userId,
 
-            isDelete: false,
-            isVerify: true,
-            status: USER_ACCESSIBILITY.isProgress,
-          },
-        ],
-      },
-      { _id: 1 },
-    );
-    if (!isUserExist) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'user not founded', '');
-    }
+//             isDelete: false,
+//             isVerify: true,
+//             status: USER_ACCESSIBILITY.isProgress,
+//           },
+//         ],
+//       },
+//       { _id: 1 },
+//     );
+//     if (!isUserExist) {
+//       throw new ApiError(httpStatus.NOT_FOUND, 'user not founded', '');
+//     }
 
-    const result = await users.findOneAndUpdate(
-      { _id: userId },
-      {
-        $set: {
-          name: payload.name,
-          phoneNumber: payload.phoneNumber,
-          password: await bcrypt.hash(
-            payload.password,
-            Number(config.bcrypt_salt_rounds),
-          ),
-          photo: payload.photo,
-          role: payload.role,
-        },
-      },
-      { new: true, upsert: true },
-    );
+//     const result = await users.findOneAndUpdate(
+//       { _id: userId },
+//       {
+//         $set: {
+//           name: payload.name,
+//           phoneNumber: payload.phoneNumber,
+//           password: await bcrypt.hash(
+//             payload.password,
+//             Number(config.bcrypt_salt_rounds),
+//           ),
+//           photo: payload.photo,
+//           role: payload.role,
+//         },
+//       },
+//       { new: true, upsert: true },
+//     );
 
-    return (
-      result && {
-        status: true,
-        message: 'user information recorded successfully',
-      }
-    );
-  } catch (error: any) {
-    throw new ApiError(
-      httpStatus.SERVICE_UNAVAILABLE,
-      'Verification auth error',
-      error,
-    );
-  }
-};
+//     return (
+//       result && {
+//         status: true,
+//         message: 'user information recorded successfully',
+//       }
+//     );
+//   } catch (error: any) {
+//     throw new ApiError(
+//       httpStatus.SERVICE_UNAVAILABLE,
+//       'Verification auth error',
+//       error,
+//     );
+//   }
+// };
 
 const chnagePasswordIntoDb = async (
   payload: {
@@ -466,7 +477,6 @@ const UserServices = {
   createUserIntoDb,
   userVarificationIntoDb,
   chnagePasswordIntoDb,
-  afterVerificUserIntoDb,
   forgotPasswordIntoDb,
   verificationForgotUserIntoDb,
   resetPasswordIntoDb,

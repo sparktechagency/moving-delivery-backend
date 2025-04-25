@@ -1,19 +1,25 @@
 import { Model } from 'mongoose';
 import { USER_ROLE } from './user.constant';
 
-export type TUser = {
+export interface IGeoLocation {
+  address: string;
+  coordinates: [number, number]; // [longitude, latitude]
+}
 
+export type TUser = {
   id: string;
   role: 'user' | 'driver' | 'admin' | 'superAdmin';
-  name:string;
+  name: string;
   password: string;
   email: string;
-  phoneNumber:string;
-  verificationCode:number;
-  isVerify:boolean;
+  phoneNumber?: string;
+  verificationCode: number;
+  isVerify: boolean;
   status: 'isProgress' | 'Blocked';
-  photo?:string;
-  provider?: 'googleauth' | 'appleauth'
+  photo?: string;
+  provider?: 'googleauth' | 'appleauth';
+  from: IGeoLocation;
+  to: IGeoLocation;
   isDelete: boolean;
 };
 
