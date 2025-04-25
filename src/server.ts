@@ -5,6 +5,7 @@ import app from './app';
 import config from './app/config';
 import ApiError from './app/error/ApiError';
 import httpStatus from 'http-status';
+import { connectSocket } from './socket/socketConnection';
 
 let server: Server;
 
@@ -14,8 +15,55 @@ async function main() {
     console.log('database connected succesfully');
 
     server = app.listen(config.port, () => {
-      console.log(`Example app listening on port ${config.port}`);
+      console.log(`moving delivery app listening on port ${config.port}`);
     });
+
+    process.on('unhandledRejection', () => {
+      if (server) {
+        server.close(() => {
+          process.exit(1);
+        });
+      } else {
+        process.exit(1);
+      }
+    });
+
+    process.on('uncaughtException', () => {
+      if (server) {
+        server.close(() => {
+          process.exit(1);
+        });
+      } else {
+        process.exit(1);
+      }
+    });
+   
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received');
+      if (server) {
+        server.close(() => {
+          console.log('Server closed due to SIGTERM');
+          process.exit(0);
+        });
+      } else {
+        process.exit(0);
+      }
+    });
+
+    process.on('SIGINT', () => {
+      console.log('SIGINT received');
+      if (server) {
+        server.close(() => {
+          console.log('Server closed due to SIGINT');
+          process.exit(0);
+        });
+      } else {
+        process.exit(0);
+      }
+    });
+
+    connectSocket(server)
+    
   } catch (err: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
@@ -25,51 +73,8 @@ async function main() {
   }
 }
 
+
 main().then(() => {
-  console.log('Successfully Server Running');
+  console.log('---Moving delivery server is running---');
 });
 
-process.on('unhandledRejection', () => {
-  if (server) {
-    server.close(() => {
-      process.exit(1);
-    });
-  } else {
-    process.exit(1);
-  }
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', () => {
-  if (server) {
-    server.close(() => {
-      process.exit(1);
-    });
-  } else {
-    process.exit(1);
-  }
-});
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received');
-  if (server) {
-    server.close(() => {
-      console.log('Server closed due to SIGTERM');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
-  }
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received');
-  if (server) {
-    server.close(() => {
-      console.log('Server closed due to SIGINT');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
-  }
-});

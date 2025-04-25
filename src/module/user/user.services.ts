@@ -291,7 +291,7 @@ const forgotPasswordIntoDb = async (payload: string | { email: string }) => {
     if (!isExistUser) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
     }
-
+  
     if ([config.googleauth, config.appleauth].includes(isExistUser.provider)) {
       throw new ApiError(
         httpStatus.FORBIDDEN,
