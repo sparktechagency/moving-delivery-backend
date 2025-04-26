@@ -2,6 +2,7 @@
 
 import {Server as chatServer,Socket} from 'socket.io'
 import { Server as HTTPServer } from 'http';
+import users from '../module/user/user.model';
 
 let io:chatServer;
 
@@ -17,11 +18,25 @@ const connectSocket = (server:HTTPServer)=>{
        })
    }
     
-   io.on('connection', (socket:Socket) => {
+   io.on('connection', async(socket:Socket) => {
     console.log("✅ A client connected:", socket.id);
     socket.on('ping', (data) => {
       io.emit('pong', data);
     });
+    const userId = socket.handshake.query.id as string;
+
+    if (!userId) {
+      socket.emit('error', 'User ID is required');
+      socket.disconnect();
+      return;
+    }
+    
+    const currentUser = await users.findById(userId);
+    if (!currentUser) {
+      socket.emit('error', 'User not found');
+      socket.disconnect();
+      return;
+    }
 
     socket.on('disconnect', () => {
         console.log('❌ A client disconnected:', socket.id);
