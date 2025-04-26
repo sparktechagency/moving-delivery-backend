@@ -113,7 +113,7 @@ const refreshTokenIntoDb = async (token: string) => {
 };
 
 const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
-  if (![config.googleauth, config.appleauth].includes(payload.provider)) {
+  if (![config?.googleauth, config?.appleauth].includes(payload?.provider)) {
     throw new ApiError(httpStatus.FORBIDDEN, 'provided is not nfounded', '');
   }
 
@@ -247,14 +247,10 @@ const changeMyProfileIntoDb = async (
   }
 };
 
-const findByAllUsersAdminIntoDb=async(query: Record<string, unknown>)=>{
-
+const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   try {
-    const allUsersdQuery = new QueryBuilder(
-      users.find(),
-      query,
-    )
-      .search( user_search_filed)
+    const allUsersdQuery = new QueryBuilder(users.find(), query)
+      .search(user_search_filed)
       .filter()
       .sort()
       .paginate()
@@ -271,8 +267,7 @@ const findByAllUsersAdminIntoDb=async(query: Record<string, unknown>)=>{
       error,
     );
   }
-}
-
+};
 
 const AuthServices = {
   loginUserIntoDb,
@@ -280,7 +275,7 @@ const AuthServices = {
   social_media_auth_IntoDb,
   myprofileIntoDb,
   changeMyProfileIntoDb,
-  findByAllUsersAdminIntoDb
+  findByAllUsersAdminIntoDb,
 };
 
 export default AuthServices;

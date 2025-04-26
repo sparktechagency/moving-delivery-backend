@@ -95,6 +95,8 @@ TdriverVerificationSchema.pre('findOne', function (next) {
   next();
 });
 
+TdriverVerificationSchema.index({ "location": "2dsphere" })
+
 // Static method implementation
 TdriverVerificationSchema.statics.isDriverVerificationExistByCustomId =
   async function (id: string): Promise<TDriverVerification | null> {

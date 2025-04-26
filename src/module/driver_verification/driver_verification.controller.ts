@@ -99,6 +99,21 @@ const detected_Driver_Auto_Live_Location: RequestHandler = catchAsync(
   },
 );
 
+const searching_for_available_trip_truck_lists: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await DriverVerificationServices.searching_for_available_trip_truck_listsIntoDb(
+      req.body
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully  Find Available Trip Truck Lists',
+      data: result,
+    });
+  },
+);
+
 const DriverVerificationController = {
   recordDriverVerification,
   findByDriverVerifictionAdmin,
@@ -106,5 +121,6 @@ const DriverVerificationController = {
   updateDriverVerification,
   deleteDriverVerification,
   detected_Driver_Auto_Live_Location,
+  searching_for_available_trip_truck_lists,
 };
 export default DriverVerificationController;

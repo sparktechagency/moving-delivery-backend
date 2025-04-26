@@ -53,7 +53,11 @@ router.patch(
   AuthController.chnageMyProfile,
 );
 
-  router.get("/find_by_admin_all_users",auth(USER_ROLE.admin,USER_ROLE.superAdmin), AuthController.findByAllUsersAdmin)
+router.get(
+  '/find_by_admin_all_users',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  AuthController.findByAllUsersAdmin,
+);
 
 const AuthRouter = router;
 export default AuthRouter;

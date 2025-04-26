@@ -109,6 +109,8 @@ router.delete(
   DriverVerificationController.deleteDriverVerification,
 );
 
+router.post("/searching_for_available_trip_truck_lists",DriverVerificationController.searching_for_available_trip_truck_lists);
+
 const DriverVerificationRouter = router;
 
 export default DriverVerificationRouter;

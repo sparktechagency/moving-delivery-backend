@@ -3,8 +3,11 @@ import ApiError from '../../app/error/ApiError';
 import driververifications from './driver_verification.model';
 import fs from 'fs/promises';
 import {
+  DriverData,
   DriverVerificationResponse,
+  DriverWithMetrics,
   RequestWithMultipleFiles,
+  UserLocation,
 } from './driver_verification.interface';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 
@@ -326,6 +329,202 @@ const deleteDriverVerificationIntoDb = async (
     );
   }
 };
+
+
+//  started 
+
+// User location data
+const userLocation: UserLocation = {
+  from: {
+      address: "1600 Amphitheatre Parkway, Mountain View AD",
+      coordinates: [-122.083851, 37.423021]
+  },
+  to: {
+      address: "1 Infinite Loop, Cupertino, CA",
+      coordinates: [-122.032182, 37.331741]
+  }
+};
+
+// Driver data (would normally come from database)
+const driverData: DriverData = {
+  success: true,
+  message: "Successfully Find Available druck driver list Lists",
+  data: [
+      {
+          "_id": "680a9b10700c9865b213eab6",
+          "driverSelectedTruck": {
+              "_id": "68029fecf2bd4d633ae60ea7",
+              "truckcategories": "tranker Truck",
+              "photo": "src\\public\\images\\bangladesh-h1-streamlining-construction-logistics-how-tipper-trucks-simplify-material-transport-20240828.jpg-3597cd54-0fe9-4a8a-89b7-4d803b9e4959.webp"
+          },
+          "autoDetectLocation": ["-73.9375", "40.8303"],
+          "id": "680a9b10700c9865b213eab6"
+      },
+      {
+          "_id": "680aae7571a03ed430d5f79d",
+          "driverSelectedTruck": {
+              "_id": "6802a050db69c50f50d33af1",
+              "truckcategories": "small truck",
+              "photo": "src\\public\\images\\images-bda382fc-a163-47df-adff-17d661343eb4.jpg"
+          },
+          "autoDetectLocation": ["-73.9375", "40.8303"],
+          "id": "680aae7571a03ed430d5f79d"
+      },
+      {
+          "_id": "680d216b84ee8ab2e0c833a2",
+          "driverSelectedTruck": {
+              "_id": "68035cf3eca764a41e8fd221",
+              "truckcategories": "dummy truckL",
+              "photo": "src\\public\\images\\truck-pictures-2arrdpurjxr3cyu7-1c06aee7-3604-49ee-820b-b3e1cbb6c093.jpg"
+          },
+          "autoDetectLocation": ["-118.3292", "34.0522"],
+          "id": "680d216b84ee8ab2e0c833a2"
+      },
+      {
+          "_id": "680d229de68fff677b656e96",
+          "driverSelectedTruck": {
+              "_id": "6802a079d4376e04ecdb22fa",
+              "truckcategories": "logging truck",
+              "photo": "src\\public\\images\\images-9a72cd2c-2170-4c87-97c4-be4a936ae970.jpg"
+          },
+          "autoDetectLocation": ["-97.7431", "30.2672"],
+          "id": "680d229de68fff677b656e96"
+      },
+      {
+          "_id": "680d23adc5bcac5fbb8b4465",
+          "driverSelectedTruck": {
+              "_id": "68035cf3eca764a41e8fd221",
+              "truckcategories": "dummy truckL",
+              "photo": "src\\public\\images\\truck-pictures-2arrdpurjxr3cyu7-1c06aee7-3604-49ee-820b-b3e1cbb6c093.jpg"
+          },
+          "autoDetectLocation": ["-122.3321", "47.6062"],
+          "id": "680d23adc5bcac5fbb8b4465"
+      },
+      {
+          "_id": "680d24844e15f72b68d4726a",
+          "driverSelectedTruck": {
+              "_id": "68029fecf2bd4d633ae60ea7",
+              "truckcategories": "tranker Truck",
+              "photo": "src\\public\\images\\bangladesh-h1-streamlining-construction-logistics-how-tipper-trucks-simplify-material-transport-20240828.jpg-3597cd54-0fe9-4a8a-89b7-4d803b9e4959.webp"
+          },
+          "autoDetectLocation": ["-84.3877", "33.749"],
+          "id": "680d24844e15f72b68d4726a"
+      },
+      {
+          "_id": "680d25b24e15f72b68d4726f",
+          "driverSelectedTruck": {
+              "_id": "680347c0867b18b5711c53a9",
+              "truckcategories": "dummy trucks",
+              "photo": "src\\public\\images\\truck-pictures-2arrdpurjxr3cyu7-e6000ea9-6376-406f-9d29-6d8ade3de24f.jpg"
+          },
+          "autoDetectLocation": ["-73.9712", "40.7831"],
+          "id": "680d25b24e15f72b68d4726f"
+      }
+  ]
+};
+
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c; // Distance in km
+  return distance;
+}
+
+function deg2rad(deg: number): number {
+  return deg * (Math.PI/180);
+}
+
+
+// Function to calculate estimated duration based on distance
+function calculateEstimatedDuration(distanceKm: number): number {
+  // Average speed in km/h (adjust based on your requirements)
+  const averageSpeed = 50;
+  const durationHours = distanceKm / averageSpeed;
+  return durationHours * 60; // Convert to minutes
+}
+
+// Function to determine bearing between two points
+function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  const θ = Math.atan2(y, x);
+  const bearing = (θ*180/Math.PI + 360) % 360;
+  
+  return bearing;
+}
+
+
+
+function getRouteType(distanceKm: number): string {
+  if (distanceKm < 5) return "short";
+  if (distanceKm < 20) return "medium";
+  return "long";
+}
+
+// Main function to find nearest drivers
+async function findNearestDrivers(): Promise<DriverWithMetrics[]> {
+  const destination = userLocation.to.coordinates;
+  const destLat = destination[1];
+  const destLng = destination[0];
+  
+  const driversWithMetrics: DriverWithMetrics[] = driverData.data.map(driver => {
+      const driverLat = parseFloat(driver.autoDetectLocation[1]);
+      const driverLng = parseFloat(driver.autoDetectLocation[0]);
+      
+      const distanceKm = calculateDistance(driverLat, driverLng, destLat, destLng);
+      const estimatedDurationMin = calculateEstimatedDuration(distanceKm);
+      const bearingDegrees = calculateBearing(driverLat, driverLng, destLat, destLng);
+      const routeType = getRouteType(distanceKm);
+      
+      return {
+          driverId: driver.id,
+          truckType: driver.driverSelectedTruck.truckcategories,
+          distanceKm: distanceKm.toFixed(2),
+          estimatedDurationMin: estimatedDurationMin.toFixed(1),
+          bearingDegrees: bearingDegrees.toFixed(1),
+          routeType: routeType,
+          driverLocation: driver.autoDetectLocation,
+          truckPhoto: driver.driverSelectedTruck.photo
+      };
+  });
+  
+  driversWithMetrics.sort((a, b) => parseFloat(a.distanceKm) - parseFloat(b.distanceKm));
+  
+  return driversWithMetrics;
+};
+
+
+
+const searching_for_available_trip_truck_listsIntoDb = async (payload: any) => {
+  try {
+    const findAllDrivers = await driververifications
+      .find({})
+      .populate('driverSelectedTruck', {
+        truckcategories: 1,
+        photo: 1,
+      }).select({
+        autoDetectLocation:1
+      });
+    return findAllDrivers;
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'searching_for_available_trip_truck_lists Into Db server unavailable ',
+      error,
+    );
+  }
+};
 const DriverVerificationServices = {
   recordDriverVerificationIntoDb,
   findByDriverVerifictionAdminIntoDb,
@@ -333,6 +532,7 @@ const DriverVerificationServices = {
   updateDriverVerificationIntoDb,
   detected_Driver_Auto_Live_Location_IntoDb,
   deleteDriverVerificationIntoDb,
+  searching_for_available_trip_truck_listsIntoDb,
 };
 
 export default DriverVerificationServices;

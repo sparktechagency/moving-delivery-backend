@@ -104,10 +104,32 @@ const detectedDriverAutoLiveLocationSchema = z.object({
     .optional(),
 });
 
+const geoLocationSchema = z
+  .object({
+    address: z
+      .string({
+        required_error: 'Address is required',
+      })
+      .optional(),
+    coordinates: z
+      .array(z.number())
+      .length(2, 'Coordinates must be in format [longitude, latitude]')
+      .optional(),
+  })
+  .optional();
+
+  const automaticallyDetectLocationSchema = z.object({
+    body: z.object({
+      from: geoLocationSchema,
+      to: geoLocationSchema,
+    }),
+  });
+
 const DriverVerificationValidationSchema = {
   driverVerificationSchema,
   updateDriverVerificationSchema,
   detectedDriverAutoLiveLocationSchema,
+  automaticallyDetectLocationSchema
 };
 
 export default DriverVerificationValidationSchema;
