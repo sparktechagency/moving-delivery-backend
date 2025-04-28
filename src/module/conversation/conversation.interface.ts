@@ -1,8 +1,8 @@
 import { Types } from 'mongoose';
 
 export interface  TConversation {
-  senderId: Types.ObjectId;
-  receiverId: Types.ObjectId;
+  sender: Types.ObjectId;
+  receiver: Types.ObjectId;
   // messages: [Types.ObjectId];
   lastMessage: Types.ObjectId;
 }

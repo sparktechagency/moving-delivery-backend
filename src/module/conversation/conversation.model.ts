@@ -3,12 +3,12 @@ import { TConversation } from './conversation.interface';
 
 const conversationSchema = new Schema<TConversation>(
   {
-    senderId: {
+    sender: {
       type: Schema.Types.ObjectId,
       required: true,
       ref: 'User',
     },
-    receiverId: {
+    receiver: {
       type: Schema.Types.ObjectId,
       required: true,
       ref: 'User',

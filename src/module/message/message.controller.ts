@@ -10,7 +10,6 @@ const getMessages: RequestHandler = catchAsync(async (req, res) => {
     req.params.userId,
     req.query,
   );
-
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

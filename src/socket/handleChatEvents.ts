@@ -3,6 +3,7 @@ import { Server as IOServer, Socket } from 'socket.io';
 import Conversation from '../module/conversation/conversation.model';
 import Message from '../module/message/message.model';
 import User from '../module/user/user.model';
+import { getSingleConversation } from '../helper/getSingleConversation';
 
 
 
@@ -40,7 +41,8 @@ const handleChatEvents = async (
     console.log(messages);
     socket.emit('messages', messages || []);
   });
-
+  
+  // new message
   socket.on('new-message', async (data) => {
     let conversation = await Conversation.findOne({
       $or: [
@@ -81,9 +83,41 @@ const handleChatEvents = async (
     );
 
     //send conversation
+
+    const conversationSender = await getSingleConversation(
+        data?.sender,
+        data?.receiver,
+      );
+      const conversationReceiver = await getSingleConversation(
+        data?.receiver,
+        data?.sender,
+      );
+      io.to(data?.sender).emit('conversation', conversationSender);
+      io.to(data?.receiver).emit('conversation', conversationReceiver);
     
     });
+    
 
+    // send
+    socket.on('seen', async ({ conversationId, msgByUserId }) => {
+        await Message.updateMany(
+          { conversationId: conversationId, msgByUserId: msgByUserId },
+          { $set: { seen: true } },
+        );
+    
+        //send conversation --------------
+        const conversationSender = await getSingleConversation(
+          currentUserId,
+          msgByUserId,
+        );
+        const conversationReceiver = await getSingleConversation(
+          msgByUserId,
+          currentUserId,
+        );
+    
+        io.to(currentUserId as string).emit('conversation', conversationSender);
+        io.to(msgByUserId).emit('conversation', conversationReceiver);
+      });
 };
 
 export default handleChatEvents;
