@@ -3,9 +3,10 @@
 import {Server as chatServer,Socket} from 'socket.io'
 import { Server as HTTPServer } from 'http';
 import users from '../module/user/user.model';
+import handleChatEvents from './handleChatEvents';
 
 let io:chatServer;
-
+const onlineUsers = new Set();
 const connectSocket = (server:HTTPServer)=>{
    if(!io){
        io = new chatServer(server,{
@@ -37,6 +38,10 @@ const connectSocket = (server:HTTPServer)=>{
       socket.disconnect();
       return;
     }
+    const currentUserId = currentUser?._id.toString();
+    socket.join(currentUserId as string)
+    onlineUsers.add(currentUserId);
+    await handleChatEvents(io, socket, onlineUsers, currentUserId)
 
     socket.on('disconnect', () => {
         console.log('❌ A client disconnected:', socket.id);

@@ -35,8 +35,8 @@ const getMessages = async (
     const result = await messageQuery.modelQuery;
     const meta = await messageQuery.countTotal();
     const userData = await users.findById(userId)
-      .select('name profile_image')
-      .populate({ path: 'mainSkill', select: 'name' });
+      .select('name photo')
+    //   .populate({ path: '', select: 'name' });
     return {
       meta,
       result: {
@@ -47,8 +47,8 @@ const getMessages = async (
     };
   }
   const userData = await users.findById(userId)
-    .select('name profile_image')
-    .populate({ path: 'mainSkill', select: 'name' });
+    .select('name photo')
+    // .populate({ path: '', select: 'name' });
 
   return {
     result: {
