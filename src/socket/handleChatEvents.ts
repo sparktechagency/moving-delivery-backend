@@ -114,7 +114,7 @@ const handleChatEvents = async (
           msgByUserId,
           currentUserId,
         );
-    
+         
         io.to(currentUserId as string).emit('conversation', conversationSender);
         io.to(msgByUserId).emit('conversation', conversationReceiver);
       });

@@ -39,10 +39,14 @@ const connectSocket = (server: HTTPServer) => {
     const currentUserId = currentUser?._id.toString();
     socket.join(currentUserId as string);
     onlineUsers.add(currentUserId);
+    console.log(onlineUsers);
     await handleChatEvents(io, socket, onlineUsers, currentUserId);
     io.emit('onlineUser', Array.from(onlineUsers));
     socket.on('disconnect', () => {
       console.log('❌ A client disconnected:', socket.id);
+      onlineUsers.delete(currentUserId);
+      console.log(onlineUsers)
+      io.emit('onlineUser', Array.from(onlineUsers));
     });
   });
   return io;
