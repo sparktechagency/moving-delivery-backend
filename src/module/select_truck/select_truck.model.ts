@@ -5,7 +5,7 @@ const TselectTruckSchema = new Schema<TSelectTruck, SelectTruckModel>(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'users',
+      ref: 'User',
       required: [true, 'userId is required'],
     },
     truckcategories: {
@@ -49,8 +49,8 @@ TselectTruckSchema.statics.isSelectTruckExistByCustomId = async function (
   return await this.findOne({ _id: id, isDelete: false });
 };
 
-const selecttrucks = model<TSelectTruck, SelectTruckModel>(
-  'selecttrucks',
+const SelectTruck = model<TSelectTruck, SelectTruckModel>(
+  'SelectTruck',
   TselectTruckSchema,
 );
-export default selecttrucks;
+export default SelectTruck;

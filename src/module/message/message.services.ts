@@ -1,8 +1,8 @@
 import Conversation from '../conversation/conversation.model';
 import Message from './message.model';
 
-import users from '../user/user.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import User from '../user/user.model';
 
 const getMessages = async (
   profileId: string,
@@ -34,8 +34,7 @@ const getMessages = async (
       .sort();
     const result = await messageQuery.modelQuery;
     const meta = await messageQuery.countTotal();
-    const userData = await users.findById(userId)
-      .select('name photo')
+    const userData = await User.findById(userId).select('name photo');
     //   .populate({ path: '', select: 'name' });
     return {
       meta,
@@ -46,9 +45,8 @@ const getMessages = async (
       },
     };
   }
-  const userData = await users.findById(userId)
-    .select('name photo')
-    // .populate({ path: '', select: 'name' });
+  const userData = await User.findById(userId).select('name photo');
+  // .populate({ path: '', select: 'name' });
 
   return {
     result: {

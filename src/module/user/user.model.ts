@@ -1,8 +1,8 @@
-import { Schema, model } from 'mongoose';
-import { IGeoLocation, TUser, UserModel } from './user.interface';
 import bcrypt from 'bcrypt';
+import { Schema, model } from 'mongoose';
 import config from '../../app/config';
 import { USER_ACCESSIBILITY, USER_ROLE } from './user.constant';
+import { IGeoLocation, TUser, UserModel } from './user.interface';
 
 const GeoLocationSchema = new Schema<IGeoLocation>(
   {
@@ -145,7 +145,7 @@ TUserSchema.pre('findOne', function (next) {
 });
 
 TUserSchema.statics.isUserExistByCustomId = async function (id: string) {
-  return await users.findOne({ id });
+  return await User.findOne({ id });
 };
 
 TUserSchema.statics.isPasswordMatched = async function (
@@ -164,6 +164,6 @@ TUserSchema.statics.isJWTIssuesBeforePasswordChange = async function (
   return passwordChangeTime > jwtIssuesTime;
 };
 
-const users = model<TUser, UserModel>('users', TUserSchema);
+const User = model<TUser, UserModel>('User', TUserSchema);
 
-export default users;
+export default User;

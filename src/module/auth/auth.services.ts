@@ -2,18 +2,18 @@ import httpStatus from 'http-status';
 import ApiError from '../../app/error/ApiError';
 import { USER_ACCESSIBILITY } from '../user/user.constant';
 
-import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
-import config from '../../app/config';
-import { TUser } from '../user/user.interface';
-import users from '../user/user.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import config from '../../app/config';
+import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
+import { TUser } from '../user/user.interface';
+import User from '../user/user.model';
 import { user_search_filed } from './auth.constant';
 
 const loginUserIntoDb = async (payload: {
   email: string;
   password: string;
 }) => {
-  const isUserExist = await users.findOne(
+  const isUserExist = await User.findOne(
     {
       $and: [
         { email: payload.email },
@@ -30,7 +30,7 @@ const loginUserIntoDb = async (payload: {
   }
 
   if (
-    !(await users.isPasswordMatched(payload?.password, isUserExist.password))
+    !(await User.isPasswordMatched(payload?.password, isUserExist.password))
   ) {
     throw new ApiError(httpStatus.FORBIDDEN, 'This Password Not Matched', '');
   }
@@ -71,7 +71,7 @@ const refreshTokenIntoDb = async (token: string) => {
 
     const { id } = decoded;
 
-    const isUserExist = await users.findOne(
+    const isUserExist = await User.findOne(
       {
         $and: [
           { _id: id },
@@ -117,7 +117,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
     throw new ApiError(httpStatus.FORBIDDEN, 'provided is not nfounded', '');
   }
 
-  const isUserExist = await users.findOne(
+  const isUserExist = await User.findOne(
     {
       email: payload.email,
       isVerify: true,
@@ -134,7 +134,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
     payload.verificationCode = otp;
     payload.isVerify = true;
     payload.phoneNumber = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const newUser = await new users(payload).save();
+    const newUser = await new User(payload).save();
     jwtPayload = {
       id: newUser._id.toString(),
       role: newUser.role,
@@ -169,7 +169,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
 
 const myprofileIntoDb = async (id: string) => {
   try {
-    const result = await users.findById(id);
+    const result = await User.findById(id);
 
     return result;
   } catch (error: any) {
@@ -221,7 +221,7 @@ const changeMyProfileIntoDb = async (
       );
     }
 
-    const result = await users.findByIdAndUpdate(id, updateData, {
+    const result = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       upsert: true,
     });
@@ -249,7 +249,7 @@ const changeMyProfileIntoDb = async (
 
 const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   try {
-    const allUsersdQuery = new QueryBuilder(users.find(), query)
+    const allUsersdQuery = new QueryBuilder(User.find(), query)
       .search(user_search_filed)
       .filter()
       .sort()
@@ -263,7 +263,7 @@ const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'find By All Users Admin IntoDb server unavailable',
+      'find By All User Admin IntoDb server unavailable',
       error,
     );
   }

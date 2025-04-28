@@ -1,21 +1,21 @@
-import mongoose, { Schema, Model, Types } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
+import { ListOfFualType } from './driver_verification.constant';
 import {
   DriverOasisModel,
   TDriverVerification,
 } from './driver_verification.interface';
-import { ListOfFualType } from './driver_verification.constant';
 
 const TdriverVerificationSchema = new Schema<TDriverVerification>(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'users',
+      ref: 'User',
       required: [true, 'userId is required'],
     },
 
     driverSelectedTruck: {
       type: Schema.Types.ObjectId,
-      ref: 'selecttrucks',
+      ref: 'SelectTruck',
       required: [true, 'driver selected truck is required'],
     },
     driverLocation: {
@@ -95,7 +95,7 @@ TdriverVerificationSchema.pre('findOne', function (next) {
   next();
 });
 
-TdriverVerificationSchema.index({ "location": "2dsphere" })
+TdriverVerificationSchema.index({ location: '2dsphere' });
 
 // Static method implementation
 TdriverVerificationSchema.statics.isDriverVerificationExistByCustomId =

@@ -1,26 +1,24 @@
-
-
-import {Server as chatServer,Socket} from 'socket.io'
 import { Server as HTTPServer } from 'http';
-import users from '../module/user/user.model';
+import { Server as chatServer, Socket } from 'socket.io';
+import User from '../module/user/user.model';
 import handleChatEvents from './handleChatEvents';
 
-let io:chatServer;
+let io: chatServer;
 const onlineUsers = new Set();
-const connectSocket = (server:HTTPServer)=>{
-   if(!io){
-       io = new chatServer(server,{
-        cors: {
-            origin: "*",
-            methods: ["GET", "POST"]
-          },
-          pingInterval: 30000,
-          pingTimeout: 5000,
-       })
-   }
-    
-   io.on('connection', async(socket:Socket) => {
-    console.log("✅ A client connected:", socket.id);
+const connectSocket = (server: HTTPServer) => {
+  if (!io) {
+    io = new chatServer(server, {
+      cors: {
+        origin: '*',
+        methods: ['GET', 'POST'],
+      },
+      pingInterval: 30000,
+      pingTimeout: 5000,
+    });
+  }
+
+  io.on('connection', async (socket: Socket) => {
+    console.log('✅ A client connected:', socket.id);
     socket.on('ping', (data) => {
       io.emit('pong', data);
     });
@@ -31,35 +29,33 @@ const connectSocket = (server:HTTPServer)=>{
       socket.disconnect();
       return;
     }
-    
-    const currentUser = await users.findById(userId);
+
+    const currentUser = await User.findById(userId);
     if (!currentUser) {
       socket.emit('error', 'User not found');
       socket.disconnect();
       return;
     }
     const currentUserId = currentUser?._id.toString();
-    socket.join(currentUserId as string)
+    socket.join(currentUserId as string);
     onlineUsers.add(currentUserId);
-    await handleChatEvents(io, socket, onlineUsers, currentUserId)
-
+    await handleChatEvents(io, socket, onlineUsers, currentUserId);
+    io.emit('onlineUser', Array.from(onlineUsers));
     socket.on('disconnect', () => {
-        console.log('❌ A client disconnected:', socket.id);
-      });
+      console.log('❌ A client disconnected:', socket.id);
+    });
   });
-}
-
+  return io;
+};
 
 const getSocketIO = () => {
-    if (!io) {
-      throw new Error(
-        'socket.io is not initialized',
-      );
-    }
-    return io;
-  };
-  
-export {connectSocket,getSocketIO}
+  if (!io) {
+    throw new Error('socket.io is not initialized');
+  }
+  return io;
+};
+
+export { connectSocket, getSocketIO };
 
 
 
@@ -106,7 +102,6 @@ export const setupSocket = (server: any) => {
 
 
 */
-
 
 /*
 

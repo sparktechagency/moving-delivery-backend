@@ -22,7 +22,7 @@ const messageSchema = new Schema<IMessage>(
     msgByUserId: {
       type: mongoose.Schema.ObjectId,
       required: true,
-      ref: 'users',
+      ref: 'User',
     },
     conversationId: {
       type: mongoose.Schema.ObjectId,

@@ -1,12 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt, { JwtPayload } from 'jsonwebtoken';
 import httpStatus from 'http-status';
-import catchAsync from '../utility/catchAsync';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import config from '../app/config';
-import { TUserRole } from '../module/user/user.interface';
 import ApiError from '../app/error/ApiError';
-import users from '../module/user/user.model';
 import { USER_ACCESSIBILITY } from '../module/user/user.constant';
+import { TUserRole } from '../module/user/user.interface';
+import User from '../module/user/user.model';
+import catchAsync from '../utility/catchAsync';
 
 const auth = (...requireRoles: TUserRole[]) => {
   return catchAsync(
@@ -33,7 +33,7 @@ const auth = (...requireRoles: TUserRole[]) => {
 
       const { role, id } = decoded;
 
-      const isUserExist = users.findOne(
+      const isUserExist = User.findOne(
         {
           _id: id,
           isVerify: true,

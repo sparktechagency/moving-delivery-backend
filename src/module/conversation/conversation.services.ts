@@ -3,7 +3,7 @@
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import Message from '../message/message.model';
 
-import users from '../user/user.model';
+import User from '../user/user.model';
 import Conversation from './conversation.model';
 
 const getConversation = async (
@@ -14,7 +14,7 @@ const getConversation = async (
   let userSearchFilter = {};
 
   if (searchTerm) {
-    const matchingUsers = await users.find(
+    const matchingUsers = await User.find(
       { name: { $regex: searchTerm, $options: 'i' } },
       '_id',
     );

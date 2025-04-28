@@ -1,21 +1,24 @@
-import httpStatus from 'http-status';
-import mongoose, { HydratedDocument } from 'mongoose';
-import ApiError from '../../app/error/ApiError';
-import { TUser, UserResponse } from './user.interface';
-import sendEmail from '../../utility/sendEmail';
-import emailcontext from '../../utility/emailcontex/sendvarificationData';
-import config from '../../app/config';
-import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
-import { USER_ACCESSIBILITY } from './user.constant';
 import bcrypt from 'bcrypt';
-import users from './user.model';
-import { string } from 'zod';
-import { calculateBearing, calculateDistance, classifyRouteType } from '../../utility/math/calculateDistance';
+import httpStatus from 'http-status';
+import mongoose from 'mongoose';
+import config from '../../app/config';
+import ApiError from '../../app/error/ApiError';
+import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
+import emailcontext from '../../utility/emailcontex/sendvarificationData';
+import {
+  calculateBearing,
+  calculateDistance,
+  classifyRouteType,
+} from '../../utility/math/calculateDistance';
+import sendEmail from '../../utility/sendEmail';
+import { USER_ACCESSIBILITY } from './user.constant';
+import { TUser, UserResponse } from './user.interface';
+import User from './user.model';
 
 const generateUniqueOTP = async (): Promise<number> => {
   const otp = Math.floor(1000 + Math.random() * 9000);
 
-  const existingUser = await users.findOne({ verificationCode: otp });
+  const existingUser = await User.findOne({ verificationCode: otp });
 
   if (existingUser) {
     return generateUniqueOTP();
@@ -31,7 +34,7 @@ const createUserIntoDb = async (payload: TUser) => {
   try {
     const otp = await generateUniqueOTP();
 
-    const isExistUser = await users.findOne(
+    const isExistUser = await User.findOne(
       {
         $or: [
           { email: payload.email, isDelete: false, isVerify: true },
@@ -49,7 +52,7 @@ const createUserIntoDb = async (payload: TUser) => {
       return 'generate token';
     }
 
-    const authBuilder = new users(payload);
+    const authBuilder = new User(payload);
 
     const result = await authBuilder.save({ session });
     await sendEmail(
@@ -88,7 +91,7 @@ const userVarificationIntoDb = async (verificationCode: number) => {
       );
     }
 
-    const updatedUser = await users.findOneAndUpdate(
+    const updatedUser = await User.findOneAndUpdate(
       { verificationCode },
       {
         isVerify: true,
@@ -137,7 +140,7 @@ const chnagePasswordIntoDb = async (
   id: string,
 ) => {
   try {
-    const isUserExist = await users.findOne(
+    const isUserExist = await User.findOne(
       {
         $and: [
           { _id: id },
@@ -162,7 +165,7 @@ const chnagePasswordIntoDb = async (
     }
 
     if (
-      !(await users.isPasswordMatched(
+      !(await User.isPasswordMatched(
         payload.oldpassword,
         isUserExist?.password,
       ))
@@ -179,7 +182,7 @@ const chnagePasswordIntoDb = async (
       Number(config.bcrypt_salt_rounds),
     );
 
-    const updatedUser = await users.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       id,
       { password: newHashedPassword },
       { new: true },
@@ -222,7 +225,7 @@ const forgotPasswordIntoDb = async (payload: string | { email: string }) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid email format', '');
     }
 
-    const isExistUser = await users.findOne(
+    const isExistUser = await User.findOne(
       {
         $and: [
           { email: emailString },
@@ -249,7 +252,7 @@ const forgotPasswordIntoDb = async (payload: string | { email: string }) => {
 
     const otp = await generateUniqueOTP();
 
-    const result = await users.findOneAndUpdate(
+    const result = await User.findOneAndUpdate(
       { _id: isExistUser._id },
       { verificationCode: otp },
       {
@@ -314,7 +317,7 @@ const verificationForgotUserIntoDb = async (
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid OTP format', '');
     }
 
-    const isExistOtp: any = await users.findOne(
+    const isExistOtp: any = await User.findOne(
       {
         $and: [
           { verificationCode: code },
@@ -358,7 +361,7 @@ const verificationForgotUserIntoDb = async (
       config.expires_in as string,
     );
 
-    await users.updateOne(
+    await User.updateOne(
       { _id: isExistOtp._id },
       { $unset: { verificationCode: '' } },
     );
@@ -382,7 +385,7 @@ const resetPasswordIntoDb = async (payload: {
   password: string;
 }) => {
   try {
-    const isExistUser = await users.findOne(
+    const isExistUser = await User.findOne(
       {
         $and: [
           { _id: payload.userId },
@@ -405,7 +408,7 @@ const resetPasswordIntoDb = async (payload: {
       Number(config.bcrypt_salt_rounds),
     );
 
-    const result = await users.findByIdAndUpdate(
+    const result = await User.findByIdAndUpdate(
       isExistUser._id,
       { password: payload.password },
       { new: true, upsert: true },
@@ -425,7 +428,7 @@ const autoMaticallyDetectLocationIntoDb = async (
   userId: string,
 ): Promise<UserResponse> => {
   try {
-    const isExistUser = await users.findOne(
+    const isExistUser = await User.findOne(
       {
         $and: [
           { _id: userId },
@@ -444,7 +447,7 @@ const autoMaticallyDetectLocationIntoDb = async (
       );
     }
 
-    const result = await users.findByIdAndUpdate(userId, payload, {
+    const result = await User.findByIdAndUpdate(userId, payload, {
       new: true,
       upsert: true,
     });
@@ -473,7 +476,7 @@ const autoMaticallyDetectLocationIntoDb = async (
  */
 const recentSearchingLocationIntoDb = async (userId: string) => {
   try {
-    const userData = await users.find({ _id: userId });
+    const userData = await User.find({ _id: userId });
     if (!userData || userData.length === 0) {
       throw new ApiError(
         httpStatus.NOT_FOUND,
@@ -482,44 +485,46 @@ const recentSearchingLocationIntoDb = async (userId: string) => {
       );
     }
 
-    const processedData =  userData && userData?.map((user) => {
-      let distanceKm = null;
-      let estimatedDurationMin = null;
-      if (
-        user?.from?.coordinates?.length === 2 &&
-        user?.to?.coordinates?.length === 2
-      ) {
-        const fromLng = user?.from?.coordinates[0];
-        const fromLat = user?.from?.coordinates[1];
-        const toLng = user?.to?.coordinates[0];
-        const toLat = user?.to?.coordinates[1];
+    const processedData =
+      userData &&
+      userData?.map((user) => {
+        let distanceKm = null;
+        let estimatedDurationMin = null;
+        if (
+          user?.from?.coordinates?.length === 2 &&
+          user?.to?.coordinates?.length === 2
+        ) {
+          const fromLng = user?.from?.coordinates[0];
+          const fromLat = user?.from?.coordinates[1];
+          const toLng = user?.to?.coordinates[0];
+          const toLat = user?.to?.coordinates[1];
 
-        distanceKm = calculateDistance(fromLat, fromLng, toLat, toLng);
-        estimatedDurationMin = (distanceKm / 50) * 60;
-      }
+          distanceKm = calculateDistance(fromLat, fromLng, toLat, toLng);
+          estimatedDurationMin = (distanceKm / 50) * 60;
+        }
 
-      const userWithGeoData: any = {
-        ...(user.toObject
-          ? user.toObject()
-          : { from: user?.from?.address, to: user?.to?.address }),
-        geoMetrics: {
-          distanceKm:
-            distanceKm !== null ? parseFloat(distanceKm?.toFixed(2)) : null,
-          estimatedDurationMin:
-            estimatedDurationMin !== null
-              ? parseFloat(estimatedDurationMin?.toFixed(1))
-              : null,
-          bearingDegrees: calculateBearing(user),
-          routeType: classifyRouteType(distanceKm),
-        },
-      };
+        const userWithGeoData: any = {
+          ...(user.toObject
+            ? user.toObject()
+            : { from: user?.from?.address, to: user?.to?.address }),
+          geoMetrics: {
+            distanceKm:
+              distanceKm !== null ? parseFloat(distanceKm?.toFixed(2)) : null,
+            estimatedDurationMin:
+              estimatedDurationMin !== null
+                ? parseFloat(estimatedDurationMin?.toFixed(1))
+                : null,
+            bearingDegrees: calculateBearing(user),
+            routeType: classifyRouteType(distanceKm),
+          },
+        };
 
-      return {
-        from: userWithGeoData.from.address as string,
-        to: userWithGeoData.to.address as string,
-        geoMetrics: userWithGeoData.geoMetrics,
-      };
-    });
+        return {
+          from: userWithGeoData.from.address as string,
+          to: userWithGeoData.to.address as string,
+          geoMetrics: userWithGeoData.geoMetrics,
+        };
+      });
 
     return {
       success: true,
@@ -535,8 +540,6 @@ const recentSearchingLocationIntoDb = async (userId: string) => {
     );
   }
 };
-
-
 
 const UserServices = {
   createUserIntoDb,

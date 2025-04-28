@@ -6,12 +6,12 @@ const conversationSchema = new Schema<TConversation>(
     senderId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'users',
+      ref: 'User',
     },
     receiverId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'users',
+      ref: 'User',
     },
     lastMessage: {
       type: Schema.Types.ObjectId,

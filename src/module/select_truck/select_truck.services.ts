@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import ApiError from '../../app/error/ApiError';
 import { select_truck_search_filed } from './select_truck.constant';
-import selecttrucks from './select_truck.model';
+import SelectTruck from './select_truck.model';
 
 interface RequestWithFile extends Request {
   file?: Express.Multer.File;
@@ -25,7 +25,7 @@ const createSelectTruckIntoDb = async (
     createSelectTruck.truckcategories = truckcategories;
     createSelectTruck.photo = file?.path;
 
-    const select_truck_builder = new selecttrucks({
+    const select_truck_builder = new SelectTruck({
       ...createSelectTruck,
       userId,
     });
@@ -47,7 +47,7 @@ const createSelectTruckIntoDb = async (
 const findAllTruckByAdminIntoDb = async (query: Record<string, unknown>) => {
   try {
     const fileFolderQuery = new QueryBuilder(
-      selecttrucks.find().populate('userId', {
+      SelectTruck.find().populate('userId', {
         name: 1,
         email: 1,
         phoneNumber: 1,
@@ -75,7 +75,7 @@ const findAllTruckByAdminIntoDb = async (query: Record<string, unknown>) => {
 
 const findAllTruckByDriverIntoDb = async (query: Record<string, unknown>) => {
   try {
-    const fileFolderQuery = new QueryBuilder(selecttrucks.find(), query)
+    const fileFolderQuery = new QueryBuilder(SelectTruck.find(), query)
       .search(select_truck_search_filed)
       .filter()
       .sort()
@@ -97,7 +97,7 @@ const findAllTruckByDriverIntoDb = async (query: Record<string, unknown>) => {
 
 const findBySpecificSelectedTruckIntoDb = async (id: string) => {
   try {
-    return await selecttrucks.isSelectTruckExistByCustomId(id);
+    return await SelectTruck.isSelectTruckExistByCustomId(id);
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
@@ -133,7 +133,7 @@ const update_selected_truckIntoDb = async (
     }
 
     if (truckcategories) {
-      const existingTruck = await selecttrucks.findOne(
+      const existingTruck = await SelectTruck.findOne(
         {
           _id: id,
         },
@@ -149,7 +149,7 @@ const update_selected_truckIntoDb = async (
       }
     }
 
-    const result = await selecttrucks.findByIdAndUpdate(id, updateData, {
+    const result = await SelectTruck.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
