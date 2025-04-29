@@ -44,51 +44,54 @@ export interface DriverOasisModel extends Model<TDriverVerification> {
   isDriverVerificationExistByCustomId(id: string): Promise<TDriverVerification>;
 }
 
-
-// Interface definitions
-export interface Location {
-  address: string;
-  coordinates: [number, number];
-}
-
-export interface UserLocation {
-  from: Location;
-  to: Location;
-}
-
-export interface TruckInfo {
+// Types for our data
+export interface ITruck {
   _id: string;
   truckcategories: string;
   photo: string;
 }
 
-export interface Driver {
+export interface IDriver extends Document {
   _id: string;
-  driverSelectedTruck: TruckInfo;
-  autoDetectLocation: [string, string];
+  driverSelectedTruck: ITruck;
+  autoDetectLocation: number[];
   id: string;
 }
 
-export interface DriverData {
-  success: boolean;
-  message: string;
-  data: Driver[];
+export interface IUserLocation {
+  from ?: {
+    address: string;
+    coordinates: number[];
+  };
+  to : {
+    address: string;
+    coordinates: number[];
+  };
 }
 
-export interface GeoMetrics {
-  distanceKm: string;
-  estimatedDurationMin: string;
-  bearingDegrees: string;
-  routeType: string;
+export interface Driver {
+  _id: string;
+  autoDetectLocation: [number, number];
+  truckDetails: {
+    _id: string;
+    truckcategories: string[];
+    photo: string;
+  };
 }
 
 export interface DriverWithMetrics {
-  driverId: string;
-  truckType: string;
-  distanceKm: string;
-  estimatedDurationMin: string;
-  bearingDegrees: string;
-  routeType: string;
-  driverLocation: [string, string];
-  truckPhoto: string;
+  _id: string;
+  driverSelectedTruck: {
+    _id: string;
+    truckcategories: string[];
+    photo: string;
+    price: string;
+  };
+  geoMetrics: {
+    distanceKm: number;
+    estimatedDurationMin: number;
+    bearingDegrees: number;
+    routeType: string;
+  };
 }
+

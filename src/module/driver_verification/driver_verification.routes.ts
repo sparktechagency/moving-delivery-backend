@@ -109,7 +109,15 @@ router.delete(
   DriverVerificationController.deleteDriverVerification,
 );
 
-router.post("/searching_for_available_trip_truck_lists",DriverVerificationController.searching_for_available_trip_truck_lists);
+
+
+router.post(
+  '/searching_for_available_trip_truck_lists',
+  validationRequest(
+    DriverVerificationValidationSchema.automaticallyDetectLocationSchema,
+  ),
+  DriverVerificationController.searching_for_available_trip_truck_listsWithMongo,
+);
 
 const DriverVerificationRouter = router;
 

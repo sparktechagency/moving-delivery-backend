@@ -5,7 +5,7 @@ export default {
   port: process.env.PORT,
   database_url: process.env.DATABASE_URL,
   NODE_ENV: process.env.NODE_ENV,
-  bcrypt_salt_rounds:process.env.BCRYPT_SALT_ROUNDS,
+  bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
   send_email: {
     nodemailer_email: process.env.NODEMAILER_EMAIL,
     nodemailer_password: process.env.NODEMAILER_PASSWORD,
@@ -16,14 +16,20 @@ export default {
   appleauth: process.env.APPLEAUTH,
   jwt_refresh_secret: process.env.JWT_REFRESH_SECRET,
   refresh_expires_in: process.env.REFRESH_EXPIRES_IN,
-  send_message:{
-    twilio_sid:process.env.TWILIO_SID,
-    twilio_auth_token:process.env.TWILIO_AUTH_TOKEN,
-    twilio_phone_number:process.env.TWILIO_PHONE_NUMBER
+  send_message: {
+    twilio_sid: process.env.TWILIO_SID,
+    twilio_auth_token: process.env.TWILIO_AUTH_TOKEN,
+    twilio_phone_number: process.env.TWILIO_PHONE_NUMBER,
   },
   uplode_file_cloudinary: {
     cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
     cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
   },
+  per_kilometer_price: process.env.PER_KILOMETER_PRICE,
+  stripe_payment_gateway:{
+    stripe_secret_key:process.env.STRIPE_SECRET_KEY,
+    stripe_webhook_secret:process.env.STRIPE_WEBHOOK_SECRET
+
+  }
 };
