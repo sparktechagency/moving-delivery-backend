@@ -22,6 +22,9 @@ export type TUser = {
   isVerify: boolean;
   status: 'isProgress' | 'Blocked';
   photo?: string;
+  paymentTypes: string[]
+  stripeAccountId: string;
+  isStripeConnected: boolean;
   provider?: 'googleauth' | 'appleauth';
   from: IGeoLocation;
   to: IGeoLocation;

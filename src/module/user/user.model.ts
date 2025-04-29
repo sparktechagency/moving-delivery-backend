@@ -72,6 +72,20 @@ const TUserSchema = new Schema<TUser, UserModel>(
       required: [false, 'photo is not required'],
       default: null,
     },
+    paymentTypes: {
+      type: [String],
+      enum: ['cash', 'card'],
+      default: ['cash'] //Default to cash only
+    },
+    stripeAccountId: {
+      type: String,
+      required: false
+    },
+    isStripeConnected: {
+      type: Boolean,
+      rquired:false,
+      default: false,
+    },
     provider: {
       type: String,
       enum: {
