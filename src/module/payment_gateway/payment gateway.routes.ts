@@ -1,26 +1,22 @@
 import express from 'express';
-import validationRequest from '../../middleware/validationRequest';
-import PaymentValidationSchema from './payment gateway.zod.validation';
-import PaymentGateWayController from './payment gateway.controller';
 import auth from '../../middleware/auth';
 import { USER_ROLE } from '../user/user.constant';
+import PaymentGatewayController from './payment gateway.controller';
 
-const router = express.Router();
+const routes = express.Router();
 
-router.post(
-  '/create-payment-intent',
-  validationRequest(PaymentValidationSchema.paymentRequestSchema),
-  PaymentGateWayController.create_payment_init,
-);
-
-router.post(
+routes.post(
   '/connect-stripe',
   auth(USER_ROLE.user),
-  PaymentGateWayController.driver_Account_For_Payment,
+  PaymentGatewayController.createConnectedAccountAndOnboardingLink,
 );
 
+routes.post(
+  '/update-connected-account',
+  auth(USER_ROLE.user),
+  PaymentGatewayController.updateOnboardingLink,
+);
 
- router.post("/webhook",express.raw({ type: 'application/json' }),PaymentGateWayController.payment_webhook_events);
+const PaymentGateWayRouter = routes;
 
-const PaymentGateWayRouter = router;
-export default PaymentGateWayRouter; 
+export default PaymentGateWayRouter;

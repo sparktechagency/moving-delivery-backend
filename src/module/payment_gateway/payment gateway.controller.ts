@@ -1,47 +1,41 @@
 import { RequestHandler } from 'express';
-import httpStatus from 'http-status';
 import catchAsync from '../../utility/catchAsync';
+import PaymentGatewayServices from './payment gateway.services';
 import sendRespone from '../../utility/sendRespone';
-import PaymentGateWayServices from './payment gateway.services';
+import httpStatus from 'http-status';
 
-const create_payment_init: RequestHandler = catchAsync(async (req, res) => {
-  const result = await PaymentGateWayServices.createPaymentIntent(req.body);
-
-  sendRespone(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    message: 'Successfully Create Payment Init',
-    data: result,
-  });
-});
-
-const payment_webhook_events: RequestHandler = catchAsync(async (req, res) => {
-  const result = await PaymentGateWayServices.handleWebhookEvent(req.body);
-  sendRespone(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    message: 'Successfull Payment Webhook Events',
-    data: result,
-  });
-});
-
-const driver_Account_For_Payment: RequestHandler = catchAsync(
+const createConnectedAccountAndOnboardingLink: RequestHandler = catchAsync(
   async (req, res) => {
-    const result = await PaymentGateWayServices.createDriverAccountAndOnBoardLink(req.body);
+    const result =
+      await PaymentGatewayServices.createConnectedAccountAndOnboardingLinkIntoDb(
+        req.user,
+      );
 
     sendRespone(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: 'Successfull add driver account',
+      message: 'Link created successfully',
       data: result,
     });
   },
 );
 
-const PaymentGateWayController = {
-  create_payment_init,
-  payment_webhook_events,
-  driver_Account_For_Payment,
+const updateOnboardingLink:RequestHandler=catchAsync(async(req , res)=>{
+
+    const result=await PaymentGatewayServices.updateOnboardingLinkIntoDb(req.user.id);
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message:  'Successfully Updating On Boarding Link',
+      data: result,
+    });
+})
+
+
+
+const PaymentGatewayController = {
+  createConnectedAccountAndOnboardingLink,
+  updateOnboardingLink
 };
 
-export default PaymentGateWayController;
+export default PaymentGatewayController;

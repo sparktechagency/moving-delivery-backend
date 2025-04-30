@@ -3,8 +3,7 @@ import path from 'path';
 donenv.config({ path: path.join(process.cwd(), '.env') });
 export default {
   port: process.env.PORT,
-  frontend_host:process.env.FRONTEND_HOST,
-  admin_charge:process.env.ADMIN_CHARGE,
+  admin_charge: process.env.ADMIN_CHARGE,
   database_url: process.env.DATABASE_URL,
   NODE_ENV: process.env.NODE_ENV,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
@@ -29,9 +28,10 @@ export default {
     cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
   },
   per_kilometer_price: process.env.PER_KILOMETER_PRICE,
-  stripe_payment_gateway:{
-    stripe_secret_key:process.env.STRIPE_SECRET_KEY,
-    stripe_webhook_secret:process.env.STRIPE_WEBHOOK_SECRET
-
-  }
+  stripe_payment_gateway: {
+    stripe_secret_key: process.env.STRIPE_SECRET_KEY,
+    stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
+    onboarding_refresh_url: process.env.ONBOARDING_REFRESH_URL,
+    onboarding_return_url: process.env.ONBOARDING_RETURN_URL,
+  },
 };
