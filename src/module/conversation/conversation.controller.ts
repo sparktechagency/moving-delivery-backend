@@ -6,7 +6,7 @@ import httpStatus from 'http-status';
 
 const getChatList: RequestHandler = catchAsync(async (req, res) => {
   const result = await ConversationService.getConversation(
-    req?.user?.profileId,
+    req?.user?.id,
     req.query,
   );
 

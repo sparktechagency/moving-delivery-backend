@@ -223,6 +223,8 @@ const updateDriverVerificationIntoDb = async (
  * @param userId
  * @returns
  */
+
+
 const detected_Driver_Auto_Live_Location_IntoDb = async (
   payload: any,
   userId: string,
@@ -336,7 +338,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
   userLocation: IUserLocation,
 ): Promise<DriverWithMetrics[]> => {
   try {
-    const [destLng, destLat] = userLocation.to.coordinates;
+    const [destLong, destLat] = userLocation.to.coordinates;
     const drivers: Driver[] = await driververifications.aggregate([
       {
         $lookup: {
@@ -372,7 +374,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
         longitude: parseFloat(lng?.toString()),
         latitude: parseFloat(lat?.toString()),
       };
-      const destinationCoords = { longitude: destLng, latitude: destLat };
+      const destinationCoords = { longitude: destLong, latitude: destLat };
 
       const distanceInMeters = geolib?.getDistance(
         driverCoords,

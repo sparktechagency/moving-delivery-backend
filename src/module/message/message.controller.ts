@@ -5,8 +5,9 @@ import { RequestHandler } from 'express';
 import MessageService from './message.services';
 import httpStatus from 'http-status';
 const getMessages: RequestHandler = catchAsync(async (req, res) => {
+
   const result = await MessageService.getMessages(
-    req?.user?.profileId,
+    req?.user?.id,
     req.params.userId,
     req.query,
   );

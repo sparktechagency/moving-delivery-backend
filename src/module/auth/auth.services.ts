@@ -24,7 +24,7 @@ const loginUserIntoDb = async (payload: {
     },
     { password: 1, _id: 1, isVerify: 1, email: 1, role: 1 },
   );
-
+   console.log(isUserExist)
   if (!isUserExist) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
   }
@@ -50,6 +50,7 @@ const loginUserIntoDb = async (payload: {
       config.jwt_access_secret as string,
       config.expires_in as string,
     );
+    console.log(accessToken)
     refreshToken = jwtHelpers.generateToken(
       jwtPayload,
       config.jwt_refresh_secret as string,

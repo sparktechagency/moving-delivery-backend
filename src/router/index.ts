@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { ContructRouter } from '../module/contract/contract.routes';
 import UserRouter from '../module/user/user.routes';
@@ -5,6 +6,9 @@ import AuthRouter from '../module/auth/auth.routes';
 import DriverVerificationRouter from '../module/driver_verification/driver_verification.routes';
 import SelectTruckRouter from '../module/select_truck/select_truck.routes';
 import PaymentGateWayRouter from '../module/payment_gateway/payment gateway.routes';
+import {conversationRoutes} from '../module/conversation/conversation.routes';
+import { messageRoutes } from '../module/message/message.routes';
+
 
 const router = express.Router();
 const moduleRoute = [
@@ -14,6 +18,8 @@ const moduleRoute = [
   { path: '/select_truck', route: SelectTruckRouter },
   { path: '/driver_verification', route: DriverVerificationRouter },
   { path: '/payment_gateway', route: PaymentGateWayRouter },
+  { path: '/conversations', route: conversationRoutes },
+  { path: '/messages', route:  messageRoutes},
 ];
 
 moduleRoute.forEach((v) => router.use(v.path, v.route));

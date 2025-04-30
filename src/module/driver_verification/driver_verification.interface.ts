@@ -24,7 +24,6 @@ export type TDriverVerification = {
   driverLocation: string;
   vehicleNumber: string;
   autoDetectLocation: number[];
-
   fuleType:
     | 'Diesel'
     | 'Gasoline'
@@ -59,11 +58,11 @@ export interface IDriver extends Document {
 }
 
 export interface IUserLocation {
-  from ?: {
+  from?: {
     address: string;
     coordinates: number[];
   };
-  to : {
+  to: {
     address: string;
     coordinates: number[];
   };
@@ -94,4 +93,3 @@ export interface DriverWithMetrics {
     routeType: string;
   };
 }
-

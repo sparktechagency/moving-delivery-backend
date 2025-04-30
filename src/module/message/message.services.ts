@@ -15,6 +15,7 @@ const getMessages = async (
       { sender: userId, receiver: profileId },
     ],
   });
+
   // if (!conversation) {
   //   conversation = await Conversation.create({
   //     sender: profileId,

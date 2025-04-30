@@ -14,6 +14,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
   userData: JwtPayload,
 ) => {
   try {
+    console.log('userData:',userData)
     const normalUser = await User.findOne(
       {
         $and: [
@@ -34,7 +35,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
         '',
       );
     }
-
+    console.log(normalUser)
     if (normalUser.stripeAccountId) {
       const onboardingLink = await stripe.accountLinks.create({
         account: normalUser.stripeAccountId,
@@ -63,7 +64,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
         },
       },
     });
-
+     console.log("account",account)
     // database not intregrated this section , write now panding
 
     const onboardingLink = await stripe.accountLinks.create({
@@ -74,6 +75,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
     });
     return onboardingLink.url;
   } catch (error: any) {
+    console.log(error)
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'create Connected Account And Onboarding Link IntoDb server server unavalable',

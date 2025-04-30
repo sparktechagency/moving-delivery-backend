@@ -13,7 +13,7 @@ app.use(express.json());
 
 app.use(cors());
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.send({
     status: true,
     message: 'Welcome to moving-delevery-service Api',
