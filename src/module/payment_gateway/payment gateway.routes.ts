@@ -56,6 +56,7 @@ router.post(
 router.get(
   '/all_payment',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  
   PaymentGatewayController.findByTheAllPayment,
 );
 
