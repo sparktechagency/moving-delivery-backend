@@ -36,20 +36,29 @@ const createUserIntoDb = async (payload: TUser) => {
 
     const isExistUser = await User.findOne(
       {
-        $or: [
-          { email: payload.email, isDelete: false, isVerify: true },
-          { phoneNumber: payload.phoneNumber, isDelete: false, isVerify: true },
+        $and: [
+          {
+            email: payload.email,
+            isDelete: false,
+            isVerify: true,
+            status: USER_ACCESSIBILITY.isProgress,
+          },
         ],
       },
       { _id: 1, email: 1, phoneNumber: 1, role: 1 },
     );
 
     payload.verificationCode = otp;
+    payload.phoneNumber = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
     if (isExistUser) {
       // await session.abortTransaction();
       // session.endSession();
-      return 'generate token';
+      throw new ApiError(
+        httpStatus.FOUND,
+        'this email alredy exist in our database',
+        '',
+      );
     }
 
     const authBuilder = new User(payload);

@@ -1,29 +1,41 @@
 import { z } from 'zod';
 
-const paymentRequestSchema = z.object({
+// Validation schema for refreshing onboarding link
+const refreshOnboardingLink = z.object({
+  body: z.object({}).strict(),
+});
+
+// Validation schema for creating payment intent
+const createPaymentIntent = z.object({
   body: z.object({
-    amount: z
-      .number()
-      .positive({ message: 'Amount must be a positive number.' }),
-    currency: z.string().min(1, { message: 'Currency is required.' }),
-    paymentMethodId: z.string().optional(),
-    items: z
-      .array(
-        z.object({
-          name: z.string().min(1, { message: 'Item name is required.' }),
-          price: z
-            .number()
-            .nonnegative({
-              message: 'Item price must be a non-negative number.',
-            }),
-        }),
-      )
-      .optional(),
+    price: z.number({
+      required_error: 'Price is required',
+      invalid_type_error: 'Price must be a number',
+    }).positive('Price must be positive'),
+    truckId: z.string({
+      required_error: 'Truck ID is required',
+    }).regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
+    description: z.string().optional(),
   }),
 });
 
-const PaymentValidationSchema={
-    paymentRequestSchema 
-};
+// Validation schema for creating checkout session
+const createCheckoutSession = z.object({
+  body: z.object({
+    price: z.number({
+      required_error: 'Price is required',
+      invalid_type_error: 'Price must be a number',
+    }).positive('Price must be positive'),
+    truckId: z.string({
+      required_error: 'Truck ID is required',
+    }).regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
+    description: z.string().optional(),
+  }),
+});
 
-export default PaymentValidationSchema;
+// Need to export as an object, not default export
+export const PaymentValidation = {
+  refreshOnboardingLink,
+  createPaymentIntent,
+  createCheckoutSession,
+};

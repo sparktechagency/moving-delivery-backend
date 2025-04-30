@@ -75,7 +75,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
     paymentTypes: {
       type: [String],
       enum: ['cash', 'card'],
-      default: ['cash'] //Default to cash only
+      default: ['card'] //Default to cash only
     },
     stripeAccountId: {
       type: String,

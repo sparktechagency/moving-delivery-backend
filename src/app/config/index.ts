@@ -33,5 +33,8 @@ export default {
     stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
     onboarding_refresh_url: process.env.ONBOARDING_REFRESH_URL,
     onboarding_return_url: process.env.ONBOARDING_RETURN_URL,
+    checkout_success_url:process.env.CHECKOUT_SUCCESS_URL,
+    checkout_cancel_url:process.env.CHECKOUT_CANCEL_URL
+
   },
 };
