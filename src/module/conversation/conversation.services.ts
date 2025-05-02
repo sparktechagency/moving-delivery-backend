@@ -10,7 +10,6 @@ const getConversation = async (
   profileId: string,
   query: Record<string, unknown>,
 ) => {
-  
   const searchTerm = query.searchTerm as string;
   let userSearchFilter = {};
 
@@ -46,8 +45,8 @@ const getConversation = async (
       ...userSearchFilter,
     })
       .sort({ updatedAt: -1 })
-      .populate({ path: 'sender', select: 'name profile_image _id email' })
-      .populate({ path: 'receiver', select: 'name profile_image _id email' })
+      .populate({ path: 'sender', select: 'name photo _id email' })
+      .populate({ path: 'receiver', select: 'name photo _id email' })
       .populate('lastMessage'),
     query,
   )
