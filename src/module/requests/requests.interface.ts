@@ -4,13 +4,15 @@ export interface TRequest {
   userId: Types.ObjectId;
   driverId?: Types.ObjectId;
   driverVerificationsId: Types.ObjectId;
-  selectedProduct: [];
+  selectedProduct: string;
   trucktripeTime: string;
   isAccepted: Boolean;
   isCompleted: Boolean;
   isCanceled: Boolean;
   isRemaining: Boolean;
   isDelete: Boolean;
+  avgRating?: number;
+  totalReviews?: number;
 }
 
 export interface RequestResponse {

@@ -21,9 +21,8 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [true, 'driverVerificationsId is required'],
     },
     selectedProduct: {
-      type: [String],
-      required: [true, ' selected product is required'],
-      default: [],
+      type: String,
+      required: [true, 'selected product is required'],
     },
     trucktripeTime:{
         type:String,
@@ -57,6 +56,8 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [false, 'isDelete is not required'],
       default: false,
     },
+    avgRating: { type: Number, default: 0 },
+    totalReviews: { type: Number, default: 0 },
   },
   {
     timestamps: true,
