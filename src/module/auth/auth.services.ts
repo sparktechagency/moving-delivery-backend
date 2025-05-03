@@ -24,7 +24,7 @@ const loginUserIntoDb = async (payload: {
     },
     { password: 1, _id: 1, isVerify: 1, email: 1, role: 1 },
   );
-   console.log(isUserExist)
+ 
   if (!isUserExist) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
   }

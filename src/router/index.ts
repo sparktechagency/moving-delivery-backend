@@ -7,6 +7,7 @@ import { PaymentGatewayRoutes } from '../module/payment_gateway/payment gateway.
 import SelectTruckRouter from '../module/select_truck/select_truck.routes';
 import UserRouter from '../module/user/user.routes';
 import { messageRoutes } from '../module/message/message.routes';
+import RequestRoutes from '../module/requests/requests.routes';
 
 const router = express.Router();
 const moduleRoute = [
@@ -18,7 +19,7 @@ const moduleRoute = [
   { path: '/payment_gateway', route: PaymentGatewayRoutes },
   { path: '/conversations', route: conversationRoutes },
   { path: '/messages', route: messageRoutes },
-
+  { path: '/request', route: RequestRoutes },
 ];
 
 moduleRoute.forEach((v) => router.use(v.path, v.route));
