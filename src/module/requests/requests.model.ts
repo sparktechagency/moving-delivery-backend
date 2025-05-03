@@ -21,15 +21,13 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [true, 'driverVerificationsId is required'],
     },
     selectedProduct: {
-      type: String,
+      type: [String],
       required: [true, 'selected product is required'],
     },
-    trucktripeTime:{
-        type:String,
-        required:[true,'truck tripe, time is  required'],
-        default:  Date()
-
-
+    trucktripeTime: {
+      type: String,
+      required: [true, 'truck tripe, time is  required'],
+      default: Date(),
     },
     isAccepted: {
       type: Boolean,
@@ -56,8 +54,16 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [false, 'isDelete is not required'],
       default: false,
     },
-    avgRating: { type: Number, default: 0 },
-    totalReviews: { type: Number, default: 0 },
+    avgRating: {
+      type: Number,
+      required: [false, 'avgRating is not required'],
+      default: 0,
+    },
+    totalReviews: {
+      type: Number,
+      required: [false, 'total reviews is not required'],
+      default: 0,
+    },
   },
   {
     timestamps: true,

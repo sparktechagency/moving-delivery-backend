@@ -26,7 +26,7 @@ router.get(
   RequestController.clientRequestDetails,
 );
 
-router.get(
+router.post(
   '/cancel_request/:requestId',
   auth(USER_ROLE.driver),
   RequestController.cancelRequest,
@@ -36,6 +36,43 @@ router.get(
   '/find_by_all_cancel_request',
   auth(USER_ROLE.driver),
   RequestController.findByAllCancelRequst,
+);
+
+// accepted request router
+router.post(
+  '/accepted_request/:requestId',
+  auth(USER_ROLE.driver),
+  RequestController.acceptedRequest,
+);
+
+// find by the all remaing  requst ----> specific driver ways
+router.get(
+  '/find_by_all_remaining_request',
+  auth(USER_ROLE.driver),
+  RequestController.findByAllRemainingTripe,
+);
+
+//completed request router ------> driver section
+
+router.post(
+  '/completed_request/:requestId',
+  auth(USER_ROLE.driver),
+  RequestController.completedTripeRequest,
+);
+
+// find by the all completed tripe request
+
+router.get(
+  '/find_by_all_completed_tripe',
+  auth(USER_ROLE.driver),
+  RequestController.findByAllCompletedTripe,
+);
+// find by the driver  dashboard
+
+router.get(
+  '/driver_dashboard',
+  auth(USER_ROLE.driver),
+  RequestController.driver_dashboard,
 );
 
 const RequestRoutes = router;

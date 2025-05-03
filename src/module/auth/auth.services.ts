@@ -50,7 +50,7 @@ const loginUserIntoDb = async (payload: {
       config.jwt_access_secret as string,
       config.expires_in as string,
     );
-    console.log(accessToken)
+ 
     refreshToken = jwtHelpers.generateToken(
       jwtPayload,
       config.jwt_refresh_secret as string,

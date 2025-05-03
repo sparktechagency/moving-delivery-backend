@@ -9,7 +9,7 @@ const createRequestZodSchema = z.object({
   body: z.object({
     driverVerificationsId: objectId,
     selectedProduct: z
-      .string(z.string()),
+      .array(z.string()),
     trucktripeTime: z
       .string()
       .min(1, 'Trip time is required')

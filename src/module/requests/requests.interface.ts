@@ -4,7 +4,7 @@ export interface TRequest {
   userId: Types.ObjectId;
   driverId?: Types.ObjectId;
   driverVerificationsId: Types.ObjectId;
-  selectedProduct: string;
+  selectedProduct: [];
   trucktripeTime: string;
   isAccepted: Boolean;
   isCompleted: Boolean;

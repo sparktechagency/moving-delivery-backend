@@ -368,12 +368,353 @@ const findByAllCancelRequstIntoDb = async (
   }
 };
 
+// accepted request
+
+/**
+ * @param driverId
+ * @param requestId
+ * @returns
+ */
+const acceptedRequestIntoDb = async (
+  driverId: string,
+  requestId: string,
+): Promise<RequestResponse> => {
+  try {
+    const request = await requests.findOne({
+      _id: requestId,
+      driverId,
+      isCanceled: false,
+      isDelete: false,
+      isAccepted: false,
+      isCompleted: false,
+    });
+
+    if (!request) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'Request not found or not available',
+        '',
+      );
+    }
+
+    const driverVerification = await driververifications.findOne({
+      _id: request.driverVerificationsId,
+      isVerifyDriverLicense: true,
+      isVerifyDriverNid: true,
+      isReadyToDrive: true,
+      isDelete: false,
+    });
+
+    if (!driverVerification) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'Driver not verified or not eligible',
+        '',
+      );
+    }
+
+    const truckExists = await SelectTruck.exists({
+      _id: driverVerification.driverSelectedTruck,
+      isDelete: false,
+    });
+
+    if (!truckExists) {
+      throw new ApiError(
+        httpStatus.PRECONDITION_FAILED,
+        'Selected truck not available',
+        '',
+      );
+    }
+    const updatedRequest = await requests.findByIdAndUpdate(
+      requestId,
+      { isAccepted: true },
+      { new: true },
+    );
+
+    if (!updatedRequest) {
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to update request',
+        '',
+      );
+    }
+    // send accepted notification
+
+    return {
+      status: true,
+      message: 'Request accepted successfully',
+    };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to process request',
+      error,
+    );
+  }
+};
+
+const findByAllRemainingTripeIntoDb = async (
+  driverId: string,
+  query: Record<string, unknown>,
+) => {
+  try {
+    const myRemainingTrip = new QueryBuilder(
+      requests
+        .find({
+          driverId,
+          isCanceled: false,
+          isDelete: false,
+          isAccepted: true,
+          isCompleted: false,
+        })
+        .populate([
+          {
+            path: 'userId',
+            select: 'name  from',
+          },
+        ])
+        .select(
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime',
+        ),
+      query,
+    )
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const allremainingtrip = await myRemainingTrip.modelQuery;
+    const meta = await myRemainingTrip.countTotal();
+
+    return { meta, allremainingtrip };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Error my remaining rrip request',
+      error,
+    );
+  }
+};
+
+// is completed tripe
+/**
+ * @param driverId
+ * @param requestId
+ * @returns
+ */
+const completedTripeRequestIntoDb = async (
+  driverId: string,
+  requestId: string,
+): Promise<RequestResponse> => {
+  try {
+    // Validate that the trip is in progress and can be completed
+    const request = await requests.findOne({
+      _id: requestId,
+      driverId,
+      isAccepted: true,
+      isCompleted: false,
+      isCanceled: false,
+      isDelete: false,
+    });
+
+    if (!request) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'Active request not found or not eligible for completion',
+        '',
+      );
+    }
+
+    const isDriverVerified = await driververifications.exists({
+      _id: request.driverVerificationsId,
+      isVerifyDriverLicense: true,
+      isVerifyDriverNid: true,
+      isReadyToDrive: true,
+      isDelete: false,
+    });
+
+    if (!isDriverVerified) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'Driver verification status is invalid',
+        '',
+      );
+    }
+
+    const updatedRequest = await requests.findByIdAndUpdate(
+      requestId,
+      { isCompleted: true },
+      { new: true },
+    );
+
+    if (!updatedRequest) {
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to mark request as completed',
+        '',
+      );
+    }
+
+    // send notification
+
+    return {
+      status: true,
+      message: 'Trip completed successfully',
+    };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to complete trip',
+      error,
+    );
+  }
+};
+
+const findByAllCompletedTripeIntoDb = async (
+  driverId: string,
+  query: Record<string, unknown>,
+) => {
+  try {
+    const myCompletedTrip = new QueryBuilder(
+      requests
+        .find({
+          driverId,
+          isCanceled: false,
+          isDelete: false,
+          isAccepted: true,
+          isCompleted: true,
+        })
+        .populate([
+          {
+            path: 'userId',
+            select: 'name  from',
+          },
+        ])
+        .select(
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime',
+        ),
+      query,
+    )
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const allcompletetrip = await myCompletedTrip.modelQuery;
+    const meta = await myCompletedTrip.countTotal();
+
+    return { meta, allcompletetrip };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Error my remaining rrip request',
+      error,
+    );
+  }
+};
+
+const driver_dashboard_InDb = async (driverId: string) => {
+  try {
+    const calcelTripRequest = await requests
+      .find({
+        driverId,
+        isCanceled: true,
+        isAccepted: false,
+        isCompleted: false,
+        isDelete: false,
+      })
+      .countDocuments();
+    const userRequestTripe = await requests
+      .find({
+        driverId,
+        isCanceled: false,
+        isDelete: false,
+        isAccepted: false,
+        isCompleted: false,
+      })
+      .countDocuments();
+
+    const remainingRequstTripe = await requests
+      .find({
+        driverId,
+        isCanceled: false,
+        isDelete: false,
+        isAccepted: true,
+        isCompleted: false,
+      })
+      .countDocuments();
+    const completedRequestTripe = await requests
+      .find({
+        driverId,
+        isCanceled: false,
+        isDelete: false,
+        isAccepted: true,
+        isCompleted: true,
+      })
+      .countDocuments();
+
+    const userInfo = await driververifications
+      .findOne(
+        {
+          userId: driverId,
+          isVerifyDriverLicense: true,
+          isVerifyDriverNid: true,
+          isReadyToDrive: true,
+          isDelete: false,
+        },
+        { _id: 1, vehicleNumber: 1 },
+      )
+      .populate('userId', { name: 1 });
+
+    // panding by the recent accepted order
+
+    return {
+      calcelTripRequest,
+      userRequestTripe,
+      remainingRequstTripe,
+      completedRequestTripe,
+      userInfo,
+    };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Error my remaining rrip request',
+      error,
+    );
+  }
+};
+
 const RequestServices = {
   sendRequestIntoDb,
   myClientRequestIntoDb,
   clientRequestDetailsIntoDb,
   cancelRequestIntoDb,
   findByAllCancelRequstIntoDb,
+  acceptedRequestIntoDb,
+  findByAllRemainingTripeIntoDb,
+  completedTripeRequestIntoDb,
+  findByAllCompletedTripeIntoDb,
+  driver_dashboard_InDb,
 };
 
 export default RequestServices;

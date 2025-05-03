@@ -65,12 +65,80 @@ const findByAllCancelRequst: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const acceptedRequest: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.acceptedRequestIntoDb(
+    req.user.id,
+    req.params.requestId,
+  );
+
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully  Accepted Request',
+    data: result,
+  });
+});
+
+const findByAllRemainingTripe: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.findByAllRemainingTripeIntoDb(
+    req.user.id,
+    req.query,
+  );
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Find By The All Remsining Request',
+    data: result,
+  });
+});
+
+const completedTripeRequest: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.completedTripeRequestIntoDb(
+    req.user.id,
+    req.params.requestId,
+  );
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Completed Tripe Request',
+    data: result,
+  });
+});
+
+const findByAllCompletedTripe: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.findByAllCompletedTripeIntoDb(
+    req.user.id,
+    req.params,
+  );
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully  My All Completed Tripe ',
+    data: result,
+  });
+});
+
+const driver_dashboard: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.driver_dashboard_InDb(req.user.id);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Driver  Tripe ',
+    data: result,
+  });
+});
+
 const RequestController = {
   sendRequest,
   myClientRequest,
   clientRequestDetails,
   cancelRequest,
-  findByAllCancelRequst
+  findByAllCancelRequst,
+  acceptedRequest,
+  findByAllRemainingTripe,
+  completedTripeRequest,
+  findByAllCompletedTripe,
+  driver_dashboard,
 };
 
 export default RequestController;
