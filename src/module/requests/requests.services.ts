@@ -629,67 +629,93 @@ const findByAllCompletedTripeIntoDb = async (
   }
 };
 
-const driver_dashboard_InDb = async (driverId: string) => {
+/**
+ * @param driverId
+ * @returns
+ */
+const getDriverDashboardIntoDb = async (driverId: string) => {
   try {
-    const calcelTripRequest = await requests
-      .find({
-        driverId,
+    const baseFilter = {
+      driverId,
+      isDelete: false,
+    };
+
+    const [
+      canceledRequests,
+      pendingRequests,
+      acceptedRequests,
+      completedRequests,
+      userInfo,
+      recentBookings,
+    ] = await Promise.all([
+      requests.countDocuments({
+        ...baseFilter,
         isCanceled: true,
         isAccepted: false,
         isCompleted: false,
-        isDelete: false,
-      })
-      .countDocuments();
-    const userRequestTripe = await requests
-      .find({
-        driverId,
+      }),
+
+      requests.countDocuments({
+        ...baseFilter,
         isCanceled: false,
-        isDelete: false,
         isAccepted: false,
         isCompleted: false,
-      })
-      .countDocuments();
+      }),
 
-    const remainingRequstTripe = await requests
-      .find({
-        driverId,
+      requests.countDocuments({
+        ...baseFilter,
         isCanceled: false,
-        isDelete: false,
         isAccepted: true,
         isCompleted: false,
-      })
-      .countDocuments();
-    const completedRequestTripe = await requests
-      .find({
-        driverId,
+      }),
+
+      requests.countDocuments({
+        ...baseFilter,
         isCanceled: false,
-        isDelete: false,
         isAccepted: true,
         isCompleted: true,
-      })
-      .countDocuments();
+      }),
 
-    const userInfo = await driververifications
-      .findOne(
-        {
-          userId: driverId,
-          isVerifyDriverLicense: true,
-          isVerifyDriverNid: true,
-          isReadyToDrive: true,
-          isDelete: false,
-        },
-        { _id: 1, vehicleNumber: 1 },
-      )
-      .populate('userId', { name: 1 });
+      driververifications
+        .findOne(
+          {
+            userId: driverId,
+            isVerifyDriverLicense: true,
+            isVerifyDriverNid: true,
+            isReadyToDrive: true,
+            isDelete: false,
+          },
+          { _id: 1, vehicleNumber: 1 },
+        )
+        .populate('userId', { name: 1 }),
 
-    // panding by the recent accepted order
+      requests
+        .find({
+          ...baseFilter,
+          isAccepted: true,
+        })
+        .sort({ createdAt: -1 })
+        .select('bookingTime from to userId fare')
+        .populate('userId', {
+          name: 1,
+          photo: 1,
+          from: 1,
+        })
+        .limit(3),
+    ]);
 
+    // panding price
+
+    // Return organized dashboard data
     return {
-      calcelTripRequest,
-      userRequestTripe,
-      remainingRequstTripe,
-      completedRequestTripe,
-      userInfo,
+      stats: {
+        canceled: canceledRequests,
+        pending: pendingRequests,
+        active: acceptedRequests,
+        completed: completedRequests,
+      },
+      driverInfo: userInfo,
+      recentBookings,
     };
   } catch (error: any) {
     if (error instanceof ApiError) {
@@ -698,12 +724,11 @@ const driver_dashboard_InDb = async (driverId: string) => {
 
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      'Error my remaining rrip request',
+      'Failed to fetch driver dashboard data',
       error,
     );
   }
 };
-
 const RequestServices = {
   sendRequestIntoDb,
   myClientRequestIntoDb,
@@ -714,7 +739,7 @@ const RequestServices = {
   findByAllRemainingTripeIntoDb,
   completedTripeRequestIntoDb,
   findByAllCompletedTripeIntoDb,
-  driver_dashboard_InDb,
+  getDriverDashboardIntoDb,
 };
 
 export default RequestServices;

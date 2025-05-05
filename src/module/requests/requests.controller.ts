@@ -119,7 +119,7 @@ const findByAllCompletedTripe: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const driver_dashboard: RequestHandler = catchAsync(async (req, res) => {
-  const result = await RequestServices.driver_dashboard_InDb(req.user.id);
+  const result = await RequestServices.getDriverDashboardIntoDb(req.user.id);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
