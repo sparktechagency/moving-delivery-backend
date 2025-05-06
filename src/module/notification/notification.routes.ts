@@ -11,6 +11,12 @@ router.get(
   NotificationController.speciifcUserNotificationList,
 );
 
+router.get(
+  '/find_by_all_notification_driver',
+  auth(USER_ROLE.driver),
+  NotificationController.specificDriverNotificationList,
+);
+
 const NotificationRoutes = router;
 
 export default NotificationRoutes;

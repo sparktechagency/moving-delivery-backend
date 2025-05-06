@@ -70,9 +70,40 @@ const speciifcUserNotificationListIntoDb = async (
   }
 };
 
+const specificDriverNotificationListIntoDb = async (
+  driverId: string,
+  query: Record<string, unknown>,
+) => {
+  try {
+    const allNotificationQuery = new QueryBuilder(
+      notifications
+        .find({ driverId })
+        .select('-userId -status -priority -createdAt -updatedAt -driverId '),
+
+      query,
+    )
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const driverNotification = await allNotificationQuery.modelQuery;
+    const meta = await allNotificationQuery.countTotal();
+
+    return { meta, driverNotification };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'speciifc driver notification  server unavailable issues',
+      error,
+    );
+  }
+};
+
 const NotificationServices = {
   sendPushNotification,
   speciifcUserNotificationListIntoDb,
+  specificDriverNotificationListIntoDb,
 };
 
 export default NotificationServices;

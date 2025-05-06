@@ -14,7 +14,23 @@ const speciifcUserNotificationList: RequestHandler = catchAsync(
     sendRespone(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: 'Successfully Find All Notification',
+      message: 'Successfully Find User All Notification',
+      data: result,
+    });
+  },
+);
+
+const specificDriverNotificationList: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await NotificationServices.specificDriverNotificationListIntoDb(
+        req.user.id,
+        req.params,
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Find Driver All Notification',
       data: result,
     });
   },
@@ -22,6 +38,7 @@ const speciifcUserNotificationList: RequestHandler = catchAsync(
 
 const NotificationController = {
   speciifcUserNotificationList,
+  specificDriverNotificationList
 };
 
 export default NotificationController;
