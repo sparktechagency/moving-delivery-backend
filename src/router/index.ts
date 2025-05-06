@@ -8,6 +8,7 @@ import SelectTruckRouter from '../module/select_truck/select_truck.routes';
 import UserRouter from '../module/user/user.routes';
 import { messageRoutes } from '../module/message/message.routes';
 import RequestRoutes from '../module/requests/requests.routes';
+import NotificationRoutes from '../module/notification/notification.routes';
 
 const router = express.Router();
 const moduleRoute = [
@@ -20,6 +21,7 @@ const moduleRoute = [
   { path: '/conversations', route: conversationRoutes },
   { path: '/messages', route: messageRoutes },
   { path: '/request', route: RequestRoutes },
+  { path: '/notification', route: NotificationRoutes },
 ];
 
 moduleRoute.forEach((v) => router.use(v.path, v.route));

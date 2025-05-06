@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import ApiError from '../../app/error/ApiError';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import driververifications from '../driver_verification/driver_verification.model';
 import { RequestResponse, TRequest } from './requests.interface';
 import User from '../user/user.model';
@@ -8,6 +8,8 @@ import { USER_ACCESSIBILITY } from '../user/user.constant';
 import SelectTruck from '../select_truck/select_truck.model';
 import requests from './requests.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import NotificationServices from '../notification/notification.services';
+import notifications from '../notification/notification.modal';
 
 /**
  * @param userId - The ID of the user sending the request
@@ -504,82 +506,116 @@ const findByAllRemainingTripeIntoDb = async (
   }
 };
 
-// is completed tripe
-/**
- * @param driverId
- * @param requestId
- * @returns
- */
-const completedTripeRequestIntoDb = async (
-  driverId: string,
-  requestId: string,
-): Promise<RequestResponse> => {
-  try {
-    // Validate that the trip is in progress and can be completed
-    const request = await requests.findOne({
-      _id: requestId,
-      driverId,
-      isAccepted: true,
-      isCompleted: false,
-      isCanceled: false,
-      isDelete: false,
-    });
 
-    if (!request) {
-      throw new ApiError(
-        httpStatus.NOT_FOUND,
-        'Active request not found or not eligible for completion',
-        '',
-      );
+
+/**  
+ * @param driverId  
+ * @param requestId  
+ * @returns  
+ */ 
+const completedTripeRequestIntoDb = async (   
+  driverId: string,   
+  requestId: string, 
+): Promise<RequestResponse> => {   
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {       
+    const request = await requests.findOne({       
+      _id: requestId,       
+      driverId,       
+      isAccepted: true,       
+      isCompleted: false,       
+      isCanceled: false,       
+      isDelete: false,     
+    }, {userId:1, driverVerificationsId:1}).session(session);
+      
+    if (!request) {       
+      throw new ApiError(         
+        httpStatus.NOT_FOUND,         
+        'Active request not found or not eligible for completion',         
+        '',       
+      );     
+    }      
+    
+    const isDriverVerified = await driververifications.exists({       
+      _id: request.driverVerificationsId,       
+      isVerifyDriverLicense: true,       
+      isVerifyDriverNid: true,       
+      isReadyToDrive: true,       
+      isDelete: false,     
+    }).session(session);      
+    
+    if (!isDriverVerified) {       
+      throw new ApiError(         
+        httpStatus.FORBIDDEN,         
+        'Driver verification status is invalid',         
+        '',       
+      );     
+    }      
+    
+    const updatedRequest = await requests.findByIdAndUpdate(       
+      requestId,       
+      { isCompleted: true },       
+      { new: true, session },     
+    );      
+    
+    if (!updatedRequest) {       
+      throw new ApiError(         
+        httpStatus.INTERNAL_SERVER_ERROR,         
+        'Failed to mark request as completed',         
+        '',       
+      );     
+    }       
+    
+    const data = {       
+      title: 'Connection Request Accepted',       
+      content: `Accepted your connection request`,       
+      time: new Date(),     
+    };           
+    
+    const sendNotification = await NotificationServices.sendPushNotification(       
+      request.userId.toString(),       
+      data,     
+    );      
+    
+    if(!sendNotification) {       
+      throw new ApiError(httpStatus.NO_CONTENT, 'Issues by the complete status notification section', '');     
+    }      
+    
+    const notificationsBuilder = new notifications({       
+      userId: request.userId.toString(),       
+      title: data.time,       
+      content: data.content,     
+    });      
+    
+    const storeNotification = await notificationsBuilder.save({ session });
+    
+    if(!storeNotification) {       
+      throw new ApiError(httpStatus.NO_CONTENT, 'Issues by the complete status notification section', '');     
     }
-
-    const isDriverVerified = await driververifications.exists({
-      _id: request.driverVerificationsId,
-      isVerifyDriverLicense: true,
-      isVerifyDriverNid: true,
-      isReadyToDrive: true,
-      isDelete: false,
-    });
-
-    if (!isDriverVerified) {
-      throw new ApiError(
-        httpStatus.FORBIDDEN,
-        'Driver verification status is invalid',
-        '',
-      );
-    }
-
-    const updatedRequest = await requests.findByIdAndUpdate(
-      requestId,
-      { isCompleted: true },
-      { new: true },
-    );
-
-    if (!updatedRequest) {
-      throw new ApiError(
-        httpStatus.INTERNAL_SERVER_ERROR,
-        'Failed to mark request as completed',
-        '',
-      );
-    }
-
-    // send notification
-
-    return {
-      status: true,
-      message: 'Trip completed successfully',
-    };
+  
+    await session.commitTransaction();
+    session.endSession();
+      
+    return {       
+      status: true,       
+      message: 'Trip completed successfully',     
+    };   
   } catch (error: any) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-
-    throw new ApiError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      'Failed to complete trip',
-      error,
-    );
-  }
+    await session.abortTransaction();
+    session.endSession();
+    
+    if (error instanceof ApiError) {       
+      throw error;     
+    }      
+    
+    throw new ApiError(       
+      httpStatus.INTERNAL_SERVER_ERROR,       
+      'Failed to complete trip',       
+      error,     
+    );   
+  } 
 };
 
 const findByAllCompletedTripeIntoDb = async (
