@@ -4,7 +4,7 @@ import auth from '../../middleware/auth';
 import PaymentGatewayController from './payment gateway.controller';
 import validationRequest from '../../middleware/validationRequest';
 import { PaymentValidation } from './payment gateway.zod.validation';
-
+import bodyParser from 'body-parser';
 const router = express.Router();
 
 // Routes for Stripe account onboarding
@@ -46,13 +46,11 @@ router.post(
 // Webhook route for Stripe events
 router.post(
   '/webhook',
-  auth(USER_ROLE.user),
-  express.raw({ type: 'application/json' }),
-  PaymentGatewayController.handleWebhook,
+  bodyParser.raw({ type: 'application/json' }),
+  PaymentGatewayController.handleWebhook
 );
 
 // all payment list router
-
 router.get(
   '/all_payment',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),

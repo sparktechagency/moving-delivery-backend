@@ -16,7 +16,7 @@ const stripe = new Stripe(
 
 interface PaymentDetails {
   price: number;
-  truckId: string;
+  driverId: string;
   description?: string;
 }
 
@@ -24,7 +24,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
   userData: JwtPayload,
 ) => {
   try {
-    console.log('userData:',userData)
+    console.log('userData:', userData);
     const normalUser = await User.findOne(
       {
         $and: [
@@ -86,7 +86,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
     });
     return onboardingLink?.url;
   } catch (error: any) {
-    console.log(error)
+    console.log(error);
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'create Connected Account And Onboarding Link IntoDb server server unavalable',
@@ -143,7 +143,7 @@ const createPaymentIntent = async (
   try {
     const {
       price,
-      truckId,
+      driverId,
       description = 'Truck service payment',
     } = paymentDetails;
 
@@ -155,7 +155,7 @@ const createPaymentIntent = async (
       );
     }
 
-    if (!truckId || !Types.ObjectId.isValid(truckId)) {
+    if (!driverId || !Types.ObjectId.isValid(driverId)) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
         'Valid truck ID is required',
@@ -169,7 +169,7 @@ const createPaymentIntent = async (
       {
         $and: [
           {
-            _id: paymentDetails.truckId,
+            _id: paymentDetails.driverId,
             isVerifyDriverNid: true,
             isReadyToDrive: true,
             isVerifyDriverLicense: true,
@@ -228,7 +228,7 @@ const createPaymentIntent = async (
         currency: 'usd',
         description: description,
         metadata: {
-          truckId: truckId,
+          driverId: driverId,
           userId: userId,
         },
         application_fee_amount: Math.round(amountInCents * 0.05), // 5% platform fee
@@ -265,8 +265,6 @@ const createPaymentIntent = async (
       );
     }
   } catch (error: any) {
-    console.error('Error in createPaymentIntent:', error);
-
     if (error instanceof ApiError) {
       throw error;
     }
@@ -306,7 +304,7 @@ const createCheckoutSessionForTruck = async (
   try {
     const {
       price,
-      truckId,
+      driverId,
       description = 'Truck rental payment',
     } = paymentDetails;
 
@@ -318,7 +316,7 @@ const createCheckoutSessionForTruck = async (
       );
     }
 
-    if (!truckId || !Types.ObjectId.isValid(truckId)) {
+    if (!driverId || !Types.ObjectId.isValid(driverId)) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
         'Valid truck ID is required',
@@ -344,10 +342,8 @@ const createCheckoutSessionForTruck = async (
       );
     }
 
-    
-
     try {
-      const session = await stripe.checkout.sessions.create({
+      const session: any = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
           {
@@ -357,7 +353,7 @@ const createCheckoutSessionForTruck = async (
                 name: 'Truck Rental',
                 description: description,
                 metadata: {
-                  truckId: truckId,
+                  driverId: driverId,
                 },
               },
               unit_amount: Math.round(price * 100),
@@ -366,7 +362,7 @@ const createCheckoutSessionForTruck = async (
           },
         ],
         metadata: {
-          truckId: truckId,
+          driverId: driverId,
           userId: userId,
         },
         mode: 'payment',
@@ -374,6 +370,25 @@ const createCheckoutSessionForTruck = async (
         success_url: `${config.stripe_payment_gateway.checkout_success_url}?sessionId={CHECKOUT_SESSION_ID}`,
         cancel_url: config.stripe_payment_gateway.checkout_cancel_url,
       });
+
+      const paymentBuilder = new stripepaymentgateways({
+        currency: session.currency,
+        sessionId: session.id,
+        userId: session.metadata.userId,
+        driverId: session.metadata.driverId,
+        paymentmethod: session.payment_method_types[0],
+        payment_statu: session.payment_status,
+        price: paymentDetails.price,
+        description: paymentDetails.description,
+      });
+      const paymentResult = await paymentBuilder.save();
+      if (!paymentResult) {
+        throw new ApiError(
+          httpStatus.NOT_IMPLEMENTED,
+          'issues by the  stripe checked session',
+          '',
+        );
+      }
 
       return {
         checkoutUrl: session.url,
@@ -410,11 +425,10 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
         {
           path: 'truckId',
           select: 'vehicleNumber fuleType vehicleAge driverSelectedTruck',
-          populate:{
-            path:"driverSelectedTruck",
-            select: 'truckcategories photo'
-          }
-         
+          populate: {
+            path: 'driverSelectedTruck',
+            select: 'truckcategories photo',
+          },
         },
       ]),
       query,
@@ -441,6 +455,121 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
   }
 };
 
+const handleWebhookIntoDb = async (event: Stripe.Event) => {
+  let result = {
+    status: false,
+    message: 'Unhandled event',
+  };
+
+  switch (event.type) {
+    case 'payment_intent.succeeded': {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+      if (!paymentIntent.id) {
+        throw new ApiError(
+          httpStatus.NOT_FOUND,
+          `issues by the ${paymentIntent.id} section `,
+          '',
+        );
+      }
+
+      // console.log(`PaymentIntent for ${paymentIntent.id} was successful!`);
+      // console.log(paymentIntent);console.log(`PaymentIntent for ${paymentIntent.id} was successful!`);
+      console.log(paymentIntent);
+
+      result = {
+        status: true,
+        message: 'Payment Successful',
+      };
+      break;
+    }
+
+    case 'account.updated': {
+      const account = event.data.object as Stripe.Account;
+      if (!account.id) {
+        throw new ApiError(
+          httpStatus.NOT_FOUND,
+          `issues by the ${account.id} updated section`,
+          '',
+        );
+      }
+
+      // console.log(`Account ${account.id} was updated`);
+      // Add any DB update or logic here
+      result = {
+        status: true,
+        message: 'Account updated',
+      };
+      break;
+    }
+    case 'checkout.session.completed': {
+      const session: any = event.data.object as Stripe.Checkout.Session;
+      if (!session) {
+        throw new ApiError(
+          httpStatus.NO_CONTENT,
+          'issues by the checkout sesiion completed section',
+          '',
+        );
+      }
+
+      // const successPaymentData = {
+      //   sessionId: session.id,
+      //   payable_name:session.customer_details?.name,
+      //   payable_email: session.customer_details?.email,
+      //   payment_intent:session.payment_intent,
+      //   payment_status:session.payment_status,
+      //   country: session.customer_details?.address?.country,
+      //   user_data:{
+      //     userId: session.metadata.userId,
+      //     driverId:session.metadata.driverId,
+      //   }
+
+      // };
+
+      const recordedPayment = await stripepaymentgateways.findOneAndUpdate(
+        {
+          $and: [
+            {
+              userId: session.metadata.userId,
+              driverId: session.metadata.driverId,
+              sessionId: session.id,
+            },
+          ],
+        },
+        {
+          $set: {
+            payable_name: session.customer_details?.name,
+            payable_email: session.customer_details?.email,
+            payment_intent: session.payment_intent,
+            payment_status: session.payment_status,
+            country: session.customer_details?.address?.country,
+          },
+        },
+        { new: true, upsert: true },
+      );
+      if (!recordedPayment) {
+        throw new ApiError(
+          httpStatus.NOT_IMPLEMENTED,
+          'issues by the checkout.session.completed case section',
+          '',
+        );
+      }
+      result = {
+        status: true,
+        message: 'session data successfully recorded',
+      };
+      break;
+    }
+
+    default: {
+      console.log(`Unhandled event type ${event.type}`);
+      break;
+    }
+  }
+
+  return result;
+};
+
 const PaymentGatewayServices = {
   createConnectedAccountAndOnboardingLinkIntoDb,
   updateOnboardingLinkIntoDb,
@@ -448,6 +577,7 @@ const PaymentGatewayServices = {
   retrievePaymentStatus,
   createCheckoutSessionForTruck,
   findByTheAllPaymentIntoDb,
+  handleWebhookIntoDb,
 };
 
 export default PaymentGatewayServices;

@@ -100,6 +100,31 @@ const specificDriverNotificationListIntoDb = async (
   }
 };
 
+
+//upcomming ----> request accepted notification
+
+const upcomming_user_request_notification_IntoDb = async (
+  userId: string,
+  query: Record<string, unknown>,
+) => {
+  try {
+
+    return {
+      userId, query
+    }
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to fetch  upcomming user request Into Db',
+      error,
+    );
+  }
+};
+
 const NotificationServices = {
   sendPushNotification,
   speciifcUserNotificationListIntoDb,

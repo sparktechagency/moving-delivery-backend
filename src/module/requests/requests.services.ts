@@ -487,7 +487,7 @@ const acceptedRequestIntoDb = async (
         isAccepted: false,
         isCompleted: false,
       },
-      { userId: 1, driverVerificationsId:1 },
+      { userId: 1, driverVerificationsId: 1 },
       { session },
     );
 
@@ -922,6 +922,11 @@ const getDriverDashboardIntoDb = async (driverId: string) => {
     );
   }
 };
+
+// user notification ----->  section  ----> started
+
+
+
 const RequestServices = {
   sendRequestIntoDb,
   myClientRequestIntoDb,
@@ -933,6 +938,8 @@ const RequestServices = {
   completedTripeRequestIntoDb,
   findByAllCompletedTripeIntoDb,
   getDriverDashboardIntoDb,
+  
+  
 };
 
 export default RequestServices;

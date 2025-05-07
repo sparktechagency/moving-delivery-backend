@@ -12,7 +12,7 @@ const createPaymentIntent = z.object({
       required_error: 'Price is required',
       invalid_type_error: 'Price must be a number',
     }).positive('Price must be positive'),
-    truckId: z.string({
+    driverId: z.string({
       required_error: 'Truck ID is required',
     }).regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
     description: z.string().optional(),
@@ -26,7 +26,7 @@ const createCheckoutSession = z.object({
       required_error: 'Price is required',
       invalid_type_error: 'Price must be a number',
     }).positive('Price must be positive'),
-    truckId: z.string({
+    driverId: z.string({
       required_error: 'Truck ID is required',
     }).regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
     description: z.string().optional(),
