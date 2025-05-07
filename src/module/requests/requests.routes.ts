@@ -75,5 +75,29 @@ router.get(
   RequestController.driver_dashboard,
 );
 
+// find by specific user upcomming history
+
+router.get(
+  '/find_by_all_upcomming_history',
+  auth(USER_ROLE.user),
+  RequestController.user_upcomming_history,
+);
+
+//find by the specifc user complted tripe history
+
+router.get(
+  '/find_by_all_completed_tripe_history',
+  auth(USER_ROLE.user),
+  RequestController.completed_history,
+);
+
+// user cancel tripe
+
+router.post(
+  '/user_cancel_tripe/:requestId',
+  auth(USER_ROLE.user),
+  RequestController.user_cancel_tripe_request,
+);
+
 const RequestRoutes = router;
 export default RequestRoutes;

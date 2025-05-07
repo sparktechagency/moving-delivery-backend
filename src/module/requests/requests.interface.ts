@@ -12,6 +12,7 @@ export interface TRequest {
   isRemaining: Boolean;
   isDelete: Boolean;
   avgRating?: number;
+  price?:number;
   totalReviews?: number;
 }
 

@@ -10,6 +10,7 @@ import requests from './requests.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import NotificationServices from '../notification/notification.services';
 import notifications from '../notification/notification.modal';
+import ApiBase from 'twilio/lib/rest/ApiBase';
 
 /**
  * @param userId
@@ -68,25 +69,6 @@ const sendRequestIntoDb = async (
       );
     }
 
-    const driver = await User?.findOne(
-      {
-        _id: verifiedDriver.userId,
-        isVerify: true,
-        isDelete: false,
-        status: USER_ACCESSIBILITY.isProgress,
-      },
-      { _id: 1 },
-      { session },
-    );
-
-    if (!driver) {
-      throw new ApiError(
-        httpStatus.NOT_FOUND,
-        'Driver not found or not currently available',
-        '',
-      );
-    }
-
     const selectedTruck = await SelectTruck?.findOne(
       {
         _id: verifiedDriver.driverSelectedTruck,
@@ -107,7 +89,7 @@ const sendRequestIntoDb = async (
     const existingRequest = await requests?.findOne(
       {
         userId,
-        driverId: driver._id,
+        driverId: verifiedDriver.userId,
         isAccepted: false,
         isDelete: false,
         isCompleted: false,
@@ -126,13 +108,14 @@ const sendRequestIntoDb = async (
         message: 'Request already exists and is being processed',
       };
     }
+    payload.price = Number(payload.price);
 
     const newRequest = await requests?.create(
       [
         {
           ...payload,
           userId,
-          driverId: driver._id,
+          driverId: verifiedDriver.userId,
           driverVerificationsId: verifiedDriver._id,
         },
       ],
@@ -923,9 +906,228 @@ const getDriverDashboardIntoDb = async (driverId: string) => {
   }
 };
 
-// user notification ----->  section  ----> started
+// user history ----->  section  ----> started
 
+const user_upcomming_history_IntoDb = async (
+  userId: string,
+  query: Record<string, unknown>,
+) => {
+  try {
+    const userTripHistory = new QueryBuilder(
+      requests
+        .find({
+          userId,
+          isCanceled: false,
+          isDelete: false,
+          isAccepted: true,
+          isCompleted: false,
+        })
+        .populate([
+          {
+            path: 'userId',
+            select: 'from.coordinates to.coordinates',
+          },
+        ])
+        .select(
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
+        ),
+      query,
+    )
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
 
+    const user_all_tripe_history = await userTripHistory.modelQuery;
+    const meta = await userTripHistory.countTotal();
+
+    return { meta, user_all_tripe_history };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to fetch  upcomming user history data ',
+      error,
+    );
+  }
+};
+
+const completed_history_IntoDb = async (
+  userId: string,
+  query: Record<string, unknown>,
+) => {
+  try {
+    const userTripHistory = new QueryBuilder(
+      requests
+        .find({
+          userId,
+          isCanceled: false,
+          isDelete: false,
+          isAccepted: true,
+          isCompleted: true,
+        })
+        .populate([
+          {
+            path: 'userId',
+            select: 'from.coordinates to.coordinates',
+          },
+        ])
+        .select(
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
+        ),
+      query,
+    )
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const user_completed_history = await userTripHistory.modelQuery;
+    const meta = await userTripHistory.countTotal();
+
+    return {
+      meta,
+      user_completed_history,
+    };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to fetch completed history into db ',
+      error,
+    );
+  }
+};
+
+/**
+ * @param userId
+ * @param requestId
+ * @returns
+ */
+const user_cancel_tripe_request_IntoDb = async (
+  userId: string,
+  requestId: string,
+): Promise<RequestResponse> => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const isExistTripeRequest: any = await requests
+      .findOne({
+        _id: requestId,
+        isAccepted: false,
+        isCompleted: false,
+        isCanceled: false,
+        isDelete: false,
+      })
+      .select('driverId')
+      .session(session);
+
+    if (!isExistTripeRequest) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'This trip is not available for cancellation',
+        '',
+      );
+    }
+
+    const cancelRequestResult = await requests.findByIdAndUpdate(
+      requestId,
+      { isCanceled: true },
+      { new: true, upsert: false, session },
+    );
+
+    if (!cancelRequestResult) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to cancel the trip request',
+        '',
+      );
+    }
+
+    const data = {
+      title: 'Trip Request Canceled',
+      content: `User has canceled the trip request`,
+      time: new Date(),
+    };
+
+    const notificationsBuilder = new notifications({
+      userId,
+      driverId: isExistTripeRequest.driverId,
+      title: data.title,
+      content: data.content,
+      createdAt: data.time,
+    });
+
+    const storeNotification = await notificationsBuilder.save({ session });
+
+    if (!storeNotification) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to store notification',
+        '',
+      );
+    }
+
+    try {
+      const sendNotification = await NotificationServices.sendPushNotification(
+        isExistTripeRequest.driverId.toString(),
+        data,
+      );
+
+      if (!sendNotification) {
+        await session.abortTransaction();
+        session.endSession();
+        throw new ApiError(
+          httpStatus.INTERNAL_SERVER_ERROR,
+          'Failed to send push notification',
+          '',
+        );
+      }
+    } catch (notificationError) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to send push notification',
+        '',
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return {
+      status: true,
+      message: 'Successfully canceled your trip request',
+    };
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to cancel trip request',
+      error,
+    );
+  }
+};
 
 const RequestServices = {
   sendRequestIntoDb,
@@ -938,8 +1140,9 @@ const RequestServices = {
   completedTripeRequestIntoDb,
   findByAllCompletedTripeIntoDb,
   getDriverDashboardIntoDb,
-  
-  
+  user_upcomming_history_IntoDb,
+  completed_history_IntoDb,
+  user_cancel_tripe_request_IntoDb,
 };
 
 export default RequestServices;

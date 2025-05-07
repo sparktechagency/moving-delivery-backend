@@ -475,7 +475,7 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
 
       // console.log(`PaymentIntent for ${paymentIntent.id} was successful!`);
       // console.log(paymentIntent);console.log(`PaymentIntent for ${paymentIntent.id} was successful!`);
-      console.log(paymentIntent);
+      // console.log(paymentIntent);
 
       result = {
         status: true,
@@ -494,8 +494,6 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
         );
       }
 
-      // console.log(`Account ${account.id} was updated`);
-      // Add any DB update or logic here
       result = {
         status: true,
         message: 'Account updated',
@@ -511,21 +509,6 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
           '',
         );
       }
-
-      // const successPaymentData = {
-      //   sessionId: session.id,
-      //   payable_name:session.customer_details?.name,
-      //   payable_email: session.customer_details?.email,
-      //   payment_intent:session.payment_intent,
-      //   payment_status:session.payment_status,
-      //   country: session.customer_details?.address?.country,
-      //   user_data:{
-      //     userId: session.metadata.userId,
-      //     driverId:session.metadata.driverId,
-      //   }
-
-      // };
-
       const recordedPayment = await stripepaymentgateways.findOneAndUpdate(
         {
           $and: [
@@ -566,6 +549,8 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
       break;
     }
   }
+
+  // https://dashboard.stripe.com/test/workbench/webhooks/we_1RLrvyIPrRs1II3ingRhX8yS/events?attemptId=wc_1RLvf3IPrRs1II3ie2YIWpS3
 
   return result;
 };

@@ -86,7 +86,7 @@ const createCheckoutSession = catchAsync(
 
     const result = await PaymentGatewayServices.createCheckoutSessionForTruck(
       userId,
-      { price,driverId, description },
+      { price, driverId, description },
     );
 
     sendRespone(res, {
@@ -117,8 +117,6 @@ const handleWebhook = catchAsync(async (req: Request, res: Response) => {
       signature,
       webhook as string,
     );
-
-    console.log(event);
   } catch (err: any) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
@@ -148,6 +146,8 @@ const findByTheAllPayment: RequestHandler = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+
 
 const PaymentGatewayController = {
   createConnectedAccountAndOnboardingLink,

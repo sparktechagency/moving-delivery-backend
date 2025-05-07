@@ -49,6 +49,11 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [false, ' isRemaining is not required'],
       default: false,
     },
+    price: {
+      type: Number,
+      required: [false, 'price is not required'],
+      default: false,
+    },
     isDelete: {
       type: Boolean,
       required: [false, 'isDelete is not required'],

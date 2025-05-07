@@ -128,6 +128,47 @@ const driver_dashboard: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const user_upcomming_history: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.user_upcomming_history_IntoDb(
+    req.user.id,
+    req.query,
+  );
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Find User Upcomming History ',
+    data: result,
+  });
+});
+
+const completed_history: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.completed_history_IntoDb(
+    req.user.id,
+    req.query,
+  );
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Find User Completed History ',
+    data: result,
+  });
+});
+
+const user_cancel_tripe_request: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result = await RequestServices.user_cancel_tripe_request_IntoDb(
+      req.user.id,
+      req.params.requestId,
+    );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Cancel Tripe ',
+      data: result,
+    });
+  },
+);
+
 const RequestController = {
   sendRequest,
   myClientRequest,
@@ -139,6 +180,9 @@ const RequestController = {
   completedTripeRequest,
   findByAllCompletedTripe,
   driver_dashboard,
+  user_upcomming_history,
+  completed_history,
+  user_cancel_tripe_request,
 };
 
 export default RequestController;

@@ -15,6 +15,7 @@ const createRequestZodSchema = z.object({
       .min(1, 'Trip time is required')
       .max(200, { message: 'max 200 word  acceptable' }),
     isAccepted: z.boolean().optional().default(false),
+    price:z.number({required_error:"price is option"}).optional(),
     isDelete: z.boolean().optional().default(false),
   }),
 });
