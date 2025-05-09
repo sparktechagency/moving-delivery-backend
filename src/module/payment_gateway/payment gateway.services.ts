@@ -9,6 +9,10 @@ import { Types } from 'mongoose';
 import stripepaymentgateways from './payment gateway.model';
 import driververifications from '../driver_verification/driver_verification.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import notifications from '../notification/notification.modal';
+import NotificationServices from '../notification/notification.services';
+import mongoose from 'mongoose';
+import { payment_status } from './payment gateway.constant';
 
 const stripe = new Stripe(
   config.stripe_payment_gateway.stripe_secret_key as string,
@@ -455,105 +459,210 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
   }
 };
 
+// Assuming this is your notification service
+
 const handleWebhookIntoDb = async (event: Stripe.Event) => {
-  let result = {
-    status: false,
-    message: 'Unhandled event',
-  };
+  const session = await mongoose.startSession();
 
-  switch (event.type) {
-    case 'payment_intent.succeeded': {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+  try {
+    session.startTransaction();
 
-      if (!paymentIntent.id) {
-        throw new ApiError(
-          httpStatus.NOT_FOUND,
-          `issues by the ${paymentIntent.id} section `,
-          '',
-        );
+    let result = {
+      status: false,
+      message: 'Unhandled event',
+    };
+
+    switch (event.type) {
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+        if (!paymentIntent.id) {
+          throw new ApiError(
+            httpStatus.NOT_FOUND,
+            `Issues with the payment intent ID: ${paymentIntent.id}`,
+            '',
+          );
+        }
+
+        result = {
+          status: true,
+          message: 'Payment Successful',
+        };
+        break;
       }
 
-      // console.log(`PaymentIntent for ${paymentIntent.id} was successful!`);
-      // console.log(paymentIntent);console.log(`PaymentIntent for ${paymentIntent.id} was successful!`);
-      // console.log(paymentIntent);
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account;
+        if (!account.id) {
+          throw new ApiError(
+            httpStatus.NOT_FOUND,
+            `Issues with the account ID: ${account.id}`,
+            '',
+          );
+        }
 
-      result = {
-        status: true,
-        message: 'Payment Successful',
-      };
-      break;
-    }
-
-    case 'account.updated': {
-      const account = event.data.object as Stripe.Account;
-      if (!account.id) {
-        throw new ApiError(
-          httpStatus.NOT_FOUND,
-          `issues by the ${account.id} updated section`,
-          '',
-        );
+        result = {
+          status: true,
+          message: 'Account updated',
+        };
+        break;
       }
 
-      result = {
-        status: true,
-        message: 'Account updated',
-      };
-      break;
-    }
-    case 'checkout.session.completed': {
-      const session: any = event.data.object as Stripe.Checkout.Session;
-      if (!session) {
-        throw new ApiError(
-          httpStatus.NO_CONTENT,
-          'issues by the checkout sesiion completed section',
-          '',
-        );
-      }
-      const recordedPayment = await stripepaymentgateways.findOneAndUpdate(
-        {
-          $and: [
-            {
-              userId: session.metadata.userId,
-              driverId: session.metadata.driverId,
-              sessionId: session.id,
-            },
-          ],
-        },
-        {
-          $set: {
-            payable_name: session.customer_details?.name,
-            payable_email: session.customer_details?.email,
-            payment_intent: session.payment_intent,
-            payment_status: session.payment_status,
-            country: session.customer_details?.address?.country,
+      case 'checkout.session.completed': {
+        const session_data: any = event.data.object as Stripe.Checkout.Session;
+        if (!session_data) {
+          throw new ApiError(
+            httpStatus.NO_CONTENT,
+            'Issues with the checkout session completed data',
+            '',
+          );
+        }
+
+        const recordedPayment = await stripepaymentgateways.findOneAndUpdate(
+          {
+            $and: [
+              {
+                userId: session_data.metadata.userId,
+                driverId: session_data.metadata.driverId,
+                sessionId: session_data.id,
+              },
+            ],
           },
-        },
-        { new: true, upsert: true },
-      );
-      if (!recordedPayment) {
-        throw new ApiError(
-          httpStatus.NOT_IMPLEMENTED,
-          'issues by the checkout.session.completed case section',
-          '',
+          {
+            $set: {
+              payable_name: session_data.customer_details?.name,
+              payable_email: session_data.customer_details?.email,
+              payment_intent: session_data.payment_intent,
+              payment_status: session_data.payment_status,
+              country: session_data.customer_details?.address?.country,
+            },
+          },
+          { new: true, upsert: true, session },
         );
+
+        if (!recordedPayment) {
+          throw new ApiError(
+            httpStatus.NOT_IMPLEMENTED,
+            'Issues recording payment information',
+            '',
+          );
+        }
+
+        const data = {
+          title: 'Trip Payment Request',
+          content: `Successfully Payment`,
+          time: new Date(),
+        };
+
+        // Create notification document with transaction session
+        const notificationsBuilder = new notifications({
+          userId: session_data.metadata.userId,
+          driverId: session_data.metadata.driverId,
+          title: data.title,
+          content: data.content,
+          createdAt: data.time,
+        });
+
+        const storeNotification = await notificationsBuilder.save({ session });
+        if (!storeNotification) {
+          throw new ApiError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Failed to store notification',
+            '',
+          );
+        }
+
+        const sendNotification =
+          await NotificationServices.sendPushNotification(
+            session_data.metadata.driverId.toString(),
+            data,
+          );
+
+        if (!sendNotification) {
+          throw new ApiError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Failed to send push notification',
+            '',
+          );
+        }
+
+        result = {
+          status: true,
+          message: 'Session data successfully recorded',
+        };
+        break;
       }
-      result = {
-        status: true,
-        message: 'session data successfully recorded',
-      };
-      break;
+
+      default: {
+        console.log(`Unhandled event type ${event.type}`);
+        break;
+      }
     }
 
-    default: {
-      console.log(`Unhandled event type ${event.type}`);
-      break;
-    }
+    await session.commitTransaction();
+
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'server unavailable payment webhhok  functiom Under',
+      '',
+    );
+  } finally {
+    session.endSession();
   }
-
-  // https://dashboard.stripe.com/test/workbench/webhooks/we_1RLrvyIPrRs1II3ingRhX8yS/events?attemptId=wc_1RLvf3IPrRs1II3ie2YIWpS3
-
-  return result;
 };
+
+const driverWalletFromDb = async (driverId: string) => {
+  try {
+    const isDriverVerified = await driververifications.findOne(
+      { userId: driverId },
+      { _id: 1, vehicleNumber: 1 },
+    );
+
+    
+
+    if (!isDriverVerified) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'issues by the driver verified section ',
+        '',
+      );
+    }
+
+    // Calculate total amount using aggregation
+    const totalAmount = await stripepaymentgateways.aggregate([
+      {
+        $match: {
+          driverId: isDriverVerified._id,
+          payment_status: payment_status.paid,
+          isDelete: false,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$price' },
+        },
+      },
+    ]);
+
+    return {
+      vehicleNumber: isDriverVerified.vehicleNumber,
+      totalAmount: totalAmount.length > 0 ? totalAmount[0].total : 0,
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'server unavailable driver wallet function',
+      error,
+    );
+  }
+};
+
+// https://dashboard.stripe.com/test/workbench/webhooks/we_1RLrvyIPrRs1II3ingRhX8yS/events?attemptId=wc_1RLvf3IPrRs1II3ie2YIWpS3
 
 const PaymentGatewayServices = {
   createConnectedAccountAndOnboardingLinkIntoDb,
@@ -563,6 +672,7 @@ const PaymentGatewayServices = {
   createCheckoutSessionForTruck,
   findByTheAllPaymentIntoDb,
   handleWebhookIntoDb,
+  driverWalletFromDb,
 };
 
 export default PaymentGatewayServices;

@@ -18,6 +18,11 @@ const TnotificationSchema = new Schema<TNotification, NotificationModel>(
       ref: 'User',
       required: [false, 'driverId is not required'],
     },
+    requestId: {
+      type: Schema.Types.ObjectId,
+      ref: 'requests',
+      required: [false, 'requests is not required'],
+    },
     title: {
       type: String,
       required: [true, 'title is required'],

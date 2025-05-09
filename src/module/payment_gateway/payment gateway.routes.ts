@@ -58,4 +58,8 @@ router.get(
   PaymentGatewayController.findByTheAllPayment,
 );
 
+// driverWallet
+
+router.get("/find_my_wallet",auth(USER_ROLE.driver),PaymentGatewayController.driverWallet)
+
 export const PaymentGatewayRoutes = router;

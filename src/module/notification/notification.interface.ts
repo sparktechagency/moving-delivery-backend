@@ -3,6 +3,7 @@ import { Model, Types } from 'mongoose';
 export interface TNotification {
   userId?: Types.ObjectId;
   driverId?: Types.ObjectId;
+  requestId?:Types.ObjectId;
   title: String;
   content: String;
   icon?: String;

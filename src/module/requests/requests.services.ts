@@ -3,14 +3,12 @@ import ApiError from '../../app/error/ApiError';
 import mongoose, { Types } from 'mongoose';
 import driververifications from '../driver_verification/driver_verification.model';
 import { RequestResponse, TRequest } from './requests.interface';
-import User from '../user/user.model';
-import { USER_ACCESSIBILITY } from '../user/user.constant';
+
 import SelectTruck from '../select_truck/select_truck.model';
 import requests from './requests.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import NotificationServices from '../notification/notification.services';
 import notifications from '../notification/notification.modal';
-import ApiBase from 'twilio/lib/rest/ApiBase';
 
 /**
  * @param userId
@@ -86,7 +84,7 @@ const sendRequestIntoDb = async (
       );
     }
 
-    const existingRequest = await requests?.findOne(
+    const existingRequest: any = await requests?.findOne(
       {
         userId,
         driverId: verifiedDriver.userId,
@@ -150,6 +148,7 @@ const sendRequestIntoDb = async (
 
     const notificationsBuilder = new notifications({
       driverId: verifiedDriver.userId.toString(),
+      requestId: existingRequest._id.toString(),
       title: data.time,
       content: data.content,
     });
@@ -269,7 +268,7 @@ const cancelRequestIntoDb = async (
   session.startTransaction();
 
   try {
-    const isExistRequest = await requests.findOne(
+    const isExistRequest: any = await requests.findOne(
       {
         _id: requestId,
         driverId,
@@ -362,6 +361,7 @@ const cancelRequestIntoDb = async (
 
     const notificationsBuilder = new notifications({
       userId: isExistRequest?.userId,
+      requestId: isExistRequest?._id.toString(),
       title: data.time,
       content: data.content,
     });
@@ -550,6 +550,7 @@ const acceptedRequestIntoDb = async (
 
     const notificationsBuilder = new notifications({
       userId: request?.userId,
+       requestId:request?._id.toString(),
       title: data.time,
       content: data.content,
     });
@@ -721,6 +722,7 @@ const completedTripeRequestIntoDb = async (
 
     const notificationsBuilder = new notifications({
       userId: request.userId.toString(),
+      requestId:request._id,
       title: data.time,
       content: data.content,
     });
@@ -1064,6 +1066,7 @@ const user_cancel_tripe_request_IntoDb = async (
     const notificationsBuilder = new notifications({
       userId,
       driverId: isExistTripeRequest.driverId,
+      requestId:isExistTripeRequest._id,
       title: data.title,
       content: data.content,
       createdAt: data.time,

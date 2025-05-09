@@ -147,6 +147,19 @@ const findByTheAllPayment: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const driverWallet:RequestHandler=catchAsync(async(req , res)=>{
+
+    const  result=await PaymentGatewayServices.driverWalletFromDb(req?.user?.id);
+    sendRespone(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'successfully find my wallet',
+    data: result,
+  });
+
+
+});
+
 
 
 const PaymentGatewayController = {
@@ -157,6 +170,7 @@ const PaymentGatewayController = {
   createCheckoutSession,
   handleWebhook,
   findByTheAllPayment,
+  driverWallet
 };
 
 export default PaymentGatewayController;
