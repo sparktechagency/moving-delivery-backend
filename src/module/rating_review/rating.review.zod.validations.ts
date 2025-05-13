@@ -1,19 +1,23 @@
 import { z } from 'zod';
-import mongoose from 'mongoose';
+import { Types } from 'mongoose';
 
-const objectIdSchema = z
-  .string()
-  .refine((val) => mongoose.Types.ObjectId.isValid(val), {
-    message: 'Invalid ObjectId',
-  });
+const isValidObjectId = (value: string) => {
+  return Types.ObjectId.isValid(value);
+};
 
-export const ratingReviewCreateSchema = z.object({
-  requestId: objectIdSchema,
-  rating: z.number().min(1, 'Rating must be at least 1').max(5, 'Rating cannot exceed 5'),
-  review: z.string().default(''), 
+const ratingReviewSchema = z.object({
+  body: z.object({
+    requestId: z.string().refine(isValidObjectId, {
+      message: 'Invalid requestId format',
+    }),
+    rating: z.number().min(0).max(5),
+    review: z.string().optional(),
+    isDelete: z.boolean().default(false).optional(),
+  }),
 });
 
-export const ratingReviewResponseSchema = ratingReviewCreateSchema.extend({
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
+const ratingReviewValidationSchema = {
+  ratingReviewSchema,
+};
+
+export default ratingReviewValidationSchema;
