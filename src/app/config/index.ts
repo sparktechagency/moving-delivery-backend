@@ -33,13 +33,13 @@ export default {
     stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
     onboarding_refresh_url: process.env.ONBOARDING_REFRESH_URL,
     onboarding_return_url: process.env.ONBOARDING_RETURN_URL,
-    checkout_success_url:process.env.CHECKOUT_SUCCESS_URL,
-    checkout_cancel_url:process.env.CHECKOUT_CANCEL_URL
-
+    checkout_success_url: process.env.CHECKOUT_SUCCESS_URL,
+    checkout_cancel_url: process.env.CHECKOUT_CANCEL_URL,
   },
   firebase_account_key: {
     projectId: process.env.FIREBASE_PROJECT_ID,
     privateKey: process.env.FIREBASE_PRIVATE_KEY,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
   },
+
 };

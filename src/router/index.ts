@@ -6,10 +6,11 @@ import DriverVerificationRouter from '../module/driver_verification/driver_verif
 import { PaymentGatewayRoutes } from '../module/payment_gateway/payment gateway.routes';
 import SelectTruckRouter from '../module/select_truck/select_truck.routes';
 import UserRouter from '../module/user/user.routes';
-import { messageRoutes } from '../module/message/message.routes';
+
 import RequestRoutes from '../module/requests/requests.routes';
 import NotificationRoutes from '../module/notification/notification.routes';
 import RatingReviewRoutes from '../module/rating_review/rating_review.routes';
+import messageRoutes from '../module/message/message.routes';
 
 const router = express.Router();
 const moduleRoute = [
@@ -24,6 +25,7 @@ const moduleRoute = [
   { path: '/request', route: RequestRoutes },
   { path: '/notification', route: NotificationRoutes },
   { path: '/rating_review', route: RatingReviewRoutes },
+
 ];
 
 moduleRoute.forEach((v) => router.use(v.path, v.route));
