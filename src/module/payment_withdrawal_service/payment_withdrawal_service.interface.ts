@@ -17,6 +17,27 @@ export interface TPaymentWithdrawalServices {
   //  which admin transafer by the  payment to driver 
 }
 
+
+export interface StatsQuery {
+  year?: string;
+}
+
+export interface MonthStat {
+  year: number;
+  month: number;
+  totalAmount: number;
+  paymentCount: number;
+  cardCount: number;
+  cashCount: number;
+  growth?: number | null;
+}
+
+export interface StatsResult {
+  totalAmount: number;
+  totalCount: number;
+  monthlyStats: MonthStat[];
+}
+
 export interface PaymentWithdrawalModel
   extends Model<TPaymentWithdrawalServices> {
   // eslint-disable-next-line no-unused-vars

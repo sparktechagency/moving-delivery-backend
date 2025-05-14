@@ -11,6 +11,7 @@ import RequestRoutes from '../module/requests/requests.routes';
 import NotificationRoutes from '../module/notification/notification.routes';
 import RatingReviewRoutes from '../module/rating_review/rating_review.routes';
 import messageRoutes from '../module/message/message.routes';
+import Payment_Withdrawal_Routers from '../module/payment_withdrawal_service/payment_withdrawal_services.routes';
 
 const router = express.Router();
 const moduleRoute = [
@@ -25,7 +26,7 @@ const moduleRoute = [
   { path: '/request', route: RequestRoutes },
   { path: '/notification', route: NotificationRoutes },
   { path: '/rating_review', route: RatingReviewRoutes },
-
+  { path: '/payment_withdrawal', route: Payment_Withdrawal_Routers },
 ];
 
 moduleRoute.forEach((v) => router.use(v.path, v.route));

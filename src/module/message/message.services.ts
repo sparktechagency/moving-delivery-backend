@@ -6,6 +6,9 @@ import QueryBuilder from '../../app/builder/QueryBuilder';
 import User from '../user/user.model';
 import { IMessage, MulterRequest } from './message.interface';
 
+
+let globalIo: IOServer | null = null;
+
 const getMessages = async (
   profileId: string,
   userId: string,
@@ -63,35 +66,11 @@ const getMessages = async (
 const new_message_IntoDb = async (req: MulterRequest, users: any) => {
   const data:any = req.body;
 
-  let conversation = await Conversation.findOne({
-        $or: [
-          { sender: data?.sender, receiver: data?.receiver },
-          { sender: data?.receiver, receiver: data?.sender },
-        ],
-      });
-  
-      if (!conversation) {
-        conversation = await Conversation.create({
-          sender: data?.sender,
-          receiver: data?.receiver,
-        });
-      }
+  console.log(data);
 
-       const messageData = {
-      text: data.text,
-      imageUrl: data.imageUrl || [],
-      videoUrl: data.videoUrl || [],
-      msgByUserId: data?.msgByUserId,
-      conversationId: conversation?._id,
-    };
-    // console.log('message dta', messageData);
-    const saveMessage = await Message.create(messageData);
-    await Conversation.updateOne(
-      { _id: conversation?._id },
-      {
-        lastMessage: saveMessage._id,
-      },
-    );
+
+
+  
 
    
 
