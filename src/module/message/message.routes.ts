@@ -34,7 +34,7 @@ router.post(
       [fieldname: string]: Express.Multer.File[];
     };
 
-    console.log(files?.imageUrl);
+  
 
     // Handle image uploads if they exist
     if (files?.imageUrl) {

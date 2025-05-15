@@ -8,6 +8,7 @@ import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
 import { TUser } from '../user/user.interface';
 import User from '../user/user.model';
 import { user_search_filed } from './auth.constant';
+import { RequestResponse } from './auth.interface';
 
 const loginUserIntoDb = async (payload: {
   email: string;
@@ -24,7 +25,7 @@ const loginUserIntoDb = async (payload: {
     },
     { password: 1, _id: 1, isVerify: 1, email: 1, role: 1 },
   );
- 
+
   if (!isUserExist) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
   }
@@ -50,7 +51,7 @@ const loginUserIntoDb = async (payload: {
       config.jwt_access_secret as string,
       config.expires_in as string,
     );
- 
+
     refreshToken = jwtHelpers.generateToken(
       jwtPayload,
       config.jwt_refresh_secret as string,
@@ -270,6 +271,30 @@ const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   }
 };
 
+const deleteAccountIntoDb = async (id: string): Promise<RequestResponse> => {
+  try {
+    const result = await User.deleteOne({ _id: id, isVerify: true });
+
+    if (!result) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'issues by the delete account into db',
+        '',
+      );
+    }
+
+    return result.deletedCount === 1
+      ? { status: true, message: 'successfully delete account' }
+      : { status: false, message: 'some issues by the  delete section' };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'delete Account Into Db server unavailable',
+      error,
+    );
+  }
+};
+
 const AuthServices = {
   loginUserIntoDb,
   refreshTokenIntoDb,
@@ -277,6 +302,7 @@ const AuthServices = {
   myprofileIntoDb,
   changeMyProfileIntoDb,
   findByAllUsersAdminIntoDb,
+  deleteAccountIntoDb,
 };
 
 export default AuthServices;

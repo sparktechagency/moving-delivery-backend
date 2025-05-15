@@ -45,7 +45,7 @@ const handleChatEvents = async (
   // new message
   socket.on('new-message', async (data) => {
 
-    // console.log(data);
+     console.log(data);
     let conversation = await Conversation.findOne({
       $or: [
         { sender: data?.sender, receiver: data?.receiver },
@@ -83,6 +83,9 @@ const handleChatEvents = async (
       `message-${data?.sender}`,
       saveMessage,
     );
+
+ 
+
 
 
     const conversationSender = await getSingleConversation(

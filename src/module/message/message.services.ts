@@ -1,13 +1,14 @@
 import Conversation from '../conversation/conversation.model';
 import Message from './message.model';
 
-import { Server as IOServer, Socket } from 'socket.io';
+
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import User from '../user/user.model';
-import { IMessage, MulterRequest } from './message.interface';
+import {  MulterRequest } from './message.interface';
 
 
-let globalIo: IOServer | null = null;
+
+
 
 const getMessages = async (
   profileId: string,
@@ -66,13 +67,6 @@ const getMessages = async (
 const new_message_IntoDb = async (req: MulterRequest, users: any) => {
   const data:any = req.body;
 
-  console.log(data);
-
-
-
-  
-
-   
 
 };
 

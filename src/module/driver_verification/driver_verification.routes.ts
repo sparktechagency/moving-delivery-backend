@@ -109,8 +109,6 @@ router.delete(
   DriverVerificationController.deleteDriverVerification,
 );
 
-
-
 router.post(
   '/searching_for_available_trip_truck_lists',
   validationRequest(
@@ -119,6 +117,16 @@ router.post(
   DriverVerificationController.searching_for_available_trip_truck_listsWithMongo,
 );
 
-const DriverVerificationRouter = router;
+router.patch(
+  '/driver_verification/:id',
+  auth(USER_ROLE.admin, USER_ROLE.admin),
+  validationRequest(
+    DriverVerificationValidationSchema.verify_driver_admin_Schema,
+  ),
+  DriverVerificationController.verify_driver_admin,
+);
 
+
+router.delete("/delete_driver_verification_request/:id", auth(USER_ROLE.admin, USER_ROLE.superAdmin), DriverVerificationController. delete_driver_verification_request)
+const DriverVerificationRouter = router;
 export default DriverVerificationRouter;

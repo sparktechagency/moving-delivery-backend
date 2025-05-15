@@ -118,18 +118,32 @@ const geoLocationSchema = z
   })
   .optional();
 
-  const automaticallyDetectLocationSchema = z.object({
-    body: z.object({
-      from: geoLocationSchema,
-      to: geoLocationSchema,
+const automaticallyDetectLocationSchema = z.object({
+  body: z.object({
+    from: geoLocationSchema,
+    to: geoLocationSchema,
+  }),
+});
+
+const verify_driver_admin_Schema = z.object({
+  body: z.object({
+    driverId: z.string({ required_error: 'driverId is requires' }),
+    isVerifyDriverLicense: z.boolean({
+      required_error: 'isVerifyDriverLicense is required',
     }),
-  });
+    isVerifyDriverNid: z.boolean({
+      required_error: 'isVerifyDriverNid is required',
+    }),
+    isReadyToDrive: z.boolean({ required_error: 'isReadyToDrive is required' }),
+  }),
+});
 
 const DriverVerificationValidationSchema = {
   driverVerificationSchema,
   updateDriverVerificationSchema,
   detectedDriverAutoLiveLocationSchema,
-  automaticallyDetectLocationSchema
+  automaticallyDetectLocationSchema,
+  verify_driver_admin_Schema
 };
 
 export default DriverVerificationValidationSchema;

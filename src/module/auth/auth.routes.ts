@@ -59,5 +59,11 @@ router.get(
   AuthController.findByAllUsersAdmin,
 );
 
+router.delete(
+  '/delete_account/:id',
+  auth(USER_ROLE.admin, USER_ROLE.driver, USER_ROLE.admin),
+  AuthController.deleteAccount,
+);
+
 const AuthRouter = router;
 export default AuthRouter;

@@ -99,19 +99,50 @@ const detected_Driver_Auto_Live_Location: RequestHandler = catchAsync(
   },
 );
 
+const searching_for_available_trip_truck_listsWithMongo: RequestHandler =
+  catchAsync(async (req, res) => {
+    const result =
+      await DriverVerificationServices.searching_for_available_trip_truck_listsWithMongo(
+        req.body,
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully  Find Available Trip Truck Lists',
+      data: result,
+    });
+  });
 
-const searching_for_available_trip_truck_listsWithMongo:RequestHandler=catchAsync(async(req , res)=>{
+const verify_driver_admin = catchAsync(async (req, res) => {
+  const result = await DriverVerificationServices.verify_driver_admin_IntoDb(
+    req.body,
+    req.params.id,
+  );
 
-  const result=await DriverVerificationServices.searching_for_available_trip_truck_listsWithMongo(req.body);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: 'Successfully  Find Available Trip Truck Lists',
+    message: 'Successfully Dennay User Verification',
     data: result,
   });
-
-
 });
+
+const delete_driver_verification_request: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await DriverVerificationServices.delete_driver_verification_request_IntoDb(
+        req.params.id,
+      );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Delete Driver Verification Request',
+      data: result,
+    });
+  },
+);
+
+
 
 const DriverVerificationController = {
   recordDriverVerification,
@@ -120,6 +151,8 @@ const DriverVerificationController = {
   updateDriverVerification,
   deleteDriverVerification,
   detected_Driver_Auto_Live_Location,
-  searching_for_available_trip_truck_listsWithMongo
+  searching_for_available_trip_truck_listsWithMongo,
+  verify_driver_admin,
+  delete_driver_verification_request,
 };
 export default DriverVerificationController;

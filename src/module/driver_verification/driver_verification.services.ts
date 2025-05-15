@@ -224,7 +224,6 @@ const updateDriverVerificationIntoDb = async (
  * @returns
  */
 
-
 const detected_Driver_Auto_Live_Location_IntoDb = async (
   payload: any,
   userId: string,
@@ -353,6 +352,8 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           'truckDetails.0': { $exists: true },
           'autoDetectLocation.0': { $exists: true },
           'autoDetectLocation.1': { $exists: true },
+          isVerifyDriverNid: true,
+          isReadyToDrive: true,
         },
       },
       {
@@ -360,60 +361,146 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           _id: 1,
           autoDetectLocation: 1,
           truckDetails: { $arrayElemAt: ['$truckDetails', 0] },
+          isVerifyDriverNid: 1,
+          isReadyToDrive: 1,
         },
       },
     ]);
 
     if (!drivers.length) {
       return [];
-    };
+    }
 
-    const enrichedDrivers =  drivers && drivers?.map((driver) => {
-      const [lng, lat] = driver?.autoDetectLocation;
-      const driverCoords = {
-        longitude: parseFloat(lng?.toString()),
-        latitude: parseFloat(lat?.toString()),
-      };
-      const destinationCoords = { longitude: destLong, latitude: destLat };
+    const enrichedDrivers =
+      drivers &&
+      drivers?.map((driver) => {
+        const [lng, lat] = driver?.autoDetectLocation;
+        const driverCoords = {
+          longitude: parseFloat(lng?.toString()),
+          latitude: parseFloat(lat?.toString()),
+        };
+        const destinationCoords = { longitude: destLong, latitude: destLat };
 
-      const distanceInMeters = geolib?.getDistance(
-        driverCoords,
-        destinationCoords,
-      );
-      const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
-      const bearingDegrees = Number(
-        geolib.getRhumbLineBearing(driverCoords, destinationCoords).toFixed(1),
-      );
-      const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
-      const routeType = classifyRouteType(distanceKm);
-      const price = (distanceKm * Number(config?.per_kilometer_price))?.toFixed(
-        2,
-      );
+        const distanceInMeters = geolib?.getDistance(
+          driverCoords,
+          destinationCoords,
+        );
+        const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
+        const bearingDegrees = Number(
+          geolib
+            .getRhumbLineBearing(driverCoords, destinationCoords)
+            .toFixed(1),
+        );
+        const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
+        const routeType = classifyRouteType(distanceKm);
+        const price = (
+          distanceKm * Number(config?.per_kilometer_price)
+        )?.toFixed(2);
 
-      return {
-        _id: driver._id.toString(),
-        
-        driverSelectedTruck: {
-          _id: driver.truckDetails._id.toString(),
-          truckcategories: driver.truckDetails.truckcategories,
-          photo: driver.truckDetails.photo,
-          price,
-        },
-        geoMetrics: {
-          distanceKm,
-          estimatedDurationMin,
-          bearingDegrees,
-          routeType,
-        },
-      };
-    });
+        return {
+          _id: driver._id.toString(),
+
+          driverSelectedTruck: {
+            _id: driver.truckDetails._id.toString(),
+            truckcategories: driver.truckDetails.truckcategories,
+            photo: driver.truckDetails.photo,
+            price,
+          },
+          geoMetrics: {
+            distanceKm,
+            estimatedDurationMin,
+            bearingDegrees,
+            routeType,
+          },
+        };
+      });
     return enrichedDrivers
-      .sort((a, b) => a?.geoMetrics?.distanceKm - b?.geoMetrics?.distanceKm)?.slice(0, 5);
+      .sort((a, b) => a?.geoMetrics?.distanceKm - b?.geoMetrics?.distanceKm)
+      ?.slice(0, 5);
   } catch (error: any) {
-  
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'Error finding nearest available trip truck drivers',
+      error,
+    );
+  }
+};
+
+const verify_driver_admin_IntoDb = async (
+  payload: {
+    isVerifyDriverLicense: boolean;
+    isVerifyDriverNid: boolean;
+    isReadyToDrive: boolean;
+    driverId: string;
+  },
+  id: string,
+): Promise<DriverVerificationResponse> => {
+  try {
+    const isExistDriverVerificationRequest = await driververifications.exists({
+      _id: id,
+      userId: payload.driverId,
+    });
+    if (!isExistDriverVerificationRequest) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'this driver verification  request not founded',
+        '',
+      );
+    }
+
+    const result = await driververifications.findByIdAndUpdate(
+      id,
+      {
+        isVerifyDriverLicense: true,
+        isVerifyDriverNid: true,
+        isReadyToDrive: true,
+      },
+      { new: true, upsert: true },
+    );
+    if (!result) {
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        'issues by the  driver verification section ',
+        '',
+      );
+    }
+
+    return {
+      status: true,
+      message: 'Successfylly Verified',
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Error finding nearest available trip truck drivers',
+      error,
+    );
+  }
+};
+
+const delete_driver_verification_request_IntoDb = async (id: string) => {
+  try {
+    const result = await driververifications.deleteOne({
+      $and: [
+        {
+          _id: id,
+          isVerifyDriverLicense: false,
+          isVerifyDriverNid: false,
+          isReadyToDrive: false,
+        },
+      ],
+    });
+
+    return result.deletedCount === 1
+      ? { status: true, message: 'successfully delete driver verified requst' }
+      : {
+          status: false,
+          message: 'already verified user can not be delete',
+        };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Error finding delete_driver_verification_request_IntoDb',
       error,
     );
   }
@@ -427,6 +514,8 @@ const DriverVerificationServices = {
   detected_Driver_Auto_Live_Location_IntoDb,
   deleteDriverVerificationIntoDb,
   searching_for_available_trip_truck_listsWithMongo,
+  verify_driver_admin_IntoDb,
+  delete_driver_verification_request_IntoDb,
 };
 
 export default DriverVerificationServices;

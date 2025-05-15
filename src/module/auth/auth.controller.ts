@@ -83,6 +83,19 @@ const findByAllUsersAdmin: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+
+const  deleteAccount:RequestHandler=catchAsync(async(req , res)=>{
+
+    const result=await  AuthServices.deleteAccountIntoDb(req.params.id);
+     sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Delete your account ',
+    data: result,
+  });
+
+})
+
 const AuthController = {
   loginUser,
   refreshToken,
@@ -90,6 +103,7 @@ const AuthController = {
   myprofile,
   chnageMyProfile,
   findByAllUsersAdmin,
+  deleteAccount
 };
 
 export default AuthController;
