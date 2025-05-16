@@ -5,6 +5,7 @@ import { Model, Types } from 'mongoose';
 export interface TStripePaymentGateWay {
   userId: Types.ObjectId;
   driverId: Types.ObjectId;
+  requestId?: Types.ObjectId;
   price: Number;
   description?: String;
   currency?:String;
@@ -15,6 +16,7 @@ export interface TStripePaymentGateWay {
   payable_email?:String;
   payment_intent?:String;
   country?:String;
+  admincommission?:number;
   isDelete?:Boolean;
 }
 

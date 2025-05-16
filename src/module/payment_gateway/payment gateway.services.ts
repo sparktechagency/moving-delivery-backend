@@ -12,7 +12,8 @@ import QueryBuilder from '../../app/builder/QueryBuilder';
 import notifications from '../notification/notification.modal';
 import NotificationServices from '../notification/notification.services';
 import mongoose from 'mongoose';
-import { payment_status } from './payment gateway.constant';
+import { payment_method, payment_status } from './payment gateway.constant';
+import requests from '../requests/requests.model';
 
 const stripe = new Stripe(
   config.stripe_payment_gateway.stripe_secret_key as string,
@@ -527,7 +528,6 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
         transactionCount: summary.count,
       },
       payments,
-      
     };
   } catch (error: any) {
     if (error instanceof ApiError) {
@@ -821,6 +821,166 @@ const driverWalletFromDb = async (driverId: string) => {
   }
 };
 
+const sendCashPaymentIntoDb = async (
+  payload: { price: number; description: string },
+  requestId: string,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const requestDetails: any = await requests
+      .findOne({
+        _id: requestId,
+        isAccepted: true,
+        isCompleted: false,
+      })
+      .select('userId driverId price')
+      .session(session);
+
+    if (!requestDetails) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'Active request not found or is already completed',
+        '',
+      );
+    }
+
+    if (requestDetails.price !== payload.price) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        'price miss match issues , please input the correct price',
+        '',
+      );
+    }
+
+    const existingPayment = await stripepaymentgateways
+      .findOne({
+        requestId,
+        userId: requestDetails.userId,
+        driverId: requestDetails.driverId,
+      })
+      .session(session);
+
+    if (existingPayment) {
+      await session.abortTransaction();
+      session.endSession();
+      return {
+        success: false,
+        message: 'Payment already processed for this request',
+        paymentId: existingPayment._id,
+      };
+    }
+
+    const result = await stripepaymentgateways.create(
+      [
+        {
+          userId: requestDetails.userId,
+          driverId: requestDetails.driverId,
+          requestId,
+          price: payload.price,
+          admincommission: payload.price * 0.2,
+          paymentmethod: payment_method.cash,
+          payment_status: payment_status.paid,
+        },
+      ],
+      { session },
+    );
+
+    if (!result || result.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        'issues by the cash payment recivable section',
+        '',
+      );
+    }
+
+    const changeCompleteStatus = await requests.findByIdAndUpdate(
+      requestId,
+      { isCompleted: true },
+      { new: true, upsert: true, session },
+    );
+
+    if (!changeCompleteStatus) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        'issues by the cash payable status ',
+        '',
+      );
+    }
+
+    const data = {
+      title: 'Trip Cash Payment Request',
+      content: `Successfully Received Cash Payment`,
+      time: new Date(),
+    };
+
+    const notificationsBuilder = new notifications({
+      userId: requestDetails.userId,
+      driverId: requestDetails.driverId,
+      requestId: requestId,
+      title: data.title,
+      content: data.content,
+      createdAt: data.time,
+    });
+
+    const storeNotification = await notificationsBuilder.save({ session });
+
+    if (!storeNotification) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to store notification',
+        '',
+      );
+    }
+
+    const sendNotification = await NotificationServices.sendPushNotification(
+      requestDetails.driverId?.toString(),
+      data,
+    );
+
+    if (!sendNotification) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to send push notification',
+        '',
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return {
+      success: true,
+      message: 'Cash payment recorded successfully',
+    };
+  } catch (error: any) {
+    // If any error occurs, abort the transaction
+    await session.abortTransaction();
+    session.endSession();
+
+    throw new ApiError(
+      error.statusCode || httpStatus.SERVICE_UNAVAILABLE,
+      error.message || 'Failed to process cash payment',
+      error,
+    );
+  }
+};
+
+
+
 const PaymentGatewayServices = {
   createConnectedAccountAndOnboardingLinkIntoDb,
   updateOnboardingLinkIntoDb,
@@ -830,6 +990,7 @@ const PaymentGatewayServices = {
   findByTheAllPaymentIntoDb,
   handleWebhookIntoDb,
   driverWalletFromDb,
+  sendCashPaymentIntoDb,
 };
 
 export default PaymentGatewayServices;

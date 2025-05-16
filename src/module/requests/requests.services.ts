@@ -36,6 +36,8 @@ const sendRequestIntoDb = async (
       );
     }
 
+    
+
     if (
       !payload.driverVerificationsId ||
       !Types.ObjectId.isValid(payload.driverVerificationsId)
@@ -84,21 +86,32 @@ const sendRequestIntoDb = async (
       );
     }
 
-    const existingRequest: any = await requests?.findOne(
-      {
-        userId,
-        driverId: verifiedDriver.userId,
-        isAccepted: false,
-        isDelete: false,
-        isCompleted: false,
-        isCanceled: false,
-        isRemaining: false,
-      },
-      { _id: 1 },
-      { session },
-    );
+    // Replace findOne with aggregate to check for existing requests
+    const existingRequestResult = await requests
+      ?.aggregate([
+        {
+          $match: {
+            driverId: verifiedDriver.userId,
+            isDelete: false,
+            $or: [
+              { isAccepted: true, isCompleted: false, isCanceled: false },
+              { isAccepted: false, isCompleted: false, isCanceled: false },
+            ],
+          },
+        },
+        {
+          $count: 'count',
+        },
+      ])
+      .session(session);
 
-    if (existingRequest) {
+    // Check if any existing requests were found
+    const existingRequestCount =
+      existingRequestResult && existingRequestResult.length > 0
+        ? existingRequestResult[0].count
+        : 0;
+
+    if (existingRequestCount > 0) {
       await session.commitTransaction();
       session.endSession();
       return {
@@ -106,6 +119,7 @@ const sendRequestIntoDb = async (
         message: 'Request already exists and is being processed',
       };
     }
+
     payload.price = Number(payload.price);
 
     const newRequest = await requests?.create(
@@ -146,9 +160,10 @@ const sendRequestIntoDb = async (
       );
     }
 
+    // Fix: Use newRequest[0]._id instead of existingRequest._id
     const notificationsBuilder = new notifications({
       driverId: verifiedDriver.userId.toString(),
-      requestId: existingRequest._id.toString(),
+      requestId: newRequest[0]._id.toString(),
       title: data.time,
       content: data.content,
     });
@@ -550,7 +565,7 @@ const acceptedRequestIntoDb = async (
 
     const notificationsBuilder = new notifications({
       userId: request?.userId,
-       requestId:request?._id.toString(),
+      requestId: request?._id.toString(),
       title: data.time,
       content: data.content,
     });
@@ -722,7 +737,7 @@ const completedTripeRequestIntoDb = async (
 
     const notificationsBuilder = new notifications({
       userId: request.userId.toString(),
-      requestId:request._id,
+      requestId: request._id,
       title: data.time,
       content: data.content,
     });
@@ -1066,7 +1081,7 @@ const user_cancel_tripe_request_IntoDb = async (
     const notificationsBuilder = new notifications({
       userId,
       driverId: isExistTripeRequest.driverId,
-      requestId:isExistTripeRequest._id,
+      requestId: isExistTripeRequest._id,
       title: data.title,
       content: data.content,
       createdAt: data.time,

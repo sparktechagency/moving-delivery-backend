@@ -8,13 +8,17 @@ const refreshOnboardingLink = z.object({
 // Validation schema for creating payment intent
 const createPaymentIntent = z.object({
   body: z.object({
-    price: z.number({
-      required_error: 'Price is required',
-      invalid_type_error: 'Price must be a number',
-    }).positive('Price must be positive'),
-    driverId: z.string({
-      required_error: 'Truck ID is required',
-    }).regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
+    price: z
+      .number({
+        required_error: 'Price is required',
+        invalid_type_error: 'Price must be a number',
+      })
+      .positive('Price must be positive'),
+    driverId: z
+      .string({
+        required_error: 'Truck ID is required',
+      })
+      .regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
     description: z.string().optional(),
   }),
 });
@@ -22,13 +26,30 @@ const createPaymentIntent = z.object({
 // Validation schema for creating checkout session
 const createCheckoutSession = z.object({
   body: z.object({
-    price: z.number({
-      required_error: 'Price is required',
-      invalid_type_error: 'Price must be a number',
-    }).positive('Price must be positive'),
-    driverId: z.string({
-      required_error: 'Truck ID is required',
-    }).regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
+    price: z
+      .number({
+        required_error: 'Price is required',
+        invalid_type_error: 'Price must be a number',
+      })
+      .positive('Price must be positive'),
+    driverId: z
+      .string({
+        required_error: 'Truck ID is required',
+      })
+      .regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
+    description: z.string().optional(),
+  }),
+});
+
+const cashPaymentSchema = z.object({
+  body: z.object({
+    price: z
+      .number({
+        required_error: 'Price is required',
+        invalid_type_error: 'Price must be a number',
+      })
+      .positive('Price must be positive'),
+
     description: z.string().optional(),
   }),
 });
@@ -38,4 +59,5 @@ export const PaymentValidation = {
   refreshOnboardingLink,
   createPaymentIntent,
   createCheckoutSession,
+  cashPaymentSchema,
 };

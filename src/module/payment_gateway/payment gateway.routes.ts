@@ -47,19 +47,30 @@ router.post(
 router.post(
   '/webhook',
   bodyParser.raw({ type: 'application/json' }),
-  PaymentGatewayController.handleWebhook
+  PaymentGatewayController.handleWebhook,
 );
 
 // all payment list router
 router.get(
   '/all_payment',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
-  
+
   PaymentGatewayController.findByTheAllPayment,
 );
 
 // driverWallet
 
-router.get("/find_my_wallet",auth(USER_ROLE.driver),PaymentGatewayController.driverWallet)
+router.get(
+  '/find_my_wallet',
+  auth(USER_ROLE.driver),
+  PaymentGatewayController.driverWallet,
+);
+
+router.post(
+  '/receiving_cash_payment/:requestId',
+  auth(USER_ROLE.driver),
+  validationRequest(PaymentValidation.cashPaymentSchema),
+  PaymentGatewayController.sendCashPayment,
+);
 
 export const PaymentGatewayRoutes = router;

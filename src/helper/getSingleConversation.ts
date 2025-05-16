@@ -8,7 +8,7 @@ export const getSingleConversation = async (
 ) => {
   if (!currentUserId || !receiverId) return null;
 
-  const conversation = await Conversation.findOne({
+  const conversation:any = await Conversation.findOne({
     $or: [
       { sender: currentUserId, receiver: receiverId },
       { sender: receiverId, receiver: currentUserId },

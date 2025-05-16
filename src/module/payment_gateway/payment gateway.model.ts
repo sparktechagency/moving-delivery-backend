@@ -21,6 +21,11 @@ const TStripePaymentGateWaySchema = new Schema<
       ref: 'driververifications',
       required: [true, 'driverId is required'],
     },
+    requestId: {
+      type: Schema.Types.ObjectId,
+      ref: 'requests',
+      required: [false, 'requestId is not required'],
+    },
     price: {
       type: Number,
       required: [true, 'price is required'],
@@ -70,6 +75,11 @@ const TStripePaymentGateWaySchema = new Schema<
     country: {
       type: String,
       required: [false, 'country is not required'],
+    },
+
+    admincommission: {
+      type: Number,
+      required: [false, ' admincommission is not  required'],
     },
 
     isDelete: {

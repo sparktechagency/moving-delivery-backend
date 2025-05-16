@@ -157,6 +157,22 @@ const driverWallet: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const sendCashPayment:RequestHandler=catchAsync(async(req , res)=>{
+
+
+  const result=await PaymentGatewayServices. sendCashPaymentIntoDb(req.body, req.params.requestId);
+   sendRespone(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'successfully  recived send cash payment',
+    data: result,
+  });
+
+
+
+
+});
+
 const PaymentGatewayController = {
   createConnectedAccountAndOnboardingLink,
   refreshOnboardingLink,
@@ -166,6 +182,7 @@ const PaymentGatewayController = {
   handleWebhook,
   findByTheAllPayment,
   driverWallet,
+  sendCashPayment
 };
 
 export default PaymentGatewayController;
