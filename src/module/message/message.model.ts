@@ -11,10 +11,6 @@ const messageSchema = new Schema<IMessage>(
       type: [String],
       default: [],
     },
-    videoUrl: {
-      type: [String],
-      default: [],
-    },
     seen: {
       type: Boolean,
       default: false,

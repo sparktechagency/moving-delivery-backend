@@ -1,16 +1,13 @@
-import { model, Schema } from 'mongoose';
-import { TConversation } from './conversation.interface';
 
-const conversationSchema = new Schema<TConversation>(
+
+import { model, Schema } from 'mongoose';
+import { IConversation } from './conversation.interface';
+
+
+const conversationSchema = new Schema<IConversation>(
   {
-    sender: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref: 'User',
-    },
-    receiver: {
-      type: Schema.Types.ObjectId,
-      required: true,
+    participants: {
+      type: [Schema.Types.ObjectId],
       ref: 'User',
     },
     lastMessage: {
@@ -24,6 +21,6 @@ const conversationSchema = new Schema<TConversation>(
 );
 conversationSchema.index({ sender: 1, receiver: 1 });
 
-const Conversation = model<TConversation>('Conversation', conversationSchema);
+const Conversation = model<IConversation>('Conversation', conversationSchema);
 
 export default Conversation;

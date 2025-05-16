@@ -3,31 +3,20 @@ import Message from './message.model';
 
 
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import { getSocketIO } from '../../socket/socketConnection';
 import User from '../user/user.model';
-import {  MulterRequest } from './message.interface';
-
-
-
-
 
 const getMessages = async (
   profileId: string,
   userId: string,
   query: Record<string, unknown>,
 ) => {
+  console.log("profileId",profileId);
+  console.log("userId",userId)
+  
   const conversation = await Conversation.findOne({
-    $or: [
-      { sender: profileId, receiver: userId },
-      { sender: userId, receiver: profileId },
-    ],
-  });
-
-  // if (!conversation) {
-  //   conversation = await Conversation.create({
-  //     sender: profileId,
-  //     receiver: userId,
-  //   });
-  // }
+      $and: [{ participants: profileId }, { participants: userId }],
+    });
 
   if (conversation) {
     const messageQuery = new QueryBuilder(
@@ -41,8 +30,8 @@ const getMessages = async (
       .sort();
     const result = await messageQuery.modelQuery;
     const meta = await messageQuery.countTotal();
-    const userData = await User.findById(userId).select('name photo');
-    //   .populate({ path: '', select: 'name' });
+    const userData = await User.findById(profileId).select('name email photo');
+  
     return {
       meta,
       result: {
@@ -52,8 +41,8 @@ const getMessages = async (
       },
     };
   }
-  const userData = await User.findById(userId).select('name photo');
-  // .populate({ path: '', select: 'name' });
+  const userData = await User.findById(profileId).select('name email photo');
+
 
   return {
     result: {
@@ -64,10 +53,48 @@ const getMessages = async (
   };
 };
 
-const new_message_IntoDb = async (req: MulterRequest, users: any) => {
-  const data:any = req.body;
+
+const new_message_IntoDb = async (data:any) => {
+ 
+  let conversation = await Conversation.findOne({
+    participants: { $all: [data.senderId, data.receiverId], $size: 2 },
+  });
+
+  if (!conversation) {
+    conversation = await Conversation.create({
+      participants: [data.senderId, data.receiverId],
+    });
+  }
 
 
+  const messageData = {
+    text: data.text,
+    imageUrl: data.imageUrl || [],
+    msgByUserId: data?.msgByUserId,
+    conversationId: conversation?._id,
+  };
+  // console.log('message dta', messageData);
+  const saveMessage = await Message.create(messageData);
+  await Conversation.updateOne(
+    { _id: conversation?._id },
+    {
+      lastMessage: saveMessage._id,
+    },
+  );
+
+  const io = getSocketIO();
+
+  io.to(data?.senderId.toString()).emit(`message-${data?.receiverId}`, saveMessage);
+  io.to(data?.receiverId.toString()).emit(`message-${data?.senderId}`, saveMessage);
+
+  io.emit("debug_check", {
+  from: data.senderId,
+  to: data.receiverId,
+  time: new Date(),
+});
+
+
+  return saveMessage;
 };
 
 const MessageService = {

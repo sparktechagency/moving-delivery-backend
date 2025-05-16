@@ -1,18 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import mongoose from 'mongoose';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import Message from '../message/message.model';
 
 import User from '../user/user.model';
 import Conversation from './conversation.model';
 
+
 const getConversation = async (
   profileId: string,
   query: Record<string, unknown>,
 ) => {
+  const profileObjectId = new mongoose.Types.ObjectId(profileId);
   const searchTerm = query.searchTerm as string;
+
   let userSearchFilter = {};
 
+  // 🔍 Search by user name (optional)
   if (searchTerm) {
     const matchingUsers = await User.find(
       { name: { $regex: searchTerm, $options: 'i' } },
@@ -21,32 +26,18 @@ const getConversation = async (
 
     const matchingUserIds = matchingUsers.map((user) => user._id);
     userSearchFilter = {
-      $or: [
-        {
-          $and: [
-            { sender: { $in: matchingUserIds } },
-            { sender: { $ne: profileId } },
-          ],
-        },
-
-        {
-          $and: [
-            { receiver: { $in: matchingUserIds } },
-            { receiver: { $ne: profileId } },
-          ],
-        },
-      ],
+      participants: { $in: matchingUserIds },
     };
   }
 
+  // 🧠 Fetch conversations with the user
   const currentUserConversationQuery = new QueryBuilder(
     Conversation.find({
-      $or: [{ sender: profileId }, { receiver: profileId }],
+      participants: profileObjectId,
       ...userSearchFilter,
     })
       .sort({ updatedAt: -1 })
-      .populate({ path: 'sender', select: 'name photo _id email' })
-      .populate({ path: 'receiver', select: 'name photo _id email' })
+      .populate({ path: 'participants', select: 'name photo _id email' })
       .populate('lastMessage'),
     query,
   )
@@ -57,24 +48,28 @@ const getConversation = async (
 
   const currentUserConversation = await currentUserConversationQuery.modelQuery;
 
+  // 📨 Format conversation list
   const conversationList = await Promise.all(
     currentUserConversation.map(async (conv: any) => {
-      const countUnseenMessage = await Message.countDocuments({
+      const otherUser = conv.participants.find(
+        (user: any) => user._id.toString() !== profileId,
+      );
+
+      const unseenCount = await Message.countDocuments({
         conversationId: conv._id,
-        msgByUserId: { $ne: profileId },
+        msgByUserId: { $ne: profileObjectId },
         seen: false,
       });
-      const otherUser =
-        conv.sender._id.toString() == profileId ? conv.receiver : conv.sender;
+
       return {
-        _id: conv?._id,
+        _id: conv._id,
         userData: {
           _id: otherUser?._id,
           name: otherUser?.name,
-          profileImage: otherUser?.profile_image,
+          profileImage: otherUser?.photo,
           email: otherUser?.email,
         },
-        unseenMsg: countUnseenMessage,
+        unseenMsg: unseenCount,
         lastMsg: conv.lastMessage,
       };
     }),
@@ -87,6 +82,10 @@ const getConversation = async (
     result: conversationList,
   };
 };
+
+
+
+
 
 const ConversationService = {
   getConversation,

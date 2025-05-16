@@ -21,7 +21,6 @@ router.post(
   '/new_message',
   auth(USER_ROLE.user, USER_ROLE.driver),
   upload.fields([
-    { name: 'videoUrl', maxCount: 2 },
     { name: 'imageUrl', maxCount: 5 },
   ]),
   (req: Request, _res: Response, next: NextFunction) => {
@@ -42,11 +41,6 @@ router.post(
       req.body.imageUrl = files.imageUrl.map(file => file.path);
     }
 
-    // Handle video uploads if they exist
-    if (files?.videoUrl) {
-      // Store paths of uploaded videos
-      req.body.videoUrl = files.videos.map(file => file.path);
-    }
 
     next();
   } catch (error: any) {
