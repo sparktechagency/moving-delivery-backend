@@ -9,6 +9,8 @@ import cron from 'node-cron';
 import ApiError from './app/error/ApiError';
 import httpStatus from 'http-status';
 import handel_unpaid_payment from './utility/handel_unpaid_payment';
+import handel_auto_delete_request from './utility/handel_auto_delete_request';
+import auto_restricts_algorithm_driver_account from './utility/auto_restricts_algorithm_driver_account';
 
 declare global {
   namespace Express {
@@ -24,15 +26,17 @@ app.use(cookieParser());
 
 app.use(
   bodyParser.json({
-    verify: function (req: express.Request, res: express.Response, buf: Buffer) {
+    verify: function (
+      req: express.Request,
+      res: express.Response,
+      buf: Buffer,
+    ) {
       req.rawBody = buf;
     },
-  })
+  }),
 );
 
 app.use(bodyParser.json());
-
-
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -45,21 +49,43 @@ app.get('/', (_req, res) => {
   });
 });
 
-// 24 hous chcked this  dunction daily 
+// 24 hous chcked this  dunction daily
 
 cron.schedule('0 0 * * *', async () => {
   try {
-    await  handel_unpaid_payment();
-  } catch (error:any) {
+    await handel_unpaid_payment();
+  } catch (error: any) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      'Cron failed issue',
-      error
+      'issues by the unpaid payemnt Cron failed',
+      error,
     );
   }
 });
 
+cron.schedule('*/30 * * * *', async () => {
+  try {
+    await handel_auto_delete_request();
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      ' issues by the auto user request delete Cron failed ',
+      error,
+    );
+  }
+});
 
+cron.schedule('0 2 * * *', async () => {
+  try {
+    await auto_restricts_algorithm_driver_account();
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'issues by the restricts user account with searching algorithm cron failed',
+      error,
+    );
+  }
+});
 
 app.use('/api/v1', router);
 

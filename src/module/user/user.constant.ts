@@ -8,6 +8,6 @@ export const USER_ROLE = {
 
 export const USER_ACCESSIBILITY={
   isProgress:'isProgress',
-  blocked:'Blocked'
+  blocked:'blocked'
 
 }

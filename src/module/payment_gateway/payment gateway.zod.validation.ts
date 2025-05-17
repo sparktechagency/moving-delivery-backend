@@ -19,6 +19,10 @@ const createPaymentIntent = z.object({
         required_error: 'Truck ID is required',
       })
       .regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
+    requestId: z
+      .string({ required_error: ' requestId is required' })
+      .regex(/^[0-9a-fA-F]{24}$/, 'Invalid requestId format'),
+
     description: z.string().optional(),
   }),
 });
@@ -37,6 +41,9 @@ const createCheckoutSession = z.object({
         required_error: 'Truck ID is required',
       })
       .regex(/^[0-9a-fA-F]{24}$/, 'Invalid truck ID format'),
+    requestId: z
+      .string({ required_error: ' requestId is required' })
+      .regex(/^[0-9a-fA-F]{24}$/, 'Invalid requestId format'),
     description: z.string().optional(),
   }),
 });

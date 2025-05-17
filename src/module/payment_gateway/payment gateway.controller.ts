@@ -49,12 +49,13 @@ const refreshOnboardingLink = catchAsync(
 
 const createPaymentIntent = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
-  const { price, driverId, description } = req.body;
+  const { price, driverId, description, requestId } = req.body;
 
   const result = await PaymentGatewayServices.createPaymentIntent(userId, {
     price,
     driverId,
     description,
+     requestId
   });
 
   sendRespone(res, {
@@ -82,11 +83,11 @@ const getPaymentStatus = catchAsync(async (req: Request, res: Response) => {
 const createCheckoutSession = catchAsync(
   async (req: Request, res: Response) => {
     const userId = req.user.id;
-    const { price, driverId, description } = req.body;
+    const { price, driverId, description, requestId } = req.body;
 
     const result = await PaymentGatewayServices.createCheckoutSessionForTruck(
       userId,
-      { price, driverId, description },
+      { price, driverId, description, requestId },
     );
 
     sendRespone(res, {
@@ -123,7 +124,7 @@ const handleWebhook = catchAsync(async (req: Request, res: Response) => {
       `Webhook Error: ${err.message}`,
       '',
     );
-  }
+  };
 
   const result = await PaymentGatewayServices.handleWebhookIntoDb(event);
 

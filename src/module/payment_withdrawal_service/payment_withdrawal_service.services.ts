@@ -8,6 +8,9 @@ import {
   StatsResult,
 } from './payment_withdrawal_service.interface';
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import { USER_ACCESSIBILITY, USER_ROLE } from '../user/user.constant';
+import driververifications from '../driver_verification/driver_verification.model';
+import mongoose from 'mongoose';
 
 const getUserCreationStats = async (query: { year?: string }) => {
   try {
@@ -213,12 +216,103 @@ const recentUserStatusIntoDb = async (query: Record<string, unknown> = {}) => {
   }
 };
 
+/**
+ * @param payload 
+ * @returns
+ */
+const restricts_account_withdrawal_into_db = async (payload: { userId: string }) => {
+  const session = await mongoose.startSession();
+  
+  try {
+    
+    session.startTransaction();
+    
+    const isRestrict = await User.findOne({
+      _id: payload.userId,
+      status: USER_ACCESSIBILITY.blocked,
+      isDelete: false,
+      role: USER_ROLE.driver,
+    }).session(session).lean();
+    
+    if (!isRestrict) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'This driver account is not restricted or does not exist',
+        '',
+      );
+    }
+
+    const changeUserStatus = await User.findByIdAndUpdate(
+      payload.userId,
+      { status: USER_ACCESSIBILITY.isProgress },
+      { new: true, session: session },
+    );
+    
+    if (!changeUserStatus) {
+      throw new ApiError(
+        httpStatus.NOT_MODIFIED,
+        'Issues updating user account status',
+        '',
+      );
+    }
+
+    const driverVerification = await driververifications.findOne({
+      userId: payload.userId,
+    }).session(session);
+    
+    if (!driverVerification) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'Driver verification record not found',
+        '',
+      );
+    }
+
+    const changeVerificationRestrictionStatus = await driververifications.findByIdAndUpdate(
+      driverVerification._id, 
+      { isVerifyDriverNid: true, isReadyToDrive: true },
+      { new: true, session: session },
+    );
+    
+    if (!changeVerificationRestrictionStatus) {
+      throw new ApiError(
+        httpStatus.NOT_MODIFIED,
+        'Issues updating driver verification restriction status',
+        '',
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+    
+    return {
+      status:true,
+      message: 'Driver account restrictions removed successfully',
+    };
+    
+  } catch (error: any) {
+
+    await session.abortTransaction();
+    session.endSession();
+    
+    if (error instanceof ApiError) {
+      throw error;
+    }
+  
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to remove restrictions from driver account',
+      error.message || '',
+    );
+  }
+};
 
 
 const Payment_Withdrawal_Services = {
   getUserCreationStats,
   getAdminCreationStatsIntoDb,
   recentUserStatusIntoDb,
+  restricts_account_withdrawal_into_db,
 };
 
 export default Payment_Withdrawal_Services;

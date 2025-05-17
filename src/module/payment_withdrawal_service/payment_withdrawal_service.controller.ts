@@ -41,10 +41,26 @@ const recentUserStatus: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const restricts_account_withdrawal: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await Payment_Withdrawal_Services?.restricts_account_withdrawal_into_db(
+        req.body
+      );
+    sendRespone(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'successfully withdraw account restricts ',
+      data: result,
+    });
+  },
+);
+
 const Payment_Withdrawal_Controller = {
   recentUserStatus,
   totalUserGraph,
   getAdminCreationStats,
+   restricts_account_withdrawal
 };
 
 export default Payment_Withdrawal_Controller;

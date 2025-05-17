@@ -29,7 +29,7 @@ const handle_unpaid_payment = async () => {
       return { deletedCount: 0, message: 'No unpaid payments to delete' };
     }
 
-    const paymentIds = unpaidPayments.map((payment) => payment._id);
+    const paymentIds = unpaidPayments?.map((payment) => payment._id);
 
     const deleteResult = await stripepaymentgateways.deleteMany({
       _id: { $in: paymentIds },

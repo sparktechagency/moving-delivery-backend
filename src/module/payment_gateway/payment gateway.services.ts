@@ -8,7 +8,6 @@ import { USER_ACCESSIBILITY } from '../user/user.constant';
 import { Types } from 'mongoose';
 import stripepaymentgateways from './payment gateway.model';
 import driververifications from '../driver_verification/driver_verification.model';
-import QueryBuilder from '../../app/builder/QueryBuilder';
 import notifications from '../notification/notification.modal';
 import NotificationServices from '../notification/notification.services';
 import mongoose from 'mongoose';
@@ -23,6 +22,7 @@ interface PaymentDetails {
   price: number;
   driverId: string;
   description?: string;
+  requestId?: string;
 }
 
 const createConnectedAccountAndOnboardingLinkIntoDb = async (
@@ -243,6 +243,7 @@ const createCheckoutSessionForTruck = async (
       price,
       driverId,
       description = 'Truck rental payment',
+      requestId,
     } = paymentDetails;
 
     if (!price || price <= 0) {
@@ -275,6 +276,21 @@ const createCheckoutSessionForTruck = async (
       throw new ApiError(
         httpStatus.NOT_FOUND,
         'User not found or not verified',
+        '',
+      );
+    }
+
+    const isExistRequest = await requests.exists({
+      _id: requestId,
+      isAccepted: true,
+      isCanceled: false,
+      isCompleted: false,
+    });
+
+    if (!isExistRequest) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'is not founded by the tripe request',
         '',
       );
     }
@@ -313,6 +329,7 @@ const createCheckoutSessionForTruck = async (
         sessionId: session.id,
         userId: session.metadata.userId,
         driverId: session.metadata.driverId,
+        requestId,
         paymentmethod: session.payment_method_types[0],
         payment_statu: session.payment_status,
         price: paymentDetails.price,
@@ -605,6 +622,7 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
               {
                 userId: session_data.metadata.userId,
                 driverId: session_data.metadata.driverId,
+
                 sessionId: session_data.id,
               },
             ],
@@ -625,6 +643,19 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
           throw new ApiError(
             httpStatus.NOT_IMPLEMENTED,
             'Issues recording payment information',
+            '',
+          );
+        }
+
+        const changeRequestCompleteStatus = await requests?.findByIdAndUpdate(
+          recordedPayment.requestId,
+          { isCompleted: true },
+          { new: true, upsert: true, session },
+        );
+        if (!changeRequestCompleteStatus) {
+          throw new ApiError(
+            httpStatus.NOT_ACCEPTABLE,
+            'chnage request complete status not acceptedd',
             '',
           );
         }
@@ -874,7 +905,11 @@ const sendCashPaymentIntoDb = async (
         message: 'Payment already processed for this request',
         paymentId: existingPayment._id,
       };
-    }
+    };
+
+    
+
+
 
     const result = await stripepaymentgateways.create(
       [
@@ -978,8 +1013,6 @@ const sendCashPaymentIntoDb = async (
     );
   }
 };
-
-
 
 const PaymentGatewayServices = {
   createConnectedAccountAndOnboardingLinkIntoDb,
