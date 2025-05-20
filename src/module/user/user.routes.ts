@@ -19,9 +19,6 @@ router.patch(
   UserController.userVarification,
 );
 
-
-
-
 router.patch(
   '/change_password',
   auth(USER_ROLE.user, USER_ROLE.admin, USER_ROLE.driver),
@@ -59,7 +56,6 @@ router.get(
   auth(USER_ROLE.user),
   UserController.recentSearchingLocation,
 );
-
 
 const UserRouter = router;
 

@@ -70,7 +70,7 @@ const auto_restricts_algorithm_driver_account = async () => {
     };
 
     for (const request of requestIds) {
-      // Start a new transaction for each request
+
       const requestSession = await mongoose.startSession();
       requestSession.startTransaction();
 
@@ -193,7 +193,7 @@ const auto_restricts_algorithm_driver_account = async () => {
                 'Failed to store notification',
                 '',
               );
-            }
+            };
 
             const sendNotification =
               await NotificationServices.sendPushNotification(

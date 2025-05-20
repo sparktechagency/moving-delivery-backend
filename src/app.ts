@@ -11,6 +11,7 @@ import httpStatus from 'http-status';
 import handel_unpaid_payment from './utility/handel_unpaid_payment';
 import handel_auto_delete_request from './utility/handel_auto_delete_request';
 import auto_restricts_algorithm_driver_account from './utility/auto_restricts_algorithm_driver_account';
+import auto_delete_unverifyed_user from './utility/auto_delete_unverifyed_user';
 
 declare global {
   namespace Express {
@@ -82,6 +83,20 @@ cron.schedule('0 2 * * *', async () => {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       'issues by the restricts user account with searching algorithm cron failed',
+      error,
+    );
+  }
+});
+
+// handel_auto_delete_request
+
+cron.schedule('*/30 * * * *', async () => {
+  try {
+    await auto_delete_unverifyed_user();
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'Issue occurred during automatic deletion of unverified users in cron job.',
       error,
     );
   }

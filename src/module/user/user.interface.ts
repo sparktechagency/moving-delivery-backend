@@ -28,6 +28,7 @@ export type TUser = {
   provider?: 'googleauth' | 'appleauth';
   from: IGeoLocation;
   to: IGeoLocation;
+  fcm?:string;
   isDelete: boolean;
 };
 

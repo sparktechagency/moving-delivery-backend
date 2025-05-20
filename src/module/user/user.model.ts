@@ -75,15 +75,15 @@ const TUserSchema = new Schema<TUser, UserModel>(
     paymentTypes: {
       type: [String],
       enum: ['cash', 'card'],
-      default: ['card'] //Default to cash only
+      default: ['card'], //Default to cash only
     },
     stripeAccountId: {
       type: String,
-      required: false
+      required: false,
     },
     isStripeConnected: {
       type: Boolean,
-      rquired:false,
+      rquired: false,
       default: false,
     },
     provider: {
@@ -103,6 +103,11 @@ const TUserSchema = new Schema<TUser, UserModel>(
     to: {
       type: GeoLocationSchema,
       required: [true, 'Destination location is required'],
+    },
+    fcm: {
+      type: String,
+      required: [false, 'fcm is not  required'],
+       default: null
     },
     isDelete: {
       type: Boolean,

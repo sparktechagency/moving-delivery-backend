@@ -73,6 +73,7 @@ const createUserZodSchema = z.object({
     // Move these inside the body object
     from: geoLocationSchema,
     to: geoLocationSchema,
+    fcm: z.string({ required_error: 'fcm is not required' }).optional(),
   }),
 });
 

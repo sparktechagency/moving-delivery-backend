@@ -3,6 +3,8 @@ import firebaseAdmin from '../../app/config/firebase';
 import ApiError from '../../app/error/ApiError';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import notifications from './notification.modal';
+import User from '../user/user.model';
+import { USER_ACCESSIBILITY } from '../user/user.constant';
 
 const sendPushNotification = async (
   userId: string,
@@ -13,7 +15,16 @@ const sendPushNotification = async (
   },
 ) => {
   try {
-    const message = {
+    const isExistFcmToken = await User.findOne(
+      {
+        _id: userId,
+        isVerify: true,
+        isDelete: true,
+        status: USER_ACCESSIBILITY.isProgress,
+      },
+      { fcm: 1 },
+    );
+    const message: any = {
       notification: {
         title: `${data.title}`,
         body: `${data.content}`,
@@ -22,8 +33,8 @@ const sendPushNotification = async (
         userId: userId?.toString(),
         data: data.toString(),
       },
-      token:
-        'fcO0TYjZG2rHl8VkAMheET:APA91bH21CD6LETWhzAOvjC_Febq5qfxc74r4ZGmgLsy--1R66_JafRhdU90h3KMkBnU6pS6yyt6w74MFwwz8bOVSs8maWExigTQHqTVcejZn9ODGx5CmR0',
+      // fcO0TYjZG2rHl8VkAMheET:APA91bH21CD6LETWhzAOvjC_Febq5qfxc74r4ZGmgLsy--1R66_JafRhdU90h3KMkBnU6pS6yyt6w74MFwwz8bOVSs8maWExigTQHqTVcejZn9ODGx5CmR0
+      token: isExistFcmToken?.fcm,
     };
 
     const response = await firebaseAdmin?.messaging()?.send(message);
@@ -100,10 +111,7 @@ const specificDriverNotificationListIntoDb = async (
   }
 };
 
-
 //upcomming ----> request accepted notification
-
-
 
 const NotificationServices = {
   sendPushNotification,

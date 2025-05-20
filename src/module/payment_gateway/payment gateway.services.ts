@@ -29,7 +29,6 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
   userData: JwtPayload,
 ) => {
   try {
-    console.log('userData:', userData);
     const normalUser = await User.findOne(
       {
         $and: [
@@ -52,7 +51,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
       );
     }
 
-    if (normalUser.stripeAccountId) {
+    if (normalUser?.stripeAccountId) {
       const onboardingLink = await stripe.accountLinks.create({
         account: normalUser.stripeAccountId,
         refresh_url: `${config.stripe_payment_gateway.onboarding_refresh_url}?accountId=${normalUser.stripeAccountId}`,
@@ -63,6 +62,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
     }
 
     //  Create a connected account
+
     const account = await stripe.accounts.create({
       type: 'express',
       email: normalUser?.email,
@@ -89,6 +89,28 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
       return_url: config.stripe_payment_gateway.onboarding_return_url,
       type: 'account_onboarding',
     });
+
+    const isExistTripeAccount = await User?.findOneAndUpdate(
+      {
+        _id: userData?.id,
+        isVerify: true,
+        status: USER_ACCESSIBILITY.isProgress,
+        isDelete: false,
+      },
+      {
+        $set: {
+          stripeAccountId: account?.id,
+        },
+      },
+      { new: true, upsert: true },
+    );
+    if (!isExistTripeAccount) {
+      throw new ApiError(
+        httpStatus.NOT_EXTENDED,
+        'Issus by the stripe account Id store into db',
+        '',
+      );
+    }
     return onboardingLink?.url;
   } catch (error: any) {
     console.log(error);
@@ -151,6 +173,8 @@ const createPaymentIntent = async (
       driverId,
       description = 'Truck service payment',
     } = paymentDetails;
+
+    console.log({ userId, paymentDetails });
 
     if (!price || price <= 0) {
       throw new ApiError(
@@ -905,11 +929,7 @@ const sendCashPaymentIntoDb = async (
         message: 'Payment already processed for this request',
         paymentId: existingPayment._id,
       };
-    };
-
-    
-
-
+    }
 
     const result = await stripepaymentgateways.create(
       [

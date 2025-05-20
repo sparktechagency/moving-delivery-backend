@@ -10,13 +10,13 @@ const router = express.Router();
 // Routes for Stripe account onboarding
 router.post(
   '/create-onboarding-link',
-  auth(USER_ROLE.user),
+  auth(USER_ROLE.user,USER_ROLE.driver),
   PaymentGatewayController.createConnectedAccountAndOnboardingLink,
 );
 
 router.post(
   '/refresh-onboarding-link',
-  auth(USER_ROLE.user),
+  auth(USER_ROLE.user, USER_ROLE.driver),
   validationRequest(PaymentValidation.refreshOnboardingLink),
   PaymentGatewayController.refreshOnboardingLink,
 );
