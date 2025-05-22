@@ -48,14 +48,13 @@ const refreshOnboardingLink = catchAsync(
 );
 
 const createPaymentIntent = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id;
   const { price, driverId, description, requestId } = req.body;
 
-  const result = await PaymentGatewayServices.createPaymentIntent(userId, {
+  const result = await PaymentGatewayServices.createPaymentIntent(req.user, {
     price,
     driverId,
     description,
-     requestId
+    requestId,
   });
 
   sendRespone(res, {
@@ -124,7 +123,7 @@ const handleWebhook = catchAsync(async (req: Request, res: Response) => {
       `Webhook Error: ${err.message}`,
       '',
     );
-  };
+  }
 
   const result = await PaymentGatewayServices.handleWebhookIntoDb(event);
 
@@ -158,21 +157,35 @@ const driverWallet: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
-const sendCashPayment:RequestHandler=catchAsync(async(req , res)=>{
-
-
-  const result=await PaymentGatewayServices. sendCashPaymentIntoDb(req.body, req.params.requestId);
-   sendRespone(res, {
+const sendCashPayment: RequestHandler = catchAsync(async (req, res) => {
+  const result = await PaymentGatewayServices.sendCashPaymentIntoDb(
+    req.body,
+    req.params.requestId,
+  );
+  sendRespone(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: 'successfully  recived send cash payment',
     data: result,
   });
-
-
-
-
 });
+
+const withdrawDriverEarningsAmount: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result =
+      await PaymentGatewayServices.withdrawDriverEarningsAmountIntoDb(
+        req.body,
+        req.user.id,
+      );
+
+    sendRespone(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'successfully with draw driver earning amount ',
+      data: result,
+    });
+  },
+);
 
 const PaymentGatewayController = {
   createConnectedAccountAndOnboardingLink,
@@ -183,7 +196,8 @@ const PaymentGatewayController = {
   handleWebhook,
   findByTheAllPayment,
   driverWallet,
-  sendCashPayment
+  sendCashPayment,
+  withdrawDriverEarningsAmount,
 };
 
 export default PaymentGatewayController;

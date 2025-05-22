@@ -61,10 +61,19 @@ const cashPaymentSchema = z.object({
   }),
 });
 
+const withdraw_driver_earnings_amount = z.object({
+  body: z.object({
+    withdrawAmount: z
+      .number({ required_error: 'with draw amount is requited' })
+      .min(2, { message: 'min 2 digit acceptable' }),
+  }),
+});
+
 // Need to export as an object, not default export
 export const PaymentValidation = {
   refreshOnboardingLink,
   createPaymentIntent,
   createCheckoutSession,
   cashPaymentSchema,
+  withdraw_driver_earnings_amount
 };

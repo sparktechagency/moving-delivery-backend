@@ -4,7 +4,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import User from '../user/user.model';
 import ApiError from '../../app/error/ApiError';
 import httpStatus from 'http-status';
-import { USER_ACCESSIBILITY } from '../user/user.constant';
+import { USER_ACCESSIBILITY, USER_ROLE } from '../user/user.constant';
 import { Types } from 'mongoose';
 import stripepaymentgateways from './payment gateway.model';
 import driververifications from '../driver_verification/driver_verification.model';
@@ -68,7 +68,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
       email: normalUser?.email,
       country: 'US',
       capabilities: {
-        // card_payments: { requested: true },
+        card_payments: { requested: true },
         transfers: { requested: true },
       },
       business_type: 'individual',
@@ -164,7 +164,7 @@ const updateOnboardingLinkIntoDb = async (userId: string) => {
 };
 
 const createPaymentIntent = async (
-  userId: string,
+  user: Partial<JwtPayload>,
   paymentDetails: Partial<PaymentDetails>,
 ) => {
   try {
@@ -173,8 +173,6 @@ const createPaymentIntent = async (
       driverId,
       description = 'Truck service payment',
     } = paymentDetails;
-
-    console.log({ userId, paymentDetails });
 
     if (!price || price <= 0) {
       throw new ApiError(
@@ -192,32 +190,69 @@ const createPaymentIntent = async (
       );
     }
 
-    //isTruck  exist
-
-    // Calculate amount in cents (Stripe uses smallest currency unit)
-    const amountInCents = Math.round(price * 100);
-
-    // Create a payment intent details for debugging
-
     try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amountInCents,
-        currency: 'usd',
-        description: description,
-        metadata: {
-          driverId: driverId,
-          userId: userId,
+      // started
+
+      // this code accessable user and  driver 80/20 paymant getways
+      const isUserExist = await User.findOne(
+        {
+          $and: [
+            {
+              _id: user.id,
+              isDelete: false,
+              isVerify: true,
+              status: USER_ACCESSIBILITY.isProgress,
+            },
+          ],
         },
-        application_fee_amount: Math.round(amountInCents * 0.05), // 5% platform fee
-        transfer_data: {
-          destination: '',
+        { name: 1 },
+      );
+      const isExistDriverStripeAccountId = await User.findOne(
+        {
+          $and: [
+            {
+              _id: driverId,
+              isDelete: false,
+              isVerify: true,
+              status: USER_ACCESSIBILITY.isProgress,
+            },
+          ],
+        },
+        { _id: 1, stripeAccountId: 1 },
+      );
+
+      // successfully find by the customerId
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: isUserExist?.name,
+        description: description,
+
+        metadata: {
+          userId: user.id,
         },
       });
+      // PaymentMethod ID: pm_1RQwfJIPrRs1II3iFcQ4JihA
+      // successfully find by the driverStripeAccountId
 
-      return {
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
-      };
+      const totalAmountInCents = 10000; // $100.00
+      const driverSharePercent = 80; // 80% to driver
+      const driverStripeAccountId =
+        isExistDriverStripeAccountId?.stripeAccountId; // driver's Stripe account
+      const paymentMethodId = 'pm_1RQwfJIPrRs1II3iFcQ4JihA'; // from front-end
+      const customerId = customer.id; // saved Stripe customer ID
+      const tripId = paymentDetails.requestId; // your internal trip ID
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: totalAmountInCents, // e.g., $100.00
+        currency: 'usd',
+        customer: customerId,
+        payment_method: paymentMethodId,
+        confirm: true,
+        description: 'Trip payment',
+        transfer_group: `trip_${tripId}`,
+      });
+
+      console.log('Payment successful:', paymentIntent.id);
     } catch (stripeError: any) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -595,61 +630,23 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
     };
 
     switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-
-        if (!paymentIntent.id) {
-          throw new ApiError(
-            httpStatus.NOT_FOUND,
-            `Issues with the payment intent ID: ${paymentIntent.id}`,
-            '',
-          );
-        }
-
-        result = {
-          status: true,
-          message: 'Payment Successful',
-        };
-        break;
-      }
-
-      case 'account.updated': {
-        const account = event.data.object as Stripe.Account;
-        if (!account.id) {
-          throw new ApiError(
-            httpStatus.NOT_FOUND,
-            `Issues with the account ID: ${account.id}`,
-            '',
-          );
-        }
-
-        result = {
-          status: true,
-          message: 'Account updated',
-        };
-        break;
-      }
-
       case 'checkout.session.completed': {
         const session_data: any = event.data.object as Stripe.Checkout.Session;
+
         if (!session_data) {
           throw new ApiError(
             httpStatus.NO_CONTENT,
-            'Issues with the checkout session completed data',
+            'Missing checkout session data',
             '',
           );
         }
 
+        // Update payment info in DB
         const recordedPayment = await stripepaymentgateways.findOneAndUpdate(
           {
-            $and: [
-              {
-                userId: session_data.metadata.userId,
-                driverId: session_data.metadata.driverId,
-
-                sessionId: session_data.id,
-              },
-            ],
+            userId: session_data.metadata.userId,
+            driverId: session_data.metadata.driverId,
+            sessionId: session_data.id,
           },
           {
             $set: {
@@ -665,92 +662,139 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
 
         if (!recordedPayment) {
           throw new ApiError(
-            httpStatus.NOT_IMPLEMENTED,
-            'Issues recording payment information',
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Failed to record payment',
             '',
           );
         }
 
-        const changeRequestCompleteStatus = await requests?.findByIdAndUpdate(
+        // Mark trip as completed
+        const updatedRequest = await requests.findByIdAndUpdate(
           recordedPayment.requestId,
           { isCompleted: true },
-          { new: true, upsert: true, session },
+          { new: true, session },
         );
-        if (!changeRequestCompleteStatus) {
+
+        if (!updatedRequest) {
           throw new ApiError(
-            httpStatus.NOT_ACCEPTABLE,
-            'chnage request complete status not acceptedd',
+            httpStatus.NOT_FOUND,
+            'Trip request not found',
             '',
           );
         }
 
-        const data = {
-          title: 'Trip Payment Request',
-          content: `Successfully Payment`,
+        // Send notification
+        const notificationData = {
+          title: 'Trip Payment',
+          content: 'Payment completed successfully.',
           time: new Date(),
         };
 
-        // Create notification document with transaction session
-        const notificationsBuilder = new notifications({
+        const notification = new notifications({
           userId: session_data.metadata.userId,
           driverId: session_data.metadata.driverId,
-          title: data.title,
-          content: data.content,
-          createdAt: data.time,
+          title: notificationData.title,
+          content: notificationData.content,
+          createdAt: notificationData.time,
         });
 
-        const storeNotification = await notificationsBuilder.save({ session });
-        if (!storeNotification) {
+        const savedNotification = await notification.save({ session });
+
+        if (!savedNotification) {
           throw new ApiError(
             httpStatus.INTERNAL_SERVER_ERROR,
-            'Failed to store notification',
+            'Notification save failed',
             '',
           );
         }
 
-        const sendNotification =
-          await NotificationServices.sendPushNotification(
-            session_data.metadata.driverId.toString(),
-            data,
-          );
+        const pushResult = await NotificationServices.sendPushNotification(
+          session_data.metadata.driverId.toString(),
+          notificationData,
+        );
 
-        if (!sendNotification) {
+        if (!pushResult) {
           throw new ApiError(
             httpStatus.INTERNAL_SERVER_ERROR,
-            'Failed to send push notification',
+            'Push notification failed',
+            '',
+          );
+        }
+
+        const paymentIntentId = session_data.payment_intent as string;
+        const paymentIntent =
+          await stripe.paymentIntents.retrieve(paymentIntentId);
+
+        const amountReceived = paymentIntent.amount_received;
+        const driverAmount = Math.floor(amountReceived * 0.8); // 80%
+        const driverStripeAccountId: any = await User.findOne(
+          {
+            $and: [
+              {
+                _id: session_data.metadata.driverId,
+                isDelete: false,
+                isVerify: true,
+                status: USER_ACCESSIBILITY?.isProgress,
+                role: USER_ROLE.driver,
+              },
+            ],
+          },
+          { stripeAccountId: 1 },
+        );
+
+        const account = await stripe.accounts.retrieve(
+          driverStripeAccountId.stripeAccountId,
+        );
+
+        if ((!account?.capabilities as {}) === 'inactive') {
+          throw new ApiError(
+            httpStatus.NOT_FOUND,
+            'your stripe account in active ,please active your account',
+            '',
+          );
+        }
+
+        const transfer = await stripe.transfers.create({
+          amount: driverAmount,
+          currency: 'usd',
+          destination: driverStripeAccountId.stripeAccountId.toString(),
+          transfer_group: session_data.id,
+        });
+
+        if (!transfer) {
+          throw new ApiError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Transfer to driver failed',
             '',
           );
         }
 
         result = {
           status: true,
-          message: 'Session data successfully recorded',
+          message: 'Payment handled and driver paid',
         };
+
         break;
       }
 
-      default: {
-        console.log(`Unhandled event type ${event.type}`);
-        break;
-      }
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
     await session.commitTransaction();
-
     return result;
-  } catch (error) {
+  } catch (error: any) {
     await session.abortTransaction();
-
+    console.error('Webhook error:', error);
     throw new ApiError(
-      httpStatus.SERVICE_UNAVAILABLE,
-      'server unavailable payment webhhok  functiom Under',
-      '',
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Webhook processing failed',
+      error.message,
     );
   } finally {
     session.endSession();
   }
 };
-
 // const driverWalletFromDb = async (driverId: string) => {
 //   try {
 //     const isDriverVerified = await driververifications.findOne(
@@ -805,7 +849,7 @@ const driverWalletFromDb = async (driverId: string) => {
   try {
     const isDriverVerified = await driververifications.findOne(
       { userId: driverId },
-      { _id: 1, vehicleNumber: 1 },
+      { _id: 1, vehicleNumber: 1, userId: 1 },
     );
 
     if (!isDriverVerified) {
@@ -815,57 +859,34 @@ const driverWalletFromDb = async (driverId: string) => {
         '',
       );
     }
+    const paymentList = await stripepaymentgateways
+      .find({
+        driverId: driverId,
+        payment_status: 'paid',
+        isDelete: false,
+      })
+      .sort({ createdAt: -1 })
+      .select('price paymentmethod');
 
-    const aggregationResult = await stripepaymentgateways.aggregate([
-      {
-        $match: {
-          driverId: isDriverVerified._id,
-          isDelete: false,
-        },
-      },
-      {
-        $facet: {
-          totalAmount: [
-            {
-              $match: {
-                payment_status: payment_status.paid,
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                total: { $sum: '$price' },
-              },
-            },
-          ],
-          paymentList: [
-            {
-              $sort: { createdAt: -1 },
-            },
-            {
-              $project: {
-                _id: 1,
-                payable_name: 1,
-                paymentmethod: 1,
-                price: 1,
-                createdAt: 1,
-              },
-            },
-          ],
-        },
-      },
-    ]);
+    const totalAmount = paymentList.reduce((sum: any, payment) => {
+      return sum + (payment.price || 0);
+    }, 0);
 
-    const total = aggregationResult[0]?.totalAmount[0]?.total ?? 0;
+    const myamount = totalAmount * 0.8;
 
-    const paymentList = aggregationResult[0]?.paymentList ?? [];
-
+    const totalResults = await stripepaymentgateways.countDocuments({
+      driverId: driverId,
+      payment_status: payment_status.paid,
+      isDelete: false,
+    });
     return {
       driverId,
-      vehicleNumber: isDriverVerified.vehicleNumber,
-      totalAmount: total,
-      myamount: total * 0.8,
+      vehicleNumber: isDriverVerified?.vehicleNumber,
+      totalAmount: totalAmount,
+      myamount: myamount,
       paymentList: paymentList,
+      resultCount: paymentList.length,
+      totalResults: totalResults,
     };
   } catch (error: any) {
     throw new ApiError(
@@ -1034,6 +1055,111 @@ const sendCashPaymentIntoDb = async (
   }
 };
 
+// strpe account  use drive can be withdraw  money
+const withdrawDriverEarningsAmountIntoDb = async (
+  payload: {
+    withdrawAmount: number;
+  },
+  driverId: string,
+) => {
+  try {
+    const driverStripeAccountId: any = await User.findOne(
+      {
+        $and: [
+          {
+            _id: driverId,
+            isDelete: false,
+            isVerify: true,
+            status: USER_ACCESSIBILITY.isProgress,
+          },
+        ],
+      },
+      { stripeAccountId: 1 },
+    );
+
+    const account = await stripe.accounts.retrieve(
+      driverStripeAccountId.stripeAccountId,
+    );
+
+    if ((!account?.capabilities as {}) === 'inactive') {
+      return {
+        message: 'your stripe account in active ,please active your account',
+        accountStatus: account?.capabilities,
+      };
+    }
+    // started payment
+    const paymentList = await stripepaymentgateways
+      .find({
+        driverId,
+        payment_status: payment_status.paid,
+        isDelete: false,
+      })
+      .sort({ createdAt: -1 })
+      .select('price');
+
+    const totalAmount = paymentList.reduce((sum: any, payment) => {
+      return sum + (payment.price || 0);
+    }, 0);
+
+
+
+    if (!(totalAmount * 0.8 >= payload.withdrawAmount)) {
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        'issues by the this amount not exist in your wallet',
+        '',
+      );
+    }
+
+    const transfer = await stripe.transfers.create({
+      amount: payload.withdrawAmount,
+      currency: 'usd',
+      destination: driverStripeAccountId?.stripeAccountId,
+      transfer_group: `driver_${driverId}`,
+    });
+
+    if (!transfer) {
+      throw new ApiError(
+        httpStatus.NOT_IMPLEMENTED,
+        'issues by the ammount tranfer driver section ',
+        '',
+      );
+    }
+
+    const payout = await stripe.payouts.create(
+      {
+        amount: payload?.withdrawAmount,
+        currency: 'usd',
+        statement_descriptor: 'Driver Payout',
+      },
+      {
+        stripeAccount: driverStripeAccountId?.stripeAccountId,
+      },
+    );
+
+    if (!payout) {
+      throw new ApiError(
+        httpStatus.NOT_IMPLEMENTED,
+        'issues by the ammount pauout section issues in driver ',
+        '',
+      );
+    }
+
+    return {
+      success: true,
+      transferId: transfer?.id,
+      payoutId: payout?.id,
+      withdrawnAmount: payload?.withdrawAmount,
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      error.statusCode || httpStatus.SERVICE_UNAVAILABLE,
+      error.message || 'withdraw driver earnings amount issues ',
+      error,
+    );
+  }
+};
+
 const PaymentGatewayServices = {
   createConnectedAccountAndOnboardingLinkIntoDb,
   updateOnboardingLinkIntoDb,
@@ -1044,6 +1170,7 @@ const PaymentGatewayServices = {
   handleWebhookIntoDb,
   driverWalletFromDb,
   sendCashPaymentIntoDb,
+  withdrawDriverEarningsAmountIntoDb,
 };
 
 export default PaymentGatewayServices;

@@ -57,6 +57,12 @@ router.get(
   UserController.recentSearchingLocation,
 );
 
+router.get(
+  '/chnage_onboarding_status',
+  auth(USER_ROLE.driver, USER_ROLE.user),
+  UserController.chnage_onboarding_status,
+);
+
 const UserRouter = router;
 
 export default UserRouter;

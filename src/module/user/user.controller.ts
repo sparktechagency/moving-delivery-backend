@@ -96,16 +96,29 @@ const autoMaticallyDetectLocation: RequestHandler = catchAsync(
   },
 );
 
-const recentSearchingLocation:RequestHandler=catchAsync(async(req , res)=>{
-
-  const  result=await UserServices.recentSearchingLocationIntoDb(req.user.id);
+const recentSearchingLocation: RequestHandler = catchAsync(async (req, res) => {
+  const result = await UserServices.recentSearchingLocationIntoDb(req.user.id);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Successfully Find Recent Location',
     data: result,
   });
-})
+});
+
+const chnage_onboarding_status: RequestHandler = catchAsync(
+  async (req, res) => {
+    const result = await UserServices.chnage_onboarding_status_intoDb(
+      req.user.id,
+    );
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Change Onboarding Status',
+      data: result,
+    });
+  },
+);
 
 const UserController = {
   createUser,
@@ -115,7 +128,8 @@ const UserController = {
   verificationForgotUser,
   resetPassword,
   autoMaticallyDetectLocation,
-  recentSearchingLocation
+  recentSearchingLocation,
+  chnage_onboarding_status,
 };
 
 export default UserController;

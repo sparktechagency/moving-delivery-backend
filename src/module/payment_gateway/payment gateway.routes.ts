@@ -10,7 +10,7 @@ const router = express.Router();
 // Routes for Stripe account onboarding
 router.post(
   '/create-onboarding-link',
-  auth(USER_ROLE.user,USER_ROLE.driver),
+  auth(USER_ROLE.user, USER_ROLE.driver),
   PaymentGatewayController.createConnectedAccountAndOnboardingLink,
 );
 
@@ -71,6 +71,17 @@ router.post(
   auth(USER_ROLE.driver),
   validationRequest(PaymentValidation.cashPaymentSchema),
   PaymentGatewayController.sendCashPayment,
+);
+
+
+
+//PaymentValidation
+
+router.post(
+  '/withdraw_driver_earnings_amount',
+  auth(USER_ROLE.driver),
+  validationRequest(PaymentValidation.withdraw_driver_earnings_amount),
+  PaymentGatewayController.withdrawDriverEarningsAmount,
 );
 
 export const PaymentGatewayRoutes = router;

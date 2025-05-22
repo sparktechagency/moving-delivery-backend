@@ -550,6 +550,38 @@ const recentSearchingLocationIntoDb = async (userId: string) => {
   }
 };
 
+const chnage_onboarding_status_intoDb = async (
+  id: string,
+): Promise<UserResponse> => {
+  //isStripeConnected
+
+  try {
+    const chnageOnboardingStatus = await User.findByIdAndUpdate(
+      id,
+      { isStripeConnected: true },
+      { new: true, upsert: true },
+    );
+    if (!chnageOnboardingStatus) {
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        'issues by the onboarding status chnage',
+        '',
+      );
+    }
+    return {
+      status: true,
+      message: 'successfully chnage onboarding status',
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      error.statusCode || httpStatus.SERVICE_UNAVAILABLE,
+      error.message ||
+        'Server unavailable in  chnage_onboarding_status function',
+      error,
+    );
+  }
+};
+
 const UserServices = {
   createUserIntoDb,
   userVarificationIntoDb,
@@ -559,6 +591,7 @@ const UserServices = {
   resetPasswordIntoDb,
   autoMaticallyDetectLocationIntoDb,
   recentSearchingLocationIntoDb,
+  chnage_onboarding_status_intoDb,
 };
 
 export default UserServices;
