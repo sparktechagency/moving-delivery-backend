@@ -36,9 +36,22 @@ const specificDriverNotificationList: RequestHandler = catchAsync(
   },
 );
 
+
+const  seenByNotification:RequestHandler=catchAsync(async(req , res)=>{
+
+    const result=await NotificationServices.seenByNotificationIntoDb(req.params.id, req.body);
+    sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Recoded  User Seen Notification Info',
+      data: result,
+    });
+});
+
 const NotificationController = {
   speciifcUserNotificationList,
-  specificDriverNotificationList
+  specificDriverNotificationList,
+  seenByNotification
 };
 
 export default NotificationController;

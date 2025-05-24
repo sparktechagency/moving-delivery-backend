@@ -43,9 +43,15 @@ const notificationzodSchema = z.object({
       .default(NotificationPriority.medium),
   }),
 });
+const seenNotificationZodSchema = z.object({
+  body: z.object({
+    route: z.string({ required_error: 'route is required' }),
+  }),
+});
 
 const NotificationValidationSchema = {
   notificationzodSchema,
+  seenNotificationZodSchema,
 };
 
 export default NotificationValidationSchema;

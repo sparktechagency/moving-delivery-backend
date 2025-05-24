@@ -11,6 +11,11 @@ export interface TNotification {
   route?: String;
   priority: 'low' | 'medium' | 'high';
   isDelete: Boolean
+};
+
+export interface NotificationResponse {
+  status: boolean;
+  message: string;
 }
 
 export interface NotificationModel extends Model<TNotification> {

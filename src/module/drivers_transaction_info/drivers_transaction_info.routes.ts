@@ -7,11 +7,16 @@ const route = express.Router();
 
 route.get(
   '/find_by_all_transaction_info',
-  
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+
   drivers_transaction_controller.findByA_all_transaction,
 );
 
-route.delete('/delete_transaction/:id',drivers_transaction_controller.delete_transaction);
+route.delete(
+  '/delete_transaction/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  drivers_transaction_controller.delete_transaction,
+);
 
 const drivers_transaction_router = route;
 

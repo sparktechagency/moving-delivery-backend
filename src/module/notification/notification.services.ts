@@ -5,6 +5,8 @@ import QueryBuilder from '../../app/builder/QueryBuilder';
 import notifications from './notification.modal';
 import User from '../user/user.model';
 import { USER_ACCESSIBILITY } from '../user/user.constant';
+import { NotificationStatus } from './notification.constant';
+import { NotificationResponse } from './notification.interface';
 
 const sendPushNotification = async (
   userId: string,
@@ -111,12 +113,52 @@ const specificDriverNotificationListIntoDb = async (
   }
 };
 
+const seenByNotificationIntoDb = async (
+  id: string,
+  payload: {
+    route: string;
+  },
+): Promise<NotificationResponse> => {
+  try {
+    const seenNotificationStatus = await notifications.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          status: NotificationStatus.read,
+          updatedAt: new Date(),
+          route: payload.route,
+        },
+      },
+      { new: true, upsert: true },
+    );
+
+    if (!seenNotificationStatus) {
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'issues by the  seen by notification section  server error',
+        '',
+      );
+    }
+    return {
+      status: true,
+      message: 'successfully seen by the notication',
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      ' seen  notification  server unavailable issues',
+      error,
+    );
+  }
+};
+
 //upcomming ----> request accepted notification
 
 const NotificationServices = {
   sendPushNotification,
   speciifcUserNotificationListIntoDb,
   specificDriverNotificationListIntoDb,
+  seenByNotificationIntoDb,
 };
 
 export default NotificationServices;

@@ -2,6 +2,8 @@ import express from 'express';
 import auth from '../../middleware/auth';
 import { USER_ROLE } from '../user/user.constant';
 import NotificationController from './notification.controller';
+import validationRequest from '../../middleware/validationRequest';
+import NotificationValidationSchema from './notification.zod.validation';
 
 const router = express.Router();
 
@@ -16,6 +18,9 @@ router.get(
   auth(USER_ROLE.driver),
   NotificationController.specificDriverNotificationList,
 );
+
+
+router.patch("/seen_notification/:id", auth(USER_ROLE.driver,USER_ROLE.user), validationRequest(NotificationValidationSchema.seenNotificationZodSchema), NotificationController. seenByNotification)
 
 const NotificationRoutes = router;
 
