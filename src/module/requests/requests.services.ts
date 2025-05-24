@@ -60,6 +60,7 @@ const sendRequestIntoDb = async (
       { driverSelectedTruck: 1, userId: 1 },
       { session },
     );
+  
 
     if (!verifiedDriver) {
       throw new ApiError(
