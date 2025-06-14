@@ -12,6 +12,9 @@ import handel_unpaid_payment from './utility/handel_unpaid_payment';
 import handel_auto_delete_request from './utility/handel_auto_delete_request';
 import auto_restricts_algorithm_driver_account from './utility/auto_restricts_algorithm_driver_account';
 import auto_delete_unverifyed_user from './utility/auto_delete_unverifyed_user';
+import path from 'path';
+import config from './app/config';
+import handel_notification_delete from './utility/handel_notification_delete';
 
 declare global {
   namespace Express {
@@ -40,7 +43,10 @@ app.use(
 app.use(bodyParser.json());
 
 app.use(express.urlencoded({ extended: true }));
-
+app.use(
+  config.file_path as string,
+  express.static(path.join(__dirname, 'public')),
+);
 app.use(cors());
 
 app.get('/', (_req, res) => {
@@ -97,6 +103,18 @@ cron.schedule('*/30 * * * *', async () => {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       'Issue occurred during automatic deletion of unverified users in cron job.',
+      error,
+    );
+  }
+});
+
+cron.schedule('*/2 * * * *', async () => {
+  try {
+    await handel_notification_delete();
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'Issues in the notification cron job (every 30 min)',
       error,
     );
   }

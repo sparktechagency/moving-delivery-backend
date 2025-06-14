@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-
 const messageSchema = z.object({
   body: z.object({
     text: z.string().min(1, 'Text is required'),
@@ -12,8 +11,16 @@ const messageSchema = z.object({
   }),
 });
 
+const messageUpdateSchema = z.object({
+  body: z.object({
+    text: z.string().min(1, 'Text is required').optional(),
+    imageUrl: z.array(z.string()).optional(),
+  }),
+});
+
 const MessageValidationSchema = {
   messageSchema,
+  messageUpdateSchema
 };
 
 export default MessageValidationSchema;

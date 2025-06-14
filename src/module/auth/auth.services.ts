@@ -251,8 +251,6 @@ const myprofileIntoDb = async (id: string) => {
   }
 };
 
-
-
 interface RequestWithFile extends Request {
   file?: Express.Multer.File;
 }
@@ -282,7 +280,8 @@ const changeMyProfileIntoDb = async (
     }
 
     if (file) {
-      updateData.photo = file.path;
+      console.log(file);
+      updateData.photo = file.path.replace(/\\/g, '/');
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -300,7 +299,7 @@ const changeMyProfileIntoDb = async (
 
     if (!result) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
-    }
+    };
 
     return {
       status: true,

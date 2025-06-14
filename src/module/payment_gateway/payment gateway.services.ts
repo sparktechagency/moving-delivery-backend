@@ -13,8 +13,7 @@ import NotificationServices from '../notification/notification.services';
 import mongoose from 'mongoose';
 import { payment_method, payment_status } from './payment gateway.constant';
 import requests from '../requests/requests.model';
-import DriverTransactionValidation from '../drivers_transaction_info/drivers_transaction_info.zod.validation';
-import { validateExpressRequest } from 'twilio/lib/webhooks/webhooks';
+
 import drivertransactionInfos from '../drivers_transaction_info/drivers_transaction_info.model';
 
 const stripe = new Stripe(
@@ -32,7 +31,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
   userData: JwtPayload,
 ) => {
   try {
-    const normalUser = await User.findOne(
+    const normalUser: any = await User.findOne(
       {
         $and: [
           {
@@ -54,6 +53,13 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
       );
     }
 
+ 
+
+    // const accountd = await stripe.accounts.retrieve(
+    //   normalUser?.stripeAccountId,
+    // );
+    //  console.log(accountd);
+
     if (normalUser?.stripeAccountId) {
       const onboardingLink = await stripe.accountLinks.create({
         account: normalUser.stripeAccountId,
@@ -61,7 +67,44 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
         return_url: config.stripe_payment_gateway.onboarding_refresh_url,
         type: 'account_onboarding',
       });
-      return onboardingLink.url;
+
+      if (onboardingLink) {
+        const account = await stripe.accounts.retrieve(
+          normalUser.stripeAccountId,
+        );
+
+        
+
+        if (
+          account?.capabilities &&
+          account.capabilities?.card_payments === 'inactive' &&
+          account?.capabilities.transfers === 'inactive'
+        ) {
+          const userWithoutStripeAccount = await User.findOneAndUpdate(
+            {
+              _id: userData?.id,
+              isVerify: true,
+              status: USER_ACCESSIBILITY.isProgress,
+              isDelete: false,
+            },
+            {
+              $unset: {
+                stripeAccountId: '',
+              },
+            },
+            { new: true },
+          );
+
+          if (!userWithoutStripeAccount) {
+            throw new ApiError(
+              httpStatus.NOT_EXTENDED,
+              'Issue while removing the Stripe account ID from the database.',
+              '',
+            );
+          }
+        }
+        return account?.capabilities;
+      }
     }
 
     //  Create a connected account
@@ -85,7 +128,6 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
     });
 
     // database not intregrated this section , write now panding
-
     const onboardingLink = await stripe.accountLinks.create({
       account: account.id,
       refresh_url: `${config.stripe_payment_gateway.onboarding_refresh_url}?accountId=${account?.id}`,
@@ -97,7 +139,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
       {
         _id: userData?.id,
         isVerify: true,
-        status: USER_ACCESSIBILITY.isProgress,
+        status: USER_ACCESSIBILITY?.isProgress,
         isDelete: false,
       },
       {
@@ -116,7 +158,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
     }
     return onboardingLink?.url;
   } catch (error: any) {
-    console.log(error);
+    // console.log(error);
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'create Connected Account And Onboarding Link IntoDb server server unavalable',
@@ -856,26 +898,24 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
 
 const driverWalletFromDb = async (driverId: string) => {
   try {
-
-     const result = await drivertransactionInfos.aggregate([
+    const result = await drivertransactionInfos.aggregate([
       {
-          $match: {
-              $or: [
-                  { driverId: driverId },  
-                  { driverId: new mongoose.Types.ObjectId(driverId) }  
-              ]
-          }
+        $match: {
+          $or: [
+            { driverId: driverId },
+            { driverId: new mongoose.Types.ObjectId(driverId) },
+          ],
+        },
       },
       {
-          $group: {
-              _id: "$driverId",
-              totalWithdrawnAmount: {
-                  $sum: "$withdrawnAmount"
-              }
-          }
-      }
-  ]);
-
+        $group: {
+          _id: '$driverId',
+          totalWithdrawnAmount: {
+            $sum: '$withdrawnAmount',
+          },
+        },
+      },
+    ]);
 
     const isDriverVerified = await driververifications.findOne(
       { userId: driverId },
@@ -913,8 +953,8 @@ const driverWalletFromDb = async (driverId: string) => {
       driverId,
       vehicleNumber: isDriverVerified?.vehicleNumber,
       totalAmount: totalAmount,
-      withdrawamount:result.length > 0 ? result[0].totalWithdrawnAmount : 0,
-      myamount: myamount-result[0].totalWithdrawnAmount,
+      withdrawamount: result.length > 0 ? result[0].totalWithdrawnAmount : 0,
+      myamount: myamount - result[0].totalWithdrawnAmount,
       paymentList: paymentList,
       resultCount: paymentList.length,
       totalResults: totalResults,
@@ -1254,8 +1294,6 @@ const processStripeOperations = async (
     },
   );
 
-
-
   if (!stripeOps.payout) {
     throw new ApiError(
       httpStatus.NOT_IMPLEMENTED,
@@ -1400,8 +1438,6 @@ const cleanupStripeOperations = async (stripeOps: StripeOperations) => {
 
   await Promise.allSettled(cleanupPromises);
 };
-
-
 
 const PaymentGatewayServices = {
   createConnectedAccountAndOnboardingLinkIntoDb,

@@ -6,6 +6,7 @@ import { getSocketIO } from '../../socket/socketConnection';
 import User from '../user/user.model';
 import ApiError from '../../app/error/ApiError';
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 
 const getMessages = async (
   profileId: string,
@@ -104,9 +105,120 @@ const new_message_IntoDb = async (data: any) => {
   }
 };
 
+const updateMessageById_IntoDb = async (
+  messageId: string,
+  updateData: Partial<{ text: string; imageUrl: string[] }>,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const updated = await Message.findByIdAndUpdate(
+      messageId,
+      { $set: updateData },
+      { new: true, session },
+    );
+
+    if (!updated) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Message not found', '');
+    }
+    await Conversation.updateMany(
+      { lastMessage: messageId },
+      { $set: { lastMessage: updated._id } },
+      { session },
+    );
+
+    const conversation = await Conversation.findOne(
+      { _id: updated.conversationId },
+      null,
+      { session },
+    );
+
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Conversation not found', '');
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const io = getSocketIO();
+    for (const userId of conversation.participants) {
+      io.to(userId.toString()).emit(`message-updated`, updated);
+    }
+
+    return updated;
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Error updating message',
+      error,
+    );
+  }
+};
+
+const deleteMessageById_IntoDb = async (messageId: string) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const message = await Message.findById(messageId).session(session);
+    if (!message) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Message not found', '');
+    }
+
+    const conversationId = message.conversationId;
+
+    await Message.deleteOne({ _id: messageId }).session(session);
+
+    const conversation: any =
+      await Conversation.findById(conversationId).session(session);
+
+    if (!conversation) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Conversation not found', '');
+    }
+    if (String(conversation?.lastMessage) === String(messageId)) {
+      const newLastMessage = await Message.findOne({ conversationId })
+        .sort({ createdAt: -1 })
+        .session(session);
+
+      conversation.lastMessage = newLastMessage?._id || null;
+      await conversation.save({ session });
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const io = getSocketIO();
+    for (const userId of conversation.participants) {
+      io.to(userId.toString()).emit('message-deleted', { messageId });
+    }
+
+    return {
+      success: true,
+      message: 'Message deleted successfully',
+      messageId,
+    };
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Error deleting message',
+      error,
+    );
+  }
+};
+
+
+
+
 const MessageService = {
   getMessages,
   new_message_IntoDb,
+  updateMessageById_IntoDb,
+  deleteMessageById_IntoDb,
 };
 
 export default MessageService;

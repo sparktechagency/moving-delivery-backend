@@ -28,11 +28,17 @@ router.post(
       };
 
       if (files?.driverLicense && files?.driverLicense[0]) {
-        req.body.driverLicense = files.driverLicense[0].path;
+        req.body.driverLicense = files.driverLicense[0]?.path?.replace(
+          /\\/g,
+          '/',
+        );
       }
 
       if (files?.driverNidCard && files?.driverNidCard[0]) {
-        req.body.driverNidCard = files?.driverNidCard[0].path;
+        req.body.driverNidCard = files?.driverNidCard[0]?.path?.replace(
+          /\\/g,
+          '/',
+        );
       }
 
       next();
@@ -126,7 +132,10 @@ router.patch(
   DriverVerificationController.verify_driver_admin,
 );
 
-
-router.delete("/delete_driver_verification_request/:id", auth(USER_ROLE.admin, USER_ROLE.superAdmin), DriverVerificationController. delete_driver_verification_request)
+router.delete(
+  '/delete_driver_verification_request/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  DriverVerificationController.delete_driver_verification_request,
+);
 const DriverVerificationRouter = router;
 export default DriverVerificationRouter;

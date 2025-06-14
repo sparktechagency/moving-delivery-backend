@@ -28,9 +28,36 @@ const new_message: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+const updateMessageById: RequestHandler = catchAsync(async (req, res) => {
+  const result = await MessageService.updateMessageById_IntoDb(
+    req.params.messageId,
+    req.body,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Successfully Update The Message',
+    data: result,
+  });
+});
+
+const deleteMessageById: RequestHandler = catchAsync(async (req, res) => {
+  const result = await MessageService.deleteMessageById_IntoDb(
+    req.params.messageId,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Successfully Delete Message',
+    data: result,
+  });
+});
+
 const MessageController = {
   getMessages,
   new_message,
+  updateMessageById,
+  deleteMessageById,
 };
 
 export default MessageController;
