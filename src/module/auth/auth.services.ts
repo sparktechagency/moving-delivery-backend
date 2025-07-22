@@ -239,7 +239,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
 
 const myprofileIntoDb = async (id: string) => {
   try {
-    const result = await User.findById(id);
+    const result = await User.findById(id).select("-from -to");
 
     return result;
   } catch (error: any) {

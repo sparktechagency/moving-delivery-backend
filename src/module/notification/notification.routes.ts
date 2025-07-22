@@ -19,8 +19,12 @@ router.get(
   NotificationController.specificDriverNotificationList,
 );
 
-
-router.patch("/seen_notification/:id", auth(USER_ROLE.driver,USER_ROLE.user), validationRequest(NotificationValidationSchema.seenNotificationZodSchema), NotificationController. seenByNotification)
+router.patch(
+  '/seen_notification/:id',
+  auth(USER_ROLE.driver, USER_ROLE.user),
+  validationRequest(NotificationValidationSchema.seenNotificationZodSchema),
+  NotificationController.seenByNotification,
+);
 
 const NotificationRoutes = router;
 

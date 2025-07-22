@@ -14,8 +14,11 @@ route.post(
   RatingReviewController.create_review_rating,
 );
 
-
-route.get("/avg_rating", RatingReviewController.findByAllReviewRating);
+route.get(
+  '/avg_rating',
+  auth(USER_ROLE.user, USER_ROLE.driver),
+  RatingReviewController.findByAllReviewRating,
+);
 
 const RatingReviewRoutes = route;
 
