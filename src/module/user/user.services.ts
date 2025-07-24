@@ -91,6 +91,9 @@ const createUserIntoDb = async (payload: TUser) => {
 };
 
 const userVarificationIntoDb = async (verificationCode: number) => {
+
+
+  console.log(verificationCode)
   try {
     if (!verificationCode) {
       throw new ApiError(

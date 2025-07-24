@@ -8,11 +8,11 @@ const GeoLocationSchema = new Schema<IGeoLocation>(
   {
     address: {
       type: String,
-      required: [true, 'Address is required'],
+      required: [false, 'Address is required'],
     },
     coordinates: {
       type: [Number],
-      required: [true, 'Coordinates are required'],
+      required: [false, 'Coordinates are required'],
       validate: {
         validator: function (v: number[]) {
           return Array.isArray(v) && v.length === 2;
@@ -83,7 +83,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
     },
     isStripeConnected: {
       type: Boolean,
-      rquired: false,
+      required: false,
       default: false,
     },
     provider: {
@@ -98,16 +98,16 @@ const TUserSchema = new Schema<TUser, UserModel>(
 
     from: {
       type: GeoLocationSchema,
-      required: [true, 'Origin location is required'],
+      required: [false, 'Origin location is required'],
     },
     to: {
       type: GeoLocationSchema,
-      required: [true, 'Destination location is required'],
+      required: [false, 'Destination location is required'],
     },
     fcm: {
       type: String,
       required: [false, 'fcm is not  required'],
-       default: null
+      default: null,
     },
     isDelete: {
       type: Boolean,
