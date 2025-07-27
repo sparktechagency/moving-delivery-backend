@@ -24,15 +24,19 @@ export type TDriverVerification = {
   driverLocation: string;
   vehicleNumber: string;
   autoDetectLocation: number[];
-  fuleType:
-    | 'Diesel'
-    | 'Gasoline'
-    | 'Natural Gas'
-    | 'Hydrogen'
-    | 'Electric'
-    | 'Hybrid Fuels'
-    | 'Dimethyl Ether (DME)'
-    | 'Renewable Diesel';
+  // fuleType:
+  //   | 'Diesel'
+  //   | 'Gasoline'
+  //   | 'Natural Gas'
+  //   | 'Hydrogen'
+  //   | 'Electric'
+  //   | 'Hybrid Fuels'
+  //   | 'Dimethyl Ether (DME)'
+  //   | 'Renewable Diesel';
+  truckSize: string;
+  loadCapacity: string;
+  picState: string;
+  picCities: string;
   vehicleAge: number;
   workingPreferredDate: string;
   isDelete?: boolean;

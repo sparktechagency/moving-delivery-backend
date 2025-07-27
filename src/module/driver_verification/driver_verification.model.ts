@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { ListOfFualType } from './driver_verification.constant';
+
 import {
   DriverOasisModel,
   TDriverVerification,
@@ -26,24 +26,44 @@ const TdriverVerificationSchema = new Schema<TDriverVerification>(
       type: String,
       required: [true, 'vehicle number is required'],
     },
-    fuleType: {
+    // /*no needed */ fuleType: {
+    //   type: String,
+    //   enum: {
+    //     values: ListOfFualType,
+    //     message: '{VALUE} is Not Required',
+    //   },
+    //   required: [true, 'Role is Required'],
+    //   default: 'Diesel',
+    // },
+
+    truckSize: {
       type: String,
-      enum: {
-        values: ListOfFualType,
-        message: '{VALUE} is Not Required',
-      },
-      required: [true, 'Role is Required'],
-      default: 'Diesel',
+      required: [true, 'truck size is  required'],
     },
-    vehicleAge: { type: Number, required: [true, 'vehicleAge is Required'] },
-    workingPreferredDate: {
+    // /*no needed */ vehicleAge: {
+    //   type: Number,
+    //   required: [true, 'vehicleAge is Required'],
+    // },
+    loadCapacity: {
       type: String,
-      required: [true, 'workingPreferredDate is required'],
+      required: [true, 'load capacity is  required'],
     },
+    // /*no needed */ workingPreferredDate: {
+    //   type: String,
+    //   required: [true, 'workingPreferredDate is required'],
+    // },
 
     autoDetectLocation: {
       type: [String],
       required: true,
+    },
+    picCities: {
+      type: String,
+      required: [true, 'pic cities is required'],
+    },
+    picState: {
+      type: String,
+      required: [true, 'pic state is required'],
     },
     isVerifyDriverLicense: {
       type: Boolean,
