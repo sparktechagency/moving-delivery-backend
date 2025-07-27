@@ -91,9 +91,7 @@ const createUserIntoDb = async (payload: TUser) => {
 };
 
 const userVarificationIntoDb = async (verificationCode: number) => {
-
-
-  console.log(verificationCode)
+  console.log(verificationCode);
   try {
     if (!verificationCode) {
       throw new ApiError(
@@ -316,7 +314,7 @@ const forgotPasswordIntoDb = async (payload: string | { email: string }) => {
 };
 
 const verificationForgotUserIntoDb = async (
-  otp: number | { verificationCode: number },
+  otp: number | { verificationCode: number } | any,
 ): Promise<string> => {
   try {
     let code: number;
@@ -329,6 +327,7 @@ const verificationForgotUserIntoDb = async (
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid OTP format', '');
     }
 
+  
     const isExistOtp: any = await User.findOne(
       {
         $and: [
@@ -386,7 +385,7 @@ const verificationForgotUserIntoDb = async (
 
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'Password change failed',
+      'Verified OTP process failed',
       error,
     );
   }

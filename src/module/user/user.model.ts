@@ -42,7 +42,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
     verificationCode: {
       type: Number,
       required: [false, 'verification Code is Required'],
-      unique: true,
+     
     },
     isVerify: {
       type: Boolean,
