@@ -9,6 +9,7 @@ import ApiError from '../../app/error/ApiError';
 import httpStatus from 'http-status';
 
 const router = express.Router();
+
 router.post(
   '/create_select_truck',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
@@ -36,7 +37,7 @@ router.get(
 
 router.get(
   '/find_by_all_selected_truck_by_admin',
-  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.driver),
   SelectTruckController.findAllTruckByAdmin,
 );
 
