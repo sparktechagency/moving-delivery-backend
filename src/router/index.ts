@@ -13,6 +13,7 @@ import RatingReviewRoutes from '../module/rating_review/rating_review.routes';
 import messageRoutes from '../module/message/message.routes';
 import Payment_Withdrawal_Routers from '../module/payment_withdrawal_service/payment_withdrawal_services.routes';
 import drivers_transaction_router from '../module/drivers_transaction_info/drivers_transaction_info.routes';
+import SettingsRoutes from '../module/settings/settings.routres';
 
 const router = express.Router();
 const moduleRoute = [
@@ -29,6 +30,7 @@ const moduleRoute = [
   { path: '/rating_review', route: RatingReviewRoutes },
   { path: '/payment_withdrawal', route: Payment_Withdrawal_Routers },
   { path: '/drivers_transaction', route: drivers_transaction_router },
+  { path: '/setting', route: SettingsRoutes },
 ];
 
 moduleRoute.forEach((v) => router.use(v.path, v.route));
