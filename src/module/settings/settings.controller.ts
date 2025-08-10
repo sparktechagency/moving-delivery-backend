@@ -25,9 +25,53 @@ const findByAboutUs: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
-const AboutController = {
+const privacyPolicys: RequestHandler = catchAsync(async (req, res) => {
+  const result = await AboutServices.privacyPolicysIntoDb(req.body);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully  Recorded',
+    data: result,
+  });
+});
+
+const findByPrivacyPolicyss: RequestHandler = catchAsync(async (req, res) => {
+  const result = await AboutServices.findByPrivacyPolicyssIntoDb();
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Find By Privacy Policy ',
+    data: result,
+  });
+});
+
+const termsConditions: RequestHandler = catchAsync(async (req, res) => {
+  const result = await AboutServices.termsConditionsIntoDb(req.body);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully  Recorded',
+    data: result,
+  });
+});
+
+const findByTermsConditions: RequestHandler = catchAsync(async (req, res) => {
+  const result = await AboutServices.findBytermsConditionsIntoDb();
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Find By Terms Conditions ',
+    data: result,
+  });
+});
+
+const SettingController = {
   updateAboutUs,
   findByAboutUs,
+  privacyPolicys,
+  findByPrivacyPolicyss,
+  termsConditions,
+  findByTermsConditions,
 };
 
-export default AboutController;
+export default SettingController;
