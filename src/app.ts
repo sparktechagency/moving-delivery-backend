@@ -47,7 +47,10 @@ app.use(
   config.file_path as string,
   express.static(path.join(__dirname, 'public')),
 );
-app.use(cors());
+
+app.use(cors({
+  origin: 'http://localhost:5173', 
+}));
 
 app.get('/', (_req, res) => {
   res.send({

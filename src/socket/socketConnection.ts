@@ -18,7 +18,7 @@ const connectSocket = (server: HTTPServer) => {
   }
 
   io.on('connection', async (socket: Socket) => {
-    console.log('✅ A client connected:', socket.id);
+    console.log('A client connected:', socket.id);
     socket.on('ping', (data) => {
       io.emit('pong', data);
     });

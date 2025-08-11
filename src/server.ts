@@ -14,8 +14,8 @@ async function main() {
     await mongoose.connect(config.database_url as string);
     console.log('database connected succesfully');
 
-    server = app.listen(config.port, () => {
-      console.log(`moving delivery app listening on port ${config.port}`);
+    server = app.listen(Number(config.port),config.base_url as string, () => {
+      console.log(`moving delivery Server is listening on port http://${config.base_url}:${config.port}`);
     });
 
     process.on('unhandledRejection', () => {
