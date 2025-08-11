@@ -327,7 +327,6 @@ const verificationForgotUserIntoDb = async (
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid OTP format', '');
     }
 
-  
     const isExistOtp: any = await User.findOne(
       {
         $and: [
@@ -438,6 +437,8 @@ const autoMaticallyDetectLocationIntoDb = async (
   payload: TUser,
   userId: string,
 ): Promise<UserResponse> => {
+ 
+
   try {
     const isExistUser = await User.findOne(
       {
@@ -458,10 +459,14 @@ const autoMaticallyDetectLocationIntoDb = async (
       );
     }
 
-    const result = await User.findByIdAndUpdate(userId, payload, {
-      new: true,
-      upsert: true,
-    });
+    const result = await User.updateOne(
+      { _id: userId, isDelete: false },
+      { $set: payload },
+      {
+        new: true,
+        upsert: true,
+      },
+    );
 
     if (!result) {
       throw new ApiError(
