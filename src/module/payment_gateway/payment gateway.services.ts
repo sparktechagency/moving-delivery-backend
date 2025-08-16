@@ -20,6 +20,8 @@ const stripe = new Stripe(
   config.stripe_payment_gateway.stripe_secret_key as string,
 );
 
+console.log(config.stripe_payment_gateway.stripe_secret_key)
+
 interface PaymentDetails {
   price: number;
   driverId: string;
@@ -53,8 +55,6 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
       );
     }
 
- 
-
     // const accountd = await stripe.accounts.retrieve(
     //   normalUser?.stripeAccountId,
     // );
@@ -72,8 +72,6 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
         const account = await stripe.accounts.retrieve(
           normalUser.stripeAccountId,
         );
-
-        
 
         if (
           account?.capabilities &&
@@ -350,6 +348,10 @@ const createCheckoutSessionForTruck = async (
       requestId,
     } = paymentDetails;
 
+    console.log(paymentDetails)
+
+ 
+
     if (!price || price <= 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -376,6 +378,8 @@ const createCheckoutSessionForTruck = async (
       { stripeAccountId: 1, email: 1 },
     );
 
+    
+
     if (!user) {
       throw new ApiError(
         httpStatus.NOT_FOUND,
@@ -384,20 +388,20 @@ const createCheckoutSessionForTruck = async (
       );
     }
 
-    const isExistRequest = await requests.exists({
-      _id: requestId,
-      isAccepted: true,
-      isCanceled: false,
-      isCompleted: false,
-    });
+    // const isExistRequest = await requests.exists({
+    //   _id: requestId,
+    //   isAccepted: true,
+    //   isCanceled: false,
+    //   isCompleted: false,
+    // });
 
-    if (!isExistRequest) {
-      throw new ApiError(
-        httpStatus.NOT_FOUND,
-        'is not founded by the tripe request',
-        '',
-      );
-    }
+    // if (!isExistRequest) {
+    //   throw new ApiError(
+    //     httpStatus.NOT_FOUND,
+    //     'is not founded by the tripe request',
+    //     '',
+    //   );
+    // }
 
     try {
       const session: any = await stripe.checkout.sessions.create({

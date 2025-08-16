@@ -46,7 +46,7 @@ router.post(
 
 router.patch(
   '/automatically_detect_location',
-  auth(USER_ROLE.driver),
+  auth(USER_ROLE.driver, USER_ROLE.user),
   validationRequest(UserValidationSchema.automaticallyDetectLocationSchema),
   UserController.autoMaticallyDetectLocation,
 );

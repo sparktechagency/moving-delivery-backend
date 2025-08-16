@@ -36,8 +36,6 @@ const sendRequestIntoDb = async (
       );
     }
 
-    
-
     if (
       !payload.driverVerificationsId ||
       !Types.ObjectId.isValid(payload.driverVerificationsId)
@@ -60,7 +58,6 @@ const sendRequestIntoDb = async (
       { driverSelectedTruck: 1, userId: 1 },
       { session },
     );
-  
 
     if (!verifiedDriver) {
       throw new ApiError(
@@ -661,6 +658,7 @@ const completedTripeRequestIntoDb = async (
 ): Promise<RequestResponse> => {
   const session = await mongoose.startSession();
   session.startTransaction();
+
 
   try {
     const request = await requests
