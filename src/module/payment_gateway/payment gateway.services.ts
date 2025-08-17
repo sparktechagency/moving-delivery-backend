@@ -53,7 +53,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
       );
     }
 
- 
+
 
     // const accountd = await stripe.accounts.retrieve(
     //   normalUser?.stripeAccountId,
@@ -73,7 +73,7 @@ const createConnectedAccountAndOnboardingLinkIntoDb = async (
           normalUser.stripeAccountId,
         );
 
-        
+
 
         if (
           account?.capabilities &&
@@ -669,6 +669,8 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
   try {
     session.startTransaction();
 
+    
+
     let result = {
       status: false,
       message: 'Unhandled event',
@@ -785,12 +787,16 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
               },
             ],
           },
-          { stripeAccountId: 1 },
+          {  stripeAccountId: 1 },
+         
+
         );
 
         const account = await stripe.accounts.retrieve(
           driverStripeAccountId.stripeAccountId,
         );
+
+       
 
         // const balance = await stripe.balance.retrieve();
         // console.log("balance: ",balance);

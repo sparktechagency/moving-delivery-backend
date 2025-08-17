@@ -36,7 +36,7 @@ const sendRequestIntoDb = async (
       );
     }
 
-    
+
 
     if (
       !payload.driverVerificationsId ||
@@ -60,7 +60,7 @@ const sendRequestIntoDb = async (
       { driverSelectedTruck: 1, userId: 1 },
       { session },
     );
-  
+
 
     if (!verifiedDriver) {
       throw new ApiError(
@@ -662,6 +662,9 @@ const completedTripeRequestIntoDb = async (
   const session = await mongoose.startSession();
   session.startTransaction();
 
+  console.log({ driverId, requestId });
+
+
   try {
     const request = await requests
       .findOne(
@@ -676,6 +679,8 @@ const completedTripeRequestIntoDb = async (
         { userId: 1, driverVerificationsId: 1 },
       )
       .session(session);
+
+
 
     if (!request) {
       throw new ApiError(
