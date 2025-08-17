@@ -950,6 +950,20 @@ const user_upcomming_history_IntoDb = async (
             path: 'userId',
             select: 'from.coordinates to.coordinates',
           },
+          {
+            path: "driverId",
+            select: "name"
+
+          },
+          {
+            path: "driverVerificationsId",
+            select: "driverSelectedTruck",
+            populate: {
+              path: "driverSelectedTruck",
+              select: "truckcategories",
+            }
+
+          }
         ])
         .select(
           '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
