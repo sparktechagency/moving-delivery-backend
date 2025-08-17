@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import ApiError from '../../app/error/ApiError';
-import { USER_ACCESSIBILITY } from '../user/user.constant';
+import { USER_ACCESSIBILITY, USER_ROLE } from '../user/user.constant';
 
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import config from '../../app/config';
@@ -10,6 +10,7 @@ import User from '../user/user.model';
 import { user_search_filed } from './auth.constant';
 import { RequestResponse } from './auth.interface';
 import mongoose from 'mongoose';
+import driververifications from '../driver_verification/driver_verification.model';
 
 const loginUserIntoDb = async (payload: {
   email: string;
@@ -237,22 +238,56 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
   }
 };
 
-const myprofileIntoDb = async (id: string) => {
-  try {
-    const result = await User.findById(id).select("-from -to");
+interface MyProfileResult {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  photo?: string;
+  location?: string;
+  driverLicense?: string;
+}
 
-    return result;
-  } catch (error: any) {
+const myprofileIntoDb = async (id: string, role: string): Promise<MyProfileResult | null> => {
+  try {
+
+    const user = await User.findById(id)
+      .select('name email phoneNumber photo location')
+      .lean(); // faster, returns plain JS object
+
+    if (!user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
+    }
+
+    if (role !== USER_ROLE.user) {
+      const driver = await driververifications
+        .findOne({ userId: id })
+        .select('driverLicense')
+        .lean();
+
+      if (driver?.driverLicense) {
+        (user as MyProfileResult).driverLicense = driver.driverLicense;
+      }
+    }
+
+    return user as MyProfileResult;
+  } catch (error: unknown) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'refresh Token generator error',
-      error,
+      'Failed to fetch profile',
+      ''
     );
   }
-};
-
-interface RequestWithFile extends Request {
-  file?: Express.Multer.File;
+}
+/**
+ * @param req
+ * @param id
+ * @returns
+ */
+interface ProfileUpdateBody {
+  name?: string;
+  phoneNumber?: string;
+  email?: string;
+  location?: string;
 }
 
 interface ProfileUpdateResponse {
@@ -260,52 +295,73 @@ interface ProfileUpdateResponse {
   message: string;
 }
 
-/**
- * @param req
- * @param id
- * @returns
- */
 const changeMyProfileIntoDb = async (
-  req: RequestWithFile,
-  id: string,
+  req: any,
+  id: string
 ): Promise<ProfileUpdateResponse> => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const file = req.file;
-    const { name } = req.body as { name?: string };
+    const { name, phoneNumber, email, location } = req.body as ProfileUpdateBody;
 
-    const updateData: { name?: string; photo?: string } = {};
+    const files = req.files
 
-    if (name) {
-      updateData.name = name;
+    const updateData: Partial<ProfileUpdateBody & { photo?: string; driverLicense?: string }> = {};
+
+    if (name) updateData.name = name;
+    if (phoneNumber) updateData.phoneNumber = phoneNumber;
+    if (email) updateData.email = email;
+    if (location) updateData.location = location;
+
+    if (files?.photo?.[0]) {
+      updateData.photo = files.photo[0].path.replace(/\\/g, '/');
     }
 
-    if (file) {
-      console.log(file);
-      updateData.photo = file.path.replace(/\\/g, '/');
+    if (files?.driverLicense?.[0]) {
+      updateData.driverLicense = files.driverLicense[0].path.replace(/\\/g, '/');
     }
 
     if (Object.keys(updateData).length === 0) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        'No data provided for update',
-        '',
-      );
+      throw new ApiError(httpStatus.BAD_REQUEST, 'No data provided for update', '');
     }
-
-    const result = await User.findByIdAndUpdate(id, updateData, {
+    const userResult = await User.findByIdAndUpdate(id, { name: updateData?.name, phoneNumber: updateData.phoneNumber, photo: updateData?.photo, location: updateData.location }, {
       new: true,
       upsert: true,
+      session,
     });
 
-    if (!result) {
+    if (!userResult) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
-    };
+    }
+
+    if (updateData.driverLicense) {
+      const driverResult = await driververifications.updateOne(
+        { userId: id },
+        { $set: { driverLicense: updateData.driverLicense } },
+        { upsert: true, session }
+      );
+
+      if (!driverResult.acknowledged) {
+        throw new ApiError(
+          httpStatus.NOT_EXTENDED,
+          'Driver license update failed',
+          ''
+        );
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
 
     return {
       status: true,
       message: 'Successfully updated profile',
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    await session.abortTransaction();
+    session.endSession();
+
     if (error instanceof ApiError) {
       throw error;
     }
@@ -313,10 +369,12 @@ const changeMyProfileIntoDb = async (
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'Profile update failed',
-      error.message,
+      ''
     );
   }
 };
+
+
 
 const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   try {

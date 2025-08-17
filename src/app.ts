@@ -48,9 +48,7 @@ app.use(
   express.static(path.join(__dirname, 'public')),
 );
 
-app.use(cors({
-  origin: 'http://localhost:5173', 
-}));
+app.use(cors());
 
 app.get('/', (_req, res) => {
   res.send({

@@ -3,6 +3,7 @@ import { Schema, model } from 'mongoose';
 import config from '../../app/config';
 import { USER_ACCESSIBILITY, USER_ROLE } from './user.constant';
 import { IGeoLocation, TUser, UserModel } from './user.interface';
+import { Stream } from 'nodemailer/lib/xoauth2';
 
 const GeoLocationSchema = new Schema<IGeoLocation>(
   {
@@ -42,7 +43,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
     verificationCode: {
       type: Number,
       required: [false, 'verification Code is Required'],
-     
+
     },
     isVerify: {
       type: Boolean,
@@ -108,6 +109,18 @@ const TUserSchema = new Schema<TUser, UserModel>(
       type: String,
       required: [false, 'fcm is not  required'],
       default: null,
+    },
+
+    location: {
+
+      type: String,
+      require: [false, 'location is not required']
+
+    },
+    driverLicense: {
+      type: String,
+      required: [false, 'driverLicense is not required ']
+
     },
     isDelete: {
       type: Boolean,

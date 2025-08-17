@@ -50,7 +50,10 @@ const social_media_auth: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const myprofile: RequestHandler = catchAsync(async (req, res) => {
-  const result = await AuthServices.myprofileIntoDb(req.user.id);
+
+
+    const {id, role}=req.user;
+  const result = await AuthServices.myprofileIntoDb(id, role);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -60,6 +63,9 @@ const myprofile: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const chnageMyProfile: RequestHandler = catchAsync(async (req, res) => {
+
+
+  console.log("successfully uplode file")
   const result = await AuthServices.changeMyProfileIntoDb(
     req as any,
     req.user.id,

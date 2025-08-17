@@ -42,5 +42,5 @@ export default {
     privateKey: process.env.FIREBASE_PRIVATE_KEY,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
   },
-  file_path: process.env.FILE_PATH
+  file_path: process.env.FILE_PATH 
 };
