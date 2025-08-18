@@ -100,6 +100,9 @@ router.post(
 );
 
 
+router.get("/cancel_user_tripe_history", auth(USER_ROLE.user), RequestController.cancel_user_history)
+
+
 
 const RequestRoutes = router;
 export default RequestRoutes;

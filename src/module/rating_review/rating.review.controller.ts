@@ -24,7 +24,7 @@ const findByAllReviewRating: RequestHandler = catchAsync(async (req, res) => {
   const pageNumber = parseInt(page as string) || 1;
   const limitNumber = parseInt(limit as string) || 10;
 
-  const result = await RatingReviewServices.findByAllReviewRatingFromDb ({
+  const result = await RatingReviewServices.findByAllReviewRatingFromDb({
     page: pageNumber,
     limit: limitNumber,
     search: search as string,
@@ -33,9 +33,36 @@ const findByAllReviewRating: RequestHandler = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).json(result);
 });
 
+
+const recentelyAcceptedTripe: RequestHandler = catchAsync(async (req, res) => {
+
+  const result = await RatingReviewServices.recentelyAcceptedTripeIntoDb(req.user.id);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully  Find By Recentely  Accepeted Tripe ',
+    data: result,
+  });
+});
+
+const personal_details: RequestHandler = catchAsync(async (req, res) => {
+
+  const result = await RatingReviewServices.personal_details_IntoDb(req.params.requestId);
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully  Find  The Personal Details ',
+    data: result,
+  });
+
+
+})
+
 const RatingReviewController = {
   create_review_rating,
-   findByAllReviewRating
+  findByAllReviewRating,
+  recentelyAcceptedTripe,
+  personal_details
 };
 
 export default RatingReviewController;

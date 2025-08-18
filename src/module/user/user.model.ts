@@ -38,7 +38,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
     phoneNumber: {
       type: String,
       required: [false, 'phone number is required'],
-      unique: true,
+     
     },
     verificationCode: {
       type: Number,

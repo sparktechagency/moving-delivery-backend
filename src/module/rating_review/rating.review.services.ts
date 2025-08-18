@@ -3,6 +3,7 @@ import ApiError from '../../app/error/ApiError';
 import { IRatingReview, RequestResponse } from './rating.review.interface';
 import requests from '../requests/requests.model';
 import ratingreview from './rating.review.model';
+import QueryBuilder from '../../app/builder/QueryBuilder';
 
 
 const create_review_rating_intoDb = async (
@@ -83,13 +84,13 @@ const findByAllReviewRatingFromDb = async ({ page = 1, limit = 10, search = '' }
 
   const searchMatchStage = search
     ? {
-        $match: {
-          $or: [
-            { 'driverDetails.name': { $regex: search, $options: 'i' } },
-            { 'driverDetails.email': { $regex: search, $options: 'i' } },
-          ],
-        },
-      }
+      $match: {
+        $or: [
+          { 'driverDetails.name': { $regex: search, $options: 'i' } },
+          { 'driverDetails.email': { $regex: search, $options: 'i' } },
+        ],
+      },
+    }
     : null;
 
   const pipeline: any[] = [
@@ -142,21 +143,121 @@ const findByAllReviewRatingFromDb = async ({ page = 1, limit = 10, search = '' }
   return {
     success: true,
     message: 'Successfully found average ratings for all drivers',
-     meta: {
+    meta: {
       page,
       limit,
       total,
       totalPages: Math.ceil(total / limit),
     },
     data,
-   
+
   };
 };
+
+
+
+const recentelyAcceptedTripeIntoDb = async (driverId: string) => {
+  try {
+    const userTripHistory = new QueryBuilder(
+      ratingreview
+        .find({
+          driverId,
+          isDelete: false,
+        })
+        .populate([
+          {
+            path: 'userId',
+            select: 'name photo from.coordinates to.coordinates',
+          },
+          {
+            path: 'requestId',
+            select: 'requestId isAccepted isCompleted isCanceled price',
+
+
+          },
+        ])
+        .select(
+          '-driverId -isRating -isDelete -createdAt -updatedAt -requestId',
+        )
+
+        .sort({ createdAt: -1 }),
+      {},
+    )
+      .filter()
+      .paginate()
+      .fields();
+
+    const user_completed_history = await userTripHistory.modelQuery;
+    const meta = await userTripHistory.countTotal();
+
+    return {
+      meta,
+      user_completed_history,
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'some issue by the recent accepted trip',
+      error,
+    );
+  }
+};
+
+const personal_details_IntoDb = async (requestId: string) => {
+
+  try {
+
+    const result = await ratingreview
+      .find({
+        requestId,
+        isDelete: false,
+      })
+      .populate([
+        {
+          path: 'userId',
+          select: 'name phoneNumber location photo',
+        },
+        {
+          path: 'requestId',
+          select: 'requestId isAccepted isCompleted driverVerificationsId',
+          populate: [
+            {
+              path: 'driverVerificationsId',
+              select: 'driverSelectedTruck',
+              populate: {
+                path: 'driverSelectedTruck',
+                select: 'truckName truckcategories',
+                populate: {
+                  path: 'truckcategories',
+                  select: 'categoryName capacity',
+                },
+              },
+            },
+          ],
+        },
+      ])
+      .select(
+        '-driverId -isRating -isDelete -createdAt -updatedAt -requestId',
+      );
+    return result
+
+  }
+  catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'some issue by the personal details',
+      error,
+    );
+  }
+}
+
 
 
 const RatingReviewServices = {
   create_review_rating_intoDb,
   findByAllReviewRatingFromDb,
+  recentelyAcceptedTripeIntoDb,
+  personal_details_IntoDb
 };
 
 export default RatingReviewServices;

@@ -98,7 +98,7 @@ const ChnagePasswordSchema = z.object({
 
 const UpdateUserProfileSchema = z.object({
   body: z.object({
-    username: z
+    name: z
       .string({ required_error: 'user name is required' })
       .min(3, { message: 'min 3 character accepted' })
       .max(15, { message: 'max 15 character accepted' })
