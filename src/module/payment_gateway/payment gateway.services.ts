@@ -473,9 +473,8 @@ const createCheckoutSessionForTruck = async (
 };
 
 /**
- * Find all payments with driver and admin amount breakdowns
- * @param query - Query parameters for filtering, sorting, and pagination
- * @returns Object containing meta information, payment records with amount breakdowns, and total calculations
+ * @param query 
+ * @returns 
  */
 const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
   try {
@@ -514,8 +513,8 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
 
       {
         $addFields: {
-          driverAmount: { $multiply: ['$price', 0.8] }, // 80% of price goes to driver
-          adminAmount: { $multiply: ['$price', 0.2] }, // 20% of price goes to admin
+          driverAmount: { $multiply: ['$price', 0.8] },
+          adminAmount: { $multiply: ['$price', 0.2] },
         },
       },
 
@@ -538,7 +537,7 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
         $lookup: {
           from: 'driververifications',
           localField: 'driverId',
-          foreignField: '_id',
+          foreignField: 'userId',
           as: 'driverDetails',
         },
       },
@@ -551,8 +550,8 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
 
       {
         $lookup: {
-          from: 'trucks',
-          localField: 'driverDetails.driverSelectedTruck',
+          from: 'users',
+          localField: 'driverDetails.userId',
           foreignField: '_id',
           as: 'truckDetails',
         },
@@ -589,12 +588,24 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
             phoneNumber: '$userDetails.phoneNumber',
             id: '$userDetails._id',
           },
+          driverDetails: {
+            _id: '$truckDetails._id',
+            name: '$truckDetails.name',
+            email: '$truckDetails.email',
+            phoneNumber: '$truckDetails.phoneNumber',
+          },
           driverId: {
             _id: '$driverDetails._id',
-            vehicleNumber: '$driverDetails.vehicleNumber',
-            fuleType: '$driverDetails.fuleType',
-            vehicleAge: '$driverDetails.vehicleAge',
+            vehicleNumber
+              : '$driverDetails.vehicleNumber',
+
+
+            truckSize
+              : '$driverDetails.truckSize',
+
+            loadCapacity: '$driverDetails.loadCapacity',
             id: '$driverDetails._id',
+            driverId: "$driverDetails.userId"
           },
         },
       },
@@ -669,7 +680,7 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
   try {
     session.startTransaction();
 
-    
+
 
     let result = {
       status: false,
@@ -787,8 +798,8 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
               },
             ],
           },
-          {  stripeAccountId: 1 },
-         
+          { stripeAccountId: 1 },
+
 
         );
 
@@ -796,7 +807,7 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
           driverStripeAccountId.stripeAccountId,
         );
 
-       
+
 
         // const balance = await stripe.balance.retrieve();
         // console.log("balance: ",balance);

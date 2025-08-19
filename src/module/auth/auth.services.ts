@@ -295,7 +295,7 @@ interface ProfileUpdateResponse {
   message: string;
 }
 
-const changeMyProfileIntoDb = async (req: any, id: string) :Promise<ProfileUpdateResponse> => {
+const changeMyProfileIntoDb = async (req: any, id: string): Promise<ProfileUpdateResponse> => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -343,7 +343,7 @@ const changeMyProfileIntoDb = async (req: any, id: string) :Promise<ProfileUpdat
     return {
       status: true,
       message: 'Successfully updated profile',
-     
+
     };
   } catch (error: any) {
     await session.abortTransaction();
@@ -357,7 +357,7 @@ const changeMyProfileIntoDb = async (req: any, id: string) :Promise<ProfileUpdat
 
 const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   try {
-    const allUsersdQuery = new QueryBuilder(User.find(), query)
+    const allUsersdQuery = new QueryBuilder(User.find().select("name email phoneNumber isVerify role status photo provider location stripeAccountId"), query)
       .search(user_search_filed)
       .filter()
       .sort()

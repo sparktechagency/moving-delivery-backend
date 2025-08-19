@@ -204,11 +204,10 @@ const recentelyAcceptedTripeIntoDb = async (driverId: string) => {
 };
 
 const personal_details_IntoDb = async (requestId: string) => {
-
   try {
 
     const result = await ratingreview
-      .find({
+      .findOne({
         requestId,
         isDelete: false,
       })
@@ -237,9 +236,32 @@ const personal_details_IntoDb = async (requestId: string) => {
         },
       ])
       .select(
-        '-driverId -isRating -isDelete -createdAt -updatedAt -requestId',
+        '-driverId -isRating -isDelete  -updatedAt -requestId',
       );
-    return result
+
+
+    if (!result) {
+      const result = await requests.findOne({ _id: requestId, isDelete: false }).populate([
+        {
+          path: 'userId',
+          select: 'name phoneNumber location photo',
+        },
+        {
+          path: 'driverVerificationsId',
+          select: 'driverSelectedTruck',
+          populate: {
+            path: 'driverSelectedTruck',
+            select: 'truckName truckcategories',
+            populate: {
+              path: 'truckcategories',
+              select: 'categoryName capacity',
+            },
+          },
+        },
+      ]).select("isAccepted");
+      return result
+    }
+    return result;
 
   }
   catch (error: any) {

@@ -218,7 +218,7 @@ const myClientRequestIntoDb = async (
         .populate([
           {
             path: 'userId',
-            select: ' name from.coordinates to.coordinates',
+            select: 'name from.coordinates to.coordinates',
           },
           {
             path: "driverVerificationsId",
