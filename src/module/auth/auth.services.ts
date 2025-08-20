@@ -204,7 +204,6 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
       // added fcm token
       const isCheckedFcm = await User.findOneAndUpdate(
         { email: payload.email },
-        { $set: { fcm: payload?.fcm } },
         { new: true, upsert: true, session },
       );
 

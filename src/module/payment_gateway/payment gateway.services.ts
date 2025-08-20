@@ -15,6 +15,7 @@ import { payment_method, payment_status } from './payment gateway.constant';
 import requests from '../requests/requests.model';
 
 import drivertransactionInfos from '../drivers_transaction_info/drivers_transaction_info.model';
+import QueryBuilder from '../../app/builder/QueryBuilder';
 
 const stripe = new Stripe(
   config.stripe_payment_gateway.stripe_secret_key as string,
@@ -863,127 +864,116 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
     session.endSession();
   }
 };
+const driverWalletFromDb = async (driverId: string) => {
+
+
+  try {
+
+    // Calculate total amount using aggregation
+    const totalAmount = await stripepaymentgateways.aggregate([
+      {
+        $match: {
+          driverId: new mongoose.Types.ObjectId(driverId),
+          payment_status: payment_status.paid,
+          isDelete: false,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$price' },
+        },
+      },
+    ]);
+
+    const amount = totalAmount.length > 0 ? totalAmount[0].total : 0;
+
+    return {
+      totalAmount: amount,
+      myamount: amount * 0.8000,
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'server unavailable driver wallet function',
+      error,
+    );
+  }
+};
+
+// https://dashboard.stripe.com/test/workbench/webhooks/we_1RLrvyIPrRs1II3ingRhX8yS/events?attemptId=wc_1RLvf3IPrRs1II3ie2YIWpS3
+
 // const driverWalletFromDb = async (driverId: string) => {
 //   try {
+//     const result = await drivertransactionInfos.aggregate([
+//       {
+//         $match: {
+//           $or: [
+//             { driverId: driverId },
+//             { driverId: new mongoose.Types.ObjectId(driverId) },
+//           ],
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: '$driverId',
+//           totalWithdrawnAmount: {
+//             $sum: '$withdrawnAmount',
+//           },
+//         },
+//       },
+//     ]);
+
 //     const isDriverVerified = await driververifications.findOne(
 //       { userId: driverId },
-//       { _id: 1, vehicleNumber: 1 },
+//       { _id: 1, vehicleNumber: 1, userId: 1 },
 //     );
 
 //     if (!isDriverVerified) {
 //       throw new ApiError(
 //         httpStatus.NOT_FOUND,
-//         'issues by the driver verified section ',
+//         'Issues in the driver verification section',
 //         '',
 //       );
 //     }
+//     const paymentList = await stripepaymentgateways
+//       .find({
+//         driverId: driverId,
+//         payment_status: 'paid',
+//         isDelete: false,
+//       })
+//       .sort({ createdAt: -1 })
+//       .select('price paymentmethod');
 
-//     // Calculate total amount using aggregation
-//     const totalAmount = await stripepaymentgateways.aggregate([
-//       {
-//         $match: {
-//           driverId: isDriverVerified._id,
-//           payment_status: payment_status.paid,
-//           isDelete: false,
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: null,
-//           total: { $sum: '$price' },
-//         },
-//       },
-//     ]);
+//     const totalAmount = paymentList.reduce((sum: any, payment) => {
+//       return sum + (payment.price || 0);
+//     }, 0);
 
-//     const amount = totalAmount.length > 0 ? totalAmount[0].total : 0;
+//     const myamount = totalAmount * 0.8;
 
+//     const totalResults = await stripepaymentgateways.countDocuments({
+//       driverId: driverId,
+//       payment_status: payment_status.paid,
+//       isDelete: false,
+//     });
 //     return {
-//       vehicleNumber: isDriverVerified.vehicleNumber,
-//       totalAmount: amount,
-//       myamount: amount * 0.8000,
+//       driverId,
+//       vehicleNumber: isDriverVerified?.vehicleNumber,
+//       totalAmount: totalAmount,
+//       withdrawamount: result.length > 0 ? result[0].totalWithdrawnAmount : 0,
+//       myamount: myamount - result[0].totalWithdrawnAmount,
+//       paymentList: paymentList,
+//       resultCount: paymentList.length,
+//       totalResults: totalResults,
 //     };
 //   } catch (error: any) {
 //     throw new ApiError(
 //       httpStatus.SERVICE_UNAVAILABLE,
-//       'server unavailable driver wallet function',
+//       'Server unavailable in driver wallet function',
 //       error,
 //     );
 //   }
 // };
-
-// https://dashboard.stripe.com/test/workbench/webhooks/we_1RLrvyIPrRs1II3ingRhX8yS/events?attemptId=wc_1RLvf3IPrRs1II3ie2YIWpS3
-
-const driverWalletFromDb = async (driverId: string) => {
-  try {
-    const result = await drivertransactionInfos.aggregate([
-      {
-        $match: {
-          $or: [
-            { driverId: driverId },
-            { driverId: new mongoose.Types.ObjectId(driverId) },
-          ],
-        },
-      },
-      {
-        $group: {
-          _id: '$driverId',
-          totalWithdrawnAmount: {
-            $sum: '$withdrawnAmount',
-          },
-        },
-      },
-    ]);
-
-    const isDriverVerified = await driververifications.findOne(
-      { userId: driverId },
-      { _id: 1, vehicleNumber: 1, userId: 1 },
-    );
-
-    if (!isDriverVerified) {
-      throw new ApiError(
-        httpStatus.NOT_FOUND,
-        'Issues in the driver verification section',
-        '',
-      );
-    }
-    const paymentList = await stripepaymentgateways
-      .find({
-        driverId: driverId,
-        payment_status: 'paid',
-        isDelete: false,
-      })
-      .sort({ createdAt: -1 })
-      .select('price paymentmethod');
-
-    const totalAmount = paymentList.reduce((sum: any, payment) => {
-      return sum + (payment.price || 0);
-    }, 0);
-
-    const myamount = totalAmount * 0.8;
-
-    const totalResults = await stripepaymentgateways.countDocuments({
-      driverId: driverId,
-      payment_status: payment_status.paid,
-      isDelete: false,
-    });
-    return {
-      driverId,
-      vehicleNumber: isDriverVerified?.vehicleNumber,
-      totalAmount: totalAmount,
-      withdrawamount: result.length > 0 ? result[0].totalWithdrawnAmount : 0,
-      myamount: myamount - result[0].totalWithdrawnAmount,
-      paymentList: paymentList,
-      resultCount: paymentList.length,
-      totalResults: totalResults,
-    };
-  } catch (error: any) {
-    throw new ApiError(
-      httpStatus.SERVICE_UNAVAILABLE,
-      'Server unavailable in driver wallet function',
-      error,
-    );
-  }
-};
 
 const sendCashPaymentIntoDb = async (
   payload: { price: number; description: string },
@@ -1003,22 +993,16 @@ const sendCashPaymentIntoDb = async (
       .session(session);
 
     if (!requestDetails) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.NOT_FOUND,
-        'Active request not found or is already completed',
-        '',
+        'Active request not found or is already completed', ''
       );
     }
 
     if (requestDetails.price !== payload.price) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.NOT_ACCEPTABLE,
-        'price miss match issues , please input the correct price',
-        '',
+        'Price mismatch. Please input the correct price.', ''
       );
     }
 
@@ -1031,8 +1015,6 @@ const sendCashPaymentIntoDb = async (
       .session(session);
 
     if (existingPayment) {
-      await session.abortTransaction();
-      session.endSession();
       return {
         success: false,
         message: 'Payment already processed for this request',
@@ -1055,13 +1037,10 @@ const sendCashPaymentIntoDb = async (
       { session },
     );
 
-    if (!result || result.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
+    if (!result?.length) {
       throw new ApiError(
         httpStatus.NOT_ACCEPTABLE,
-        'issues by the cash payment recivable section',
-        '',
+        'Issue while recording the cash payment', ''
       );
     }
 
@@ -1072,39 +1051,36 @@ const sendCashPaymentIntoDb = async (
     );
 
     if (!changeCompleteStatus) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.NOT_ACCEPTABLE,
-        'issues by the cash payable status ',
-        '',
+        'Failed to update request completion status', ''
       );
     }
 
     const data = {
       title: 'Trip Cash Payment Request',
-      content: `Successfully Received Cash Payment`,
+      content: 'Successfully received cash payment',
       time: new Date(),
     };
 
-    const notificationsBuilder = new notifications({
-      userId: requestDetails.userId,
-      driverId: requestDetails.driverId,
-      requestId: requestId,
-      title: data.title,
-      content: data.content,
-      createdAt: data.time,
-    });
+    const notification = await notifications.create(
+      [
+        {
+          userId: requestDetails.userId,
+          driverId: requestDetails.driverId,
+          requestId,
+          title: data.title,
+          content: data.content,
+          createdAt: data.time,
+        },
+      ],
+      { session },
+    );
 
-    const storeNotification = await notificationsBuilder.save({ session });
-
-    if (!storeNotification) {
-      await session.abortTransaction();
-      session.endSession();
+    if (!notification?.length) {
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
-        'Failed to store notification',
-        '',
+        'Failed to store notification', ''
       );
     }
 
@@ -1114,32 +1090,27 @@ const sendCashPaymentIntoDb = async (
     );
 
     if (!sendNotification) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
-        'Failed to send push notification',
-        '',
+        'Failed to send push notification', ''
       );
     }
 
     await session.commitTransaction();
-    session.endSession();
 
     return {
       success: true,
       message: 'Cash payment recorded successfully',
     };
   } catch (error: any) {
-    // If any error occurs, abort the transaction
     await session.abortTransaction();
-    session.endSession();
-
     throw new ApiError(
       error.statusCode || httpStatus.SERVICE_UNAVAILABLE,
       error.message || 'Failed to process cash payment',
       error,
     );
+  } finally {
+    session.endSession();
   }
 };
 
@@ -1456,6 +1427,119 @@ const cleanupStripeOperations = async (stripeOps: StripeOperations) => {
   await Promise.allSettled(cleanupPromises);
 };
 
+const recent_transactions_intodb = async (driverId: string) => {
+  try {
+    const myTransactionQuery = new QueryBuilder(
+      stripepaymentgateways.find({ driverId, isDelete: false, payment_status: payment_status.paid }).populate([
+        {
+          path: 'userId',
+          select: 'name  photo stripeAccountId',
+        },
+
+      ]).select("price paymentmethod createdAt"),
+      {},
+    )
+      .search([])
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const my_transactions =
+      await myTransactionQuery.modelQuery;
+    const meta = await myTransactionQuery.countTotal();
+    return { meta, my_transactions };
+
+
+  }
+  catch (error: any) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      ' recent_transactions_intodb  failed',
+      error.message,
+    );
+  }
+
+};
+
+
+
+const driver_ledger_IntoDb = async (driverId: string) => {
+  try {
+    const summary = await stripepaymentgateways.aggregate([
+      {
+        $match: {
+          driverId: new mongoose.Types.ObjectId(driverId),
+          isDelete: false,
+          payment_status: payment_status.paid,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalCash: {
+            $sum: { $cond: [{ $eq: ["$paymentmethod", "cash"] }, "$price", 0] },
+          },
+          totalCard: {
+            $sum: { $cond: [{ $eq: ["$paymentmethod", "card"] }, "$price", 0] },
+          },
+        },
+      },
+      {
+        $addFields: {
+          grandTotal: { $add: ["$totalCash", "$totalCard"] },
+        },
+      },
+      {
+        $addFields: {
+          commission: { $multiply: ["$grandTotal", 0.2] },
+        },
+      },
+      {
+        $addFields: {
+          netEarning: { $subtract: ["$grandTotal", "$commission"] },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalCash: 1,
+          totalCard: 1,
+          grandTotal: 1,
+          commission: 1,
+          netEarning: 1,
+        },
+      },
+    ]);
+
+    return {
+      success: true,
+      message: summary.length
+        ? "Successfully retrieved driver ledger"
+        : "No payments found for this driver",
+      summary: summary[0] || {
+        totalCash: 0,
+        totalCard: 0,
+        grandTotal: 0,
+        commission: 0,
+        netEarning: 0,
+      },
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Driver ledger aggregation failed",
+      error.message,
+    );
+  }
+};
+
+
+
+
+
+
+
 const PaymentGatewayServices = {
   createConnectedAccountAndOnboardingLinkIntoDb,
   updateOnboardingLinkIntoDb,
@@ -1467,6 +1551,10 @@ const PaymentGatewayServices = {
   driverWalletFromDb,
   sendCashPaymentIntoDb,
   withdrawDriverEarningsAmountIntoDb,
+  recent_transactions_intodb,
+  driver_ledger_IntoDb
 };
+
+
 
 export default PaymentGatewayServices;

@@ -187,6 +187,33 @@ const withdrawDriverEarningsAmount: RequestHandler = catchAsync(
   },
 );
 
+
+const recent_transactions: RequestHandler = catchAsync(async (req, res) => {
+
+
+  const result = await PaymentGatewayServices.recent_transactions_intodb(req.user.id);
+  sendRespone(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'successfully find by  recent transaction amount ',
+    data: result,
+  });
+});
+
+const driver_ledger: RequestHandler = catchAsync(async (req, res) => {
+
+  const result = await PaymentGatewayServices.driver_ledger_IntoDb(req.user.id);
+  sendRespone(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'successfully find  my leger ',
+    data: result,
+  });
+
+
+
+});
+
 const PaymentGatewayController = {
   createConnectedAccountAndOnboardingLink,
   refreshOnboardingLink,
@@ -198,6 +225,8 @@ const PaymentGatewayController = {
   driverWallet,
   sendCashPayment,
   withdrawDriverEarningsAmount,
+  recent_transactions,
+  driver_ledger
 };
 
 export default PaymentGatewayController;
