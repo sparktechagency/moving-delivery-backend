@@ -9,6 +9,7 @@ import requests from './requests.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import NotificationServices from '../notification/notification.services';
 import notifications from '../notification/notification.modal';
+import { fail } from 'assert';
 
 /**
  * @param userId
@@ -1070,6 +1071,11 @@ const completed_history_IntoDb = async (
  * @param requestId
  * @returns
  */
+/**
+ * @param userId
+ * @param requestId
+ * @returns
+ */
 const user_cancel_tripe_request_IntoDb = async (
   userId: string,
   requestId: string,
@@ -1078,10 +1084,11 @@ const user_cancel_tripe_request_IntoDb = async (
   session.startTransaction();
 
   try {
+    // Check if request exists
     const isExistTripeRequest: any = await requests
       .findOne({
         _id: requestId,
-        isAccepted: false,
+        isAccepted: true,
         isCompleted: false,
         isCanceled: false,
         isDelete: false,
@@ -1090,8 +1097,6 @@ const user_cancel_tripe_request_IntoDb = async (
       .session(session);
 
     if (!isExistTripeRequest) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.NOT_FOUND,
         'This trip is not available for cancellation',
@@ -1099,6 +1104,7 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
+    // Cancel request
     const cancelRequestResult = await requests.findByIdAndUpdate(
       requestId,
       { isCanceled: true },
@@ -1106,8 +1112,6 @@ const user_cancel_tripe_request_IntoDb = async (
     );
 
     if (!cancelRequestResult) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
         'Failed to cancel the trip request',
@@ -1115,6 +1119,7 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
+    // Create notification
     const data = {
       title: 'Trip Request Canceled',
       content: `User has canceled the trip request`,
@@ -1133,8 +1138,6 @@ const user_cancel_tripe_request_IntoDb = async (
     const storeNotification = await notificationsBuilder.save({ session });
 
     if (!storeNotification) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
         'Failed to store notification',
@@ -1142,24 +1145,13 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
-    try {
-      const sendNotification = await NotificationServices.sendPushNotification(
-        isExistTripeRequest.driverId.toString(),
-        data,
-      );
+    // Send push notification
+    const sendNotification = await NotificationServices.sendPushNotification(
+      isExistTripeRequest.driverId.toString(),
+      data,
+    );
 
-      if (!sendNotification) {
-        await session.abortTransaction();
-        session.endSession();
-        throw new ApiError(
-          httpStatus.INTERNAL_SERVER_ERROR,
-          'Failed to send push notification',
-          '',
-        );
-      }
-    } catch (notificationError) {
-      await session.abortTransaction();
-      session.endSession();
+    if (!sendNotification) {
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
         'Failed to send push notification',
@@ -1167,16 +1159,16 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
+    // ✅ Commit only once
     await session.commitTransaction();
-    session.endSession();
 
     return {
       status: true,
       message: 'Successfully canceled your trip request',
     };
   } catch (error: any) {
+    // ❌ Abort only once here
     await session.abortTransaction();
-    session.endSession();
 
     if (error instanceof ApiError) {
       throw error;
@@ -1187,8 +1179,12 @@ const user_cancel_tripe_request_IntoDb = async (
       'Failed to cancel trip request',
       error,
     );
+  } finally {
+    // ✅ Always close the session
+    session.endSession();
   }
 };
+
 
 
 const cancel_user_history_IntoDb = async (
@@ -1198,12 +1194,11 @@ const cancel_user_history_IntoDb = async (
   try {
 
 
-    console.log({ userId })
     const userTripHistory = new QueryBuilder(
       requests
         .find({
           userId,
-          isAccepted: false,
+          isAccepted: true,
           isCompleted: false,
           isCanceled: true,
           isDelete: false,
