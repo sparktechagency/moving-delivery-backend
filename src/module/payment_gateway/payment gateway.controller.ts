@@ -191,7 +191,7 @@ const withdrawDriverEarningsAmount: RequestHandler = catchAsync(
 const recent_transactions: RequestHandler = catchAsync(async (req, res) => {
 
 
-  const result = await PaymentGatewayServices.recent_transactions_intodb(req.user.id);
+  const result = await PaymentGatewayServices.recent_transactions_intodb(req.user.id, req.query);
   sendRespone(res, {
     statusCode: httpStatus.OK,
     success: true,

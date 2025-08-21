@@ -491,6 +491,8 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
       'country',
       'payable_email',
       'payable_name',
+      'payment_status'
+
     ];
     allowedFilters.forEach((field) => {
       if (query[field]) {
@@ -511,6 +513,9 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
 
     const aggregationPipeline: any = [
       { $match: matchCriteria },
+      { $match: { payment_status: payment_status.paid } },
+
+
 
       {
         $addFields: {
@@ -533,7 +538,6 @@ const findByTheAllPaymentIntoDb = async (query: Record<string, unknown>) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-
       {
         $lookup: {
           from: 'driververifications',
@@ -1176,6 +1180,7 @@ const withdrawDriverEarningsAmountIntoDb = async (
  * Validates driver exists and retrieves Stripe account information
  */
 const validateDriverAndGetAccount = async (driverId: string, session: any) => {
+
   const driverStripeAccount = await User.findOne(
     {
       $and: [
@@ -1247,9 +1252,7 @@ const validateWithdrawalAmount = async (
   }
 };
 
-/**
- * Processes Stripe transfer and payout operations
- */
+
 const processStripeOperations = async (
   payload: WithdrawPayload,
   driverAccount: any,
@@ -1427,7 +1430,7 @@ const cleanupStripeOperations = async (stripeOps: StripeOperations) => {
   await Promise.allSettled(cleanupPromises);
 };
 
-const recent_transactions_intodb = async (driverId: string) => {
+const recent_transactions_intodb = async (driverId: string, query: Record<string, unknown>) => {
   try {
     const myTransactionQuery = new QueryBuilder(
       stripepaymentgateways.find({ driverId, isDelete: false, payment_status: payment_status.paid }).populate([
@@ -1437,7 +1440,7 @@ const recent_transactions_intodb = async (driverId: string) => {
         },
 
       ]).select("price paymentmethod createdAt"),
-      {},
+      query,
     )
       .search([])
       .filter()
