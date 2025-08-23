@@ -31,6 +31,7 @@ const moduleRoute = [
   { path: '/payment_withdrawal', route: Payment_Withdrawal_Routers },
   { path: '/drivers_transaction', route: drivers_transaction_router },
   { path: '/setting', route: SettingsRoutes },
+  
 ];
 
 moduleRoute.forEach((v) => router.use(v.path, v.route));

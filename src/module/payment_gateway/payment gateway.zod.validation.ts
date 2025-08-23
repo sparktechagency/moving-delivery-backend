@@ -65,7 +65,7 @@ const withdraw_driver_earnings_amount = z.object({
   body: z.object({
     withdrawAmount: z
       .number({ required_error: 'with draw amount is requited' })
-      .min(2, { message: 'min 2 digit acceptable' }),
+      .min(1, { message: 'min 2 digit acceptable' }),
   }),
 });
 

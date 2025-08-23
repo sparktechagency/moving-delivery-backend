@@ -89,4 +89,9 @@ router.get("/my_recent_transactions", auth(USER_ROLE.driver), PaymentGatewayCont
 
 router.get("/driver_ledger", auth(USER_ROLE.driver), PaymentGatewayController.driver_ledger);
 
+router.get("/driver_transaction_history", auth(USER_ROLE.driver), PaymentGatewayController.driverTransactionHistory);
+
+router.get("/driver_earning_transaction_ladger", auth(USER_ROLE.driver), PaymentGatewayController.driverEarningTransactionLadger)
+
+
 export const PaymentGatewayRoutes = router;
