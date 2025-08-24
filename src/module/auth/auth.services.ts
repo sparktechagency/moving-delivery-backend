@@ -152,11 +152,12 @@ const refreshTokenIntoDb = async (token: string) => {
 const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
   const session = await mongoose.startSession();
 
+
   try {
     session.startTransaction();
 
     if (![config?.googleauth, config?.appleauth].includes(payload?.provider)) {
-      throw new ApiError(httpStatus.FORBIDDEN, 'provided is not nfounded', '');
+      throw new ApiError(httpStatus.FORBIDDEN, 'provider is not found', '');
     }
 
     const isUserExist = await User.findOne(
@@ -176,7 +177,9 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
       const otp = Number(Math.floor(100000 + Math.random() * 9000).toString());
       payload.verificationCode = otp;
       payload.isVerify = true;
-      payload.phoneNumber = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      payload.phoneNumber = `temp-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
 
       const newUser = new User(payload);
       const savedUser = await newUser.save({ session });
@@ -201,16 +204,17 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
         config.expires_in as string,
       );
 
-      // added fcm token
+    
       const isCheckedFcm = await User.findOneAndUpdate(
         { email: payload.email },
-        { new: true, upsert: true, session },
+        { $set: { fcm: payload.fcm } }, 
+        { new: true, upsert: true, session }, 
       );
 
       if (!isCheckedFcm) {
         throw new ApiError(
           httpStatus.NOT_ACCEPTABLE,
-          'issues by the fcm token include and updatation',
+          'issues by the fcm token include and updation',
           '',
         );
       }
@@ -236,6 +240,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
     session.endSession();
   }
 };
+
 
 interface MyProfileResult {
   name: string;
