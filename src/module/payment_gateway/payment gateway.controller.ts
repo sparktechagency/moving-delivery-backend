@@ -213,16 +213,16 @@ const driver_ledger: RequestHandler = catchAsync(async (req, res) => {
 });
 
 
-const driverTransactionHistory: RequestHandler = catchAsync(async (req, res) => {
+// const driverTransactionHistory: RequestHandler = catchAsync(async (req, res) => {
 
-  const result = await PaymentGatewayServices.driverTransactionHistoryFromDb(req.user.id);
-  sendRespone(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'successfully find  my  driver transaction history ',
-    data: result,
-  });
-});
+//   const result = await PaymentGatewayServices.driverTransactionHistoryFromDb(req.user.id);
+//   sendRespone(res, {
+//     statusCode: httpStatus.OK,
+//     success: true,
+//     message: 'successfully find  my  driver transaction history ',
+//     data: result,
+//   });
+// });
 
 const driverEarningTransactionLadger: RequestHandler = catchAsync(async (req, res) => {
 
@@ -250,7 +250,6 @@ const PaymentGatewayController = {
   withdrawDriverEarningsAmount,
   recent_transactions,
   driver_ledger,
-  driverTransactionHistory,
   driverEarningTransactionLadger
 };
 
