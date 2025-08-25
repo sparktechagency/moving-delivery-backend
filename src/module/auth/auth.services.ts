@@ -7,10 +7,11 @@ import config from '../../app/config';
 import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
 import { TUser } from '../user/user.interface';
 import User from '../user/user.model';
-import { user_search_filed } from './auth.constant';
+import { socialAuth, user_search_filed } from './auth.constant';
 import { RequestResponse } from './auth.interface';
 import mongoose from 'mongoose';
 import driververifications from '../driver_verification/driver_verification.model';
+
 
 const loginUserIntoDb = async (payload: {
   email: string;
@@ -18,11 +19,9 @@ const loginUserIntoDb = async (payload: {
   fcm?: string;
 }) => {
   const session = await mongoose.startSession();
-
   try {
     session.startTransaction();
-
-    const isUserExist = await User.findOne(
+    const isUserExist: any = await User.findOne(
       {
         $and: [
           { email: payload.email },
@@ -31,14 +30,23 @@ const loginUserIntoDb = async (payload: {
           { isDelete: false },
         ],
       },
-      { password: 1, _id: 1, isVerify: 1, email: 1, role: 1 },
+      { password: 1, _id: 1, isVerify: 1, email: 1, role: 1, provider: 1 },
       { session },
     );
-
     if (!isUserExist) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
     }
-
+    
+    // Fixed: Throw error instead of returning object for social auth
+    if (isUserExist?.provider === socialAuth.googleauth || isUserExist?.provider === socialAuth.appleauth) {
+      console.log("jhGZFCGJSD")
+      throw new ApiError(
+        httpStatus.BAD_REQUEST, 
+        `This email is registered with ${isUserExist?.provider} social login. Please use social login instead.`, 
+        ''
+      );
+    }
+    
     const checkedFcm = await User.findOneAndUpdate(
       { email: payload.email },
       {
@@ -48,7 +56,6 @@ const loginUserIntoDb = async (payload: {
       },
       { new: true, upsert: true, session },
     );
-
     if (!checkedFcm) {
       throw new ApiError(
         httpStatus.NOT_FOUND,
@@ -56,29 +63,24 @@ const loginUserIntoDb = async (payload: {
         '',
       );
     }
-
     if (
       !(await User.isPasswordMatched(payload?.password, isUserExist.password))
     ) {
       throw new ApiError(httpStatus.FORBIDDEN, 'This Password Not Matched', '');
     }
-
     const jwtPayload = {
       id: isUserExist.id,
       role: isUserExist.role,
       email: isUserExist.email,
     };
-
     let accessToken: string | null = null;
     let refreshToken: string | null = null;
-
     if (isUserExist.isVerify) {
       accessToken = jwtHelpers.generateToken(
         jwtPayload,
         config.jwt_access_secret as string,
         config.expires_in as string,
       );
-
       refreshToken = jwtHelpers.generateToken(
         jwtPayload,
         config.jwt_refresh_secret as string,
@@ -86,7 +88,6 @@ const loginUserIntoDb = async (payload: {
       );
     }
     await session.commitTransaction();
-
     return {
       accessToken,
       refreshToken,
@@ -204,11 +205,11 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
         config.expires_in as string,
       );
 
-    
+
       const isCheckedFcm = await User.findOneAndUpdate(
         { email: payload.email },
-        { $set: { fcm: payload.fcm } }, 
-        { new: true, upsert: true, session }, 
+        { $set: { fcm: payload.fcm } },
+        { new: true, upsert: true, session },
       );
 
       if (!isCheckedFcm) {
