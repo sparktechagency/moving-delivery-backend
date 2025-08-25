@@ -58,16 +58,9 @@ app.use(
   express.static(path.join(__dirname, 'public')),
 );
 
-<<<<<<< HEAD
-app.use(cors({
-   origin: [
-    'http://localhost:5173',       // for local dev
-    'http://10.10.20.62:5173'      // for LAN dev
-  ]
-}));
-=======
+
 app.use(cors());
->>>>>>> 4660262bca960e0574d0ca28d1b5e81b376715cd
+
 
 app.get('/', (_req, res) => {
   res.send({
