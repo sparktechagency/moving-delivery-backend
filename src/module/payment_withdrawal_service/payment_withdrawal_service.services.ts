@@ -194,7 +194,7 @@ const recentUserStatusIntoDb = async (query: Record<string, unknown> = {}) => {
     };
 
     const userQuery = new QueryBuilder(
-      User.find().select('name email photo from to'),
+      User.find().select('name email photo phoneNumber location'),
       finalQuery,
     )
       .filter()

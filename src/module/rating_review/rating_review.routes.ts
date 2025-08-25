@@ -20,6 +20,11 @@ route.get(
   RatingReviewController.findByAllReviewRating,
 );
 
+
+route.get("/recentel_accepted_tripe", auth(USER_ROLE.driver), RatingReviewController.recentelyAcceptedTripe);
+
+route.get("/personal_details/:requestId", auth(USER_ROLE.driver), RatingReviewController.personal_details);
+
 const RatingReviewRoutes = route;
 
 export default RatingReviewRoutes;
