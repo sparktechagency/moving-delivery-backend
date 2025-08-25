@@ -1,4 +1,5 @@
 import cors from 'cors';
+
 import express, { Request, Response } from 'express';
 import globalErrorHandelar from './middleware/globalErrorHandelar';
 import notFound from './middleware/notFound';
@@ -15,6 +16,11 @@ import auto_delete_unverifyed_user from './utility/auto_delete_unverifyed_user';
 import path from 'path';
 import config from './app/config';
 import handel_notification_delete from './utility/handel_notification_delete';
+import { Call } from './module/call/call.model';
+import { jwtHelpers } from './app/jwtHalpers/jwtHalpers';
+import { fileURLToPath } from 'url';
+import { ZegoExpressEngine } from 'zego-express-engine-webrtc';
+
 
 declare global {
   namespace Express {
@@ -23,6 +29,10 @@ declare global {
     }
   }
 }
+
+
+
+// Serve static files from public folder
 
 const app = express();
 
@@ -49,7 +59,10 @@ app.use(
 );
 
 app.use(cors({
-  origin: 'http://localhost:5173', 
+   origin: [
+    'http://localhost:5173',       // for local dev
+    'http://10.10.20.62:5173'      // for LAN dev
+  ]
 }));
 
 app.get('/', (_req, res) => {

@@ -52,6 +52,7 @@ const connectSocket = (server: HTTPServer) => {
   return io;
 };
 
+
 const getSocketIO = () => {
   if (!io) {
     throw new Error('socket.io is not initialized');

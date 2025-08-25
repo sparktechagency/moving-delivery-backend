@@ -14,7 +14,7 @@ async function main() {
     await mongoose.connect(config.database_url as string);
     console.log('database connected succesfully');
 
-    server = app.listen(Number(config.port),config.base_url as string, () => {
+    server = app.listen(Number(config.port), '0.0.0.0', () => {
       console.log(`moving delivery Server is listening on port http://${config.base_url}:${config.port}`);
     });
 

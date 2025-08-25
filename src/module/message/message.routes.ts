@@ -12,7 +12,7 @@ import MessageValidationSchema from './message.zod.validation';
 const router = express.Router();
 
 router.get(
-  '/get-messages/:userId',
+  '/get-messages/:conversationId',
   auth(USER_ROLE.user),
   MessageController.getMessages,
 );

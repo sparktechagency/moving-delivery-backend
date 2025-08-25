@@ -9,14 +9,20 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 
 const getMessages = async (
-  profileId: string,
   userId: string,
+  conversationId:string,
   query: Record<string, unknown>,
 ) => {
-  const conversation = await Conversation.findOne({
-    $and: [{ participants: profileId }, { participants: userId }],
-  });
-
+  const conversation = await Conversation.findOne({_id:conversationId});
+ 
+  if(!conversation){
+     throw new ApiError(
+      httpStatus.NOT_FOUND,
+      'conversation not found',
+      ""
+    );
+  }
+  const userData = await User.findById(userId).select('name email photo');
   if (conversation) {
     const messageQuery = new QueryBuilder(
       Message.find({ conversationId: conversation?._id }),
@@ -29,8 +35,7 @@ const getMessages = async (
       .sort();
     const result = await messageQuery.modelQuery;
     const meta = await messageQuery.countTotal();
-    const userData = await User.findById(profileId).select('name email photo');
-
+    
     return {
       meta,
       result: {
@@ -40,7 +45,6 @@ const getMessages = async (
       },
     };
   }
-  const userData = await User.findById(profileId).select('name email photo');
 
   return {
     result: {

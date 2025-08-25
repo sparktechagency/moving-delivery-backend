@@ -41,59 +41,56 @@ const handleChatEvents = async (
   });
 
   // new message
-  // socket.on('new-message', async (data) => {
+  socket.on('new-message', async (data) => {
 
-  //    console.log(data);
-  //   let conversation = await Conversation.findOne({
-  //     $or: [
-  //       { sender: data?.sender, receiver: data?.receiver },
-  //       { sender: data?.receiver, receiver: data?.sender },
-  //     ],
-  //   });
+     console.log(data);
+    let conversation = await Conversation.findOne({
+          participants: { $all: [data.senderId, data.receiverId], $size: 2 },
+        });
 
-  //   if (!conversation) {
-  //     conversation = await Conversation.create({
-  //       sender: data?.sender,
-  //       receiver: data?.receiver,
-  //     });
-  //   }
-  //   const messageData = {
-  //     text: data.text,
-  //     imageUrl: data.imageUrl || [],
-  //     videoUrl: data.videoUrl || [],
-  //     msgByUserId: data?.msgByUserId,
-  //     conversationId: conversation?._id,
-  //   };
-  //   // console.log('message dta', messageData);
-  //   const saveMessage = await Message.create(messageData);
-  //   await Conversation.updateOne(
-  //     { _id: conversation?._id },
-  //     {
-  //       lastMessage: saveMessage._id,
-  //     },
-  //   );
+     if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [data.senderId, data.receiverId],
+      });
+    }
 
-  //   io.to(data?.sender.toString()).emit(
-  //     `message-${data?.receiver}`,
-  //     saveMessage,
-  //   );
-  //   io.to(data?.receiver.toString()).emit(
-  //     `message-${data?.sender}`,
-  //     saveMessage,
-  //   );
+    const messageData = {
+      text: data.text,
+      imageUrl: data.imageUrl || [],
+      videoUrl: data.videoUrl || [],
+      msgByUserId: data?.msgByUserId,
+      conversationId: conversation?._id,
+    };
+    // console.log('message dta', messageData);
+    const saveMessage = await Message.create(messageData);
+    await Conversation.updateOne(
+      { _id: conversation?._id },
+      {
+        lastMessage: saveMessage._id,
+      },
+    );
 
-  //   const conversationSender = await getSingleConversation(
-  //       data?.sender,
-  //       data?.receiver,
-  //     );
-  //     const conversationReceiver = await getSingleConversation(
-  //       data?.receiver,
-  //       data?.sender,
-  //     );
-  //     io.to(data?.sender).emit('conversation', conversationSender);
-  //     io.to(data?.receiver).emit('conversation', conversationReceiver);
+    io.to(data?.sender.toString()).emit(
+      `message-${data?.receiver}`,
+      saveMessage,
+    );
+    io.to(data?.receiver.toString()).emit(
+      `message-${data?.sender}`,
+      saveMessage,
+    );
 
-  //   });
+    const conversationSender = await getSingleConversation(
+        data?.sender,
+        data?.receiver,
+      );
+      const conversationReceiver = await getSingleConversation(
+        data?.receiver,
+        data?.sender,
+      );
+      io.to(data?.sender).emit('conversation', conversationSender);
+      io.to(data?.receiver).emit('conversation', conversationReceiver);
+
+    });
 
   // send
   socket.on('seen', async ({ conversationId, msgByUserId }) => {
