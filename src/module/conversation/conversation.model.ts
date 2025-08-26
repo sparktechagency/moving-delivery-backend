@@ -19,7 +19,7 @@ const conversationSchema = new Schema<IConversation>(
     timestamps: true,
   },
 );
-conversationSchema.index({ sender: 1, receiver: 1 });
+
 
 const Conversation = model<IConversation>('Conversation', conversationSchema);
 

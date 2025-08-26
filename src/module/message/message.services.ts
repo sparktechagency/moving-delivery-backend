@@ -1,26 +1,24 @@
 import Conversation from '../conversation/conversation.model';
 import Message from './message.model';
 
+import httpStatus from 'http-status';
+import { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import QueryBuilder from '../../app/builder/QueryBuilder';
+import ApiError from '../../app/error/ApiError';
+import { getSingleConversation } from '../../helper/getSingleConversation';
 import { getSocketIO } from '../../socket/socketConnection';
 import User from '../user/user.model';
-import ApiError from '../../app/error/ApiError';
-import httpStatus from 'http-status';
-import mongoose from 'mongoose';
 
 const getMessages = async (
   userId: string,
-  conversationId:string,
+  conversationId: string,
   query: Record<string, unknown>,
 ) => {
-  const conversation = await Conversation.findOne({_id:conversationId});
- 
-  if(!conversation){
-     throw new ApiError(
-      httpStatus.NOT_FOUND,
-      'conversation not found',
-      ""
-    );
+  const conversation = await Conversation.findOne({ _id: conversationId });
+
+  if (!conversation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'conversation not found', '');
   }
   const userData = await User.findById(userId).select('name email photo');
   if (conversation) {
@@ -35,7 +33,7 @@ const getMessages = async (
       .sort();
     const result = await messageQuery.modelQuery;
     const meta = await messageQuery.countTotal();
-    
+
     return {
       meta,
       result: {
@@ -55,60 +53,68 @@ const getMessages = async (
   };
 };
 
-const new_message_IntoDb = async (data: any) => {
-  try {
-    let conversation = await Conversation.findOne({
-      participants: { $all: [data.senderId, data.receiverId], $size: 2 },
-    });
-
-    if (!conversation) {
-      conversation = await Conversation.create({
-        participants: [data.senderId, data.receiverId],
-      });
-    }
-
-    const messageData = {
-      text: data.text,
-      imageUrl: data.imageUrl || [],
-      msgByUserId: data?.msgByUserId,
-      conversationId: conversation?._id,
-    };
-    // console.log('message dta', messageData);
-    const saveMessage = await Message.create(messageData);
-    await Conversation.updateOne(
-      { _id: conversation?._id },
-      {
-        lastMessage: saveMessage._id,
-      },
-    );
-
-    const io = getSocketIO();
-
-    io.to(data?.senderId.toString()).emit(
-      `message-${data?.receiverId}`,
-      saveMessage,
-    );
-    io.to(data?.receiverId.toString()).emit(
-      `message-${data?.senderId}`,
-      saveMessage,
-    );
-
-    io.emit('debug_check', {
-      from: data.senderId,
-      to: data.receiverId,
-      time: new Date(),
-    });
-
-    return saveMessage;
-  } catch (error: any) {
+// send message
+const new_message_IntoDb = async (user: JwtPayload, data: any) => {
+  console.log('ne-message user', user);
+  const isRecieverExist = await User.findOne({ _id: data.receiverId });
+  if (!isRecieverExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'reciever Id not found', '');
+  }
+  if (user.id === data.receiverId) {
     throw new ApiError(
-      httpStatus.NOT_FOUND,
-      'issues by the new message intodb',
-      error,
+      httpStatus.BAD_REQUEST,
+      'SenderId and receiverId cannot be the same',
+      '',
     );
   }
+  let conversation = await Conversation.findOne({
+    participants: { $all: [user.id, data.receiverId], $size: 2 },
+  });
+
+  console.log('conversation', conversation);
+  if (!conversation) {
+    conversation = await Conversation.create({
+      participants: [user.id, data.receiverId],
+    });
+  }
+
+  const messageData = {
+    text: data.text,
+    imageUrl: data.imageUrl || [],
+    msgByUserId: user.id,
+    conversationId: conversation?._id,
+  };
+  // console.log('message dta', messageData);
+  const saveMessage = await Message.create(messageData);
+  await Conversation.updateOne(
+    { _id: conversation?._id },
+    {
+      lastMessage: saveMessage._id,
+    },
+  );
+
+  const io = getSocketIO();
+
+   io.to(conversation._id.toString()).emit("new-message", saveMessage);
+
+  const conversationSender = await getSingleConversation(
+    user.id,
+    data?.receiverId,
+  );
+  const conversationReceiver = await getSingleConversation(
+    data?.receiverId,
+    user.id,
+  );
+
+   io.to(conversation._id.toString()).emit("conversation-updated", {
+      [user.id]: conversationSender,
+      [data?.receiverId]: conversationReceiver,
+    });
+
+  return saveMessage;
 };
 
+//update message
 const updateMessageById_IntoDb = async (
   messageId: string,
   updateData: Partial<{ text: string; imageUrl: string[] }>,
@@ -196,7 +202,7 @@ const deleteMessageById_IntoDb = async (messageId: string) => {
 
     const io = getSocketIO();
     for (const userId of conversation.participants) {
-      io.to(userId.toString()).emit('message-deleted', { messageId });
+     io.to(userId.toString()).emit(`message-deleted`);
     }
 
     return {
@@ -214,8 +220,6 @@ const deleteMessageById_IntoDb = async (messageId: string) => {
     );
   }
 };
-
-
 
 
 const MessageService = {

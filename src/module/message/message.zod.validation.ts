@@ -2,19 +2,24 @@ import { z } from 'zod';
 
 const messageSchema = z.object({
   body: z.object({
-    text: z.string().min(1, 'Text is required'),
+    text: z.string().optional(),
     imageUrl: z.array(z.string()).optional(),
-    videoUrl: z.array(z.string()).optional(),
-    senderId: z.string({ required_error: 'sender id is required' }),
-    receiverId: z.string({ required_error: 'reciver id is required' }),
-    msgByUserId: z.string({ required_error: 'msg by userId is required' }),
+    receiverId: z.string({ required_error: "receiver id is required" }),
+
+  }).strict({ message: 'Only text | imageUrl| recieverId  is allowed in the request body' }).superRefine((data, ctx) => {
+    if (!data.text?.trim() && (!data.imageUrl || data.imageUrl.length === 0)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Either text or imageUrl is required",
+        path: ["text"], // you can also point to ["imageUrl"]
+      });
+    }
   }),
-});
+})
 
 const messageUpdateSchema = z.object({
   body: z.object({
     text: z.string().min(1, 'Text is required').optional(),
-    imageUrl: z.array(z.string()).optional(),
   }),
 });
 

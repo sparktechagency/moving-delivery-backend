@@ -28,6 +28,7 @@ const messageSchema = new Schema<IMessage>(
   },
   {
     timestamps: true,
+    versionKey:false
   },
 );
 

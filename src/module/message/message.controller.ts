@@ -19,7 +19,8 @@ const getMessages: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const new_message: RequestHandler = catchAsync(async (req, res) => {
-  const result = await MessageService.new_message_IntoDb(req.body);
+
+  const result = await MessageService.new_message_IntoDb(req.user,req.body);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,

@@ -72,6 +72,7 @@ const loginUserIntoDb = async (payload: {
       id: isUserExist.id,
       role: isUserExist.role,
       email: isUserExist.email,
+      photo:isUserExist?.photo
     };
     let accessToken: string | null = null;
     let refreshToken: string | null = null;

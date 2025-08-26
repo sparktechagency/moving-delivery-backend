@@ -1,9 +1,12 @@
 import { Server as IOServer, Socket } from 'socket.io';
 
+import httpStatus from 'http-status';
+import ApiError from '../app/error/ApiError';
+import { getSingleConversation } from '../helper/getSingleConversation';
 import Conversation from '../module/conversation/conversation.model';
 import Message from '../module/message/message.model';
 import User from '../module/user/user.model';
-import { getSingleConversation } from '../helper/getSingleConversation';
+import QueryBuilder from '../app/builder/QueryBuilder';
 
 const handleChatEvents = async (
   io: IOServer,
@@ -11,54 +14,121 @@ const handleChatEvents = async (
   onlineUser: any,
   currentUserId: string,
 ): Promise<void> => {
-  // message page
-  socket.on('message-page', async (userId) => {
-    const userDetails = await User.findById(userId).select('-password');
-    if (userDetails) {
-      const payload = {
-        _id: userDetails._id,
-        name: userDetails.name,
-        email: userDetails.email,
-        profile_image: userDetails?.photo,
-        online: onlineUser.has(userId),
-      };
-      socket.emit('message-user', payload);
-    } else {
-      socket.emit('socket-error', {
-        errorMessage: 'Current user is not exits',
-      });
-    }
-    //get previous message
-    const conversation = await Conversation.findOne({
-      $or: [
-        { sender: currentUserId, receiver: userId },
-        { sender: userId, receiver: currentUserId },
-      ],
-    });
-    const messages = await Message.find({ conversationId: conversation?._id });
-    console.log(messages);
-    socket.emit('messages', messages || []);
+
+  // join conversation
+  socket.on("join_conversation", (conversationId: string) => {
+    socket.join(conversationId);
+    console.log(`User ${currentUserId} joined room ${conversationId}`);
   });
+
+
+  // message page
+  socket.on('message-page', async (data) => {
+  const { conversationId, page = 1, limit = 2, search = '' } = data;
+
+  // 1️⃣ Fetch the conversation
+  const conversation = await Conversation.findById(conversationId).populate('participants', '-password');
+  if (!conversation) {
+    return socket.emit('socket-error', { errorMessage: 'Conversation not found' });
+  }
+
+  console.log("conversation",conversation)
+  const otherUser:any = conversation.participants.find(
+    (user: any) => user._id.toString() !== currentUserId
+  );
+
+  if(!otherUser){
+    throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'receiverId not found',
+        '',
+      );
+  }
+  const payload = {
+    recieverId: otherUser._id,
+    name: otherUser.name,
+    profile_image: otherUser?.photo,
+    online: onlineUser.has(otherUser._id.toString()),
+  };
+  socket.emit('message-user', payload);
+
+  // 3️⃣ Fetch paginated messages using QueryBuilder
+  const messageQuery = new QueryBuilder(
+    Message.find({ conversationId }),
+    { page, limit, search }
+  )
+    .search(['text'])
+    .sort()
+    .paginate();
+
+  const result = await messageQuery.modelQuery;
+  const meta = await messageQuery.countTotal();
+
+
+  socket.emit('messages', {
+    conversationId,
+    userData: payload,
+    messages: result.reverse(), 
+    meta,
+  });
+
+  socket.join(conversationId.toString());
+});
+
+
+
+  // socket.on('message-page', async (data) => {
+  //   const userDetails = await User.findById(data.userId).select('-password');
+  //   console.log(userDetails);
+  //   if (userDetails) {
+  //     const payload = {
+  //       _id: userDetails._id,
+  //       name: userDetails.name,
+  //       profile_image: userDetails?.photo,
+  //       online: onlineUser.has(data.userId),
+  //     };
+  //     socket.emit('message-user', payload);
+  //   } else {
+  //     socket.emit('socket-error', {
+  //       errorMessage: 'Current user is not exits',
+  //     });
+  //   }
+  //   //get previous message
+  //   const conversation = await Conversation.findOne({
+  //     participants: { $all: [currentUserId, data.userId], $size: 2 },
+  //   });
+
+  //   const messages = await Message.find({ conversationId: conversation?._id });
+  //   console.log(messages);
+  //   socket.emit('messages', messages || []);
+  // });
+
 
   // new message
   socket.on('new-message', async (data) => {
 
-     console.log(data);
+    if (currentUserId === data.receiverId) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'SenderId and receiverId cannot be the same',
+        '',
+      );
+    }
+    console.log("data",data);
     let conversation = await Conversation.findOne({
-          participants: { $all: [data.senderId, data.receiverId], $size: 2 },
-        });
+      participants: { $all: [currentUserId, data.receiverId], $size: 2 },
+    });
 
-     if (!conversation) {
+    if (!conversation) {
       conversation = await Conversation.create({
-        participants: [data.senderId, data.receiverId],
+        participants: [currentUserId, data.receiverId],
       });
     }
 
     const messageData = {
       text: data.text,
       imageUrl: data.imageUrl || [],
-      videoUrl: data.videoUrl || [],
-      msgByUserId: data?.msgByUserId,
+      msgByUserId: currentUserId,
       conversationId: conversation?._id,
     };
     // console.log('message dta', messageData);
@@ -70,29 +140,25 @@ const handleChatEvents = async (
       },
     );
 
-    io.to(data?.sender.toString()).emit(
-      `message-${data?.receiver}`,
-      saveMessage,
-    );
-    io.to(data?.receiver.toString()).emit(
-      `message-${data?.sender}`,
-      saveMessage,
-    );
+    io.to(conversation._id.toString()).emit("new-message", saveMessage);
 
     const conversationSender = await getSingleConversation(
-        data?.sender,
-        data?.receiver,
-      );
-      const conversationReceiver = await getSingleConversation(
-        data?.receiver,
-        data?.sender,
-      );
-      io.to(data?.sender).emit('conversation', conversationSender);
-      io.to(data?.receiver).emit('conversation', conversationReceiver);
-
+      currentUserId,
+      data?.receiverId,
+    );
+    const conversationReceiver = await getSingleConversation(
+      data?.receiverId,
+      currentUserId,
+    );
+   
+    io.to(conversation._id.toString()).emit("conversation-updated", {
+      [currentUserId]: conversationSender,
+      [data?.receiverId]: conversationReceiver,
     });
 
-  // send
+  });
+
+  // seen message
   socket.on('seen', async ({ conversationId, msgByUserId }) => {
     await Message.updateMany(
       { conversationId: conversationId, msgByUserId: msgByUserId },
@@ -113,23 +179,6 @@ const handleChatEvents = async (
     io.to(msgByUserId).emit('conversation', conversationReceiver);
   });
 
-  socket.on('message-updated', (updatedMessage) => {
-    //  if (updatedMessage.conversationId === activeConversationId) {
-    //     console.log('Message updated:', updatedMessage);
-
-    //     // Update message list in UI
-    //     update MessageInUI(updatedMessage);
-    //   }
-
-    console.log(updatedMessage);
-  });
-
-  socket.on('message-deleted', ({ messageId }) => {
-    console.log('Message deleted:', messageId);
-
-    // // Remove message from UI
-    // removeMessageFromUI(messageId);
-  });
 };
 
 export default handleChatEvents;
