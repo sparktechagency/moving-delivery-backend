@@ -26,15 +26,19 @@ export const getSingleConversation = async (
   const otherUser = conversation.participants.find(
     (u: any) => u._id.toString() !== currentUserId
   );
-
+  
+  console.log(conversation.lastMessage)
   return {
     conversationId: conversation._id,
     userData: {
       userId: otherUser?._id,
       name: otherUser?.name,
-      profileImage: otherUser?.profile_image,
+      profileImage: otherUser?.photo,
     },
     unseenMsg: countUnseenMessage,
-    lastMsg: conversation.lastMessage,
+    lastMsg: {
+      ...conversation.lastMessage.toObject(),
+      text: conversation.lastMessage.text ? conversation.lastMessage.text : `send ${conversation.lastMessage.imageUrl.length} file`,
+    }
   };
 };

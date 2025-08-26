@@ -105,7 +105,7 @@ const handleChatEvents = async (
 
 
   // new message
-  socket.on('new-message', async (data) => {
+  socket.on('send-message', async (data) => {
 
     if (currentUserId === data.receiverId) {
       throw new ApiError(
@@ -131,7 +131,7 @@ const handleChatEvents = async (
       msgByUserId: currentUserId,
       conversationId: conversation?._id,
     };
-    // console.log('message dta', messageData);
+   
     const saveMessage = await Message.create(messageData);
     await Conversation.updateOne(
       { _id: conversation?._id },
@@ -159,25 +159,45 @@ const handleChatEvents = async (
   });
 
   // seen message
-  socket.on('seen', async ({ conversationId, msgByUserId }) => {
-    await Message.updateMany(
-      { conversationId: conversationId, msgByUserId: msgByUserId },
-      { $set: { seen: true } },
-    );
+ socket.on("seen", async ({ conversationId }) => {
+ 
+  const conversation = await Conversation.findById(conversationId);
+  if (!conversation)  throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'conversation not found',
+        '',
+      );;
 
-    //send conversation --------------
-    const conversationSender = await getSingleConversation(
-      currentUserId,
-      msgByUserId,
-    );
-    const conversationReceiver = await getSingleConversation(
-      msgByUserId,
-      currentUserId,
-    );
 
-    io.to(currentUserId as string).emit('conversation', conversationSender);
-    io.to(msgByUserId).emit('conversation', conversationReceiver);
+  const otherUserId:any = conversation.participants.find(
+    (id) => id.toString() !== currentUserId
+  );
+
+
+  await Message.updateMany(
+    { conversationId, msgByUserId: otherUserId },
+    { $set: { seen: true } }
+  );
+
+
+  const conversationSender = await getSingleConversation(
+    currentUserId,
+    otherUserId.toString()
+  );
+  const conversationReceiver = await getSingleConversation(
+    otherUserId.toString(),
+    currentUserId
+  );
+
+  io.to(currentUserId).emit("conversation", conversationSender);
+  io.to(otherUserId.toString()).emit("conversation", conversationReceiver);
+
+  io.to(conversationId.toString()).emit("messages-seen", {
+    conversationId,
+    seenBy: currentUserId,
   });
+});
+
 
 };
 
