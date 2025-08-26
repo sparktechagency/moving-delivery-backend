@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.get(
   '/get-messages/:conversationId',
-  auth(USER_ROLE.user),
+  auth(USER_ROLE.user,USER_ROLE.driver),
   MessageController.getMessages,
 );
 
