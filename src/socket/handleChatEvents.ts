@@ -16,7 +16,7 @@ const handleChatEvents = async (
 ): Promise<void> => {
 
   // join conversation
-  socket.on("join_conversation", (conversationId: string) => {
+  socket.on("join-conversation", (conversationId: string) => {
     socket.join(conversationId);
     console.log(`User ${currentUserId} joined room ${conversationId}`);
   });
