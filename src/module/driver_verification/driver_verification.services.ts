@@ -337,6 +337,8 @@ const deleteDriverVerificationIntoDb = async (
 const searching_for_available_trip_truck_listsWithMongo = async (
   userLocation: IUserLocation,
 ): Promise<DriverWithMetrics[]> => {
+
+console.log(userLocation)
   try {
     const [destLong, destLat] = userLocation.to.coordinates;
     const drivers: Driver[] = await driververifications.aggregate([
@@ -368,10 +370,14 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       },
     ]);
 
+     console.log(drivers)
+
+
     if (!drivers.length) {
       return [];
     }
 
+   
     const enrichedDrivers =
       drivers &&
       drivers?.map((driver) => {
