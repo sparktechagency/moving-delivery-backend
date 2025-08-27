@@ -5,8 +5,8 @@ import ApiError from '../app/error/ApiError';
 import { getSingleConversation } from '../helper/getSingleConversation';
 import Conversation from '../module/conversation/conversation.model';
 import Message from '../module/message/message.model';
-import User from '../module/user/user.model';
 import QueryBuilder from '../app/builder/QueryBuilder';
+import { getConversationList } from '../helper/getConversationList';
 
 const handleChatEvents = async (
   io: IOServer,
@@ -20,11 +20,19 @@ const handleChatEvents = async (
     socket.join(conversationId);
     console.log(`User ${currentUserId} joined room ${conversationId}`);
   });
-
+  
+   socket.on("get-conversations", async (query) => {
+      try {
+        const convList = await getConversationList(currentUserId, onlineUser, query);
+        socket.emit("conversation-list", convList);
+      } catch (err: any) {
+        socket.emit("socket-error", { errorMessage: err.message });
+      }
+    });
 
   // message page
   socket.on('message-page', async (data) => {
-  const { conversationId, page = 1, limit = 2, search = '' } = data;
+  const { conversationId, page = 1, limit = 5, search = '' } = data;
 
   // 1️⃣ Fetch the conversation
   const conversation = await Conversation.findById(conversationId).populate('participants', '-password');
