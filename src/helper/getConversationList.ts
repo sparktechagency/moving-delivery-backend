@@ -29,7 +29,7 @@ export const getConversationList = async (
       ...userSearchFilter,
     })
       .sort({ updatedAt: -1 })
-      .populate({ path: 'participants', select: 'name photo _id email' })
+      .populate({ path: 'participants', select: 'name photo _id' })
       .populate('lastMessage'),
     query,
   )
