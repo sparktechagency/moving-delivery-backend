@@ -48,7 +48,7 @@ const connectSocket = (server: HTTPServer) => {
 
 
     io.emit("onlineUsers", Array.from(onlineUsers));
-
+     console.log(onlineUsers)
     socket.on("disconnect", () => {
       console.log("Disconnected:", socket.id);
       onlineUsers.delete(currentUserId);

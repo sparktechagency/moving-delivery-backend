@@ -11,7 +11,7 @@ export const getConversationList = async (
 ) => {
   const profileObjectId = new mongoose.Types.ObjectId(profileId);
   const searchTerm = query.searchTerm as string;
-
+  console.log("online users",onlineUsers)
   let userSearchFilter = {};
   if (searchTerm) {
     const matchingUsers = await User.find(
@@ -21,7 +21,8 @@ export const getConversationList = async (
     const matchingUserIds = matchingUsers.map((u) => u._id);
     userSearchFilter = { participants: { $in: matchingUserIds } };
   }
-
+  
+console.log(userSearchFilter)
   // Use your QueryBuilder
   const conversationQuery = new QueryBuilder(
     Conversation.find({
@@ -40,7 +41,7 @@ export const getConversationList = async (
 
   const conversations = await conversationQuery.modelQuery;
   const meta = await conversationQuery.countTotal();
-
+  console.log("conversations",conversations)
   // Format conversation list
   const conversationList = await Promise.all(
     conversations.map(async (conv: any) => {
@@ -53,26 +54,27 @@ export const getConversationList = async (
         msgByUserId: { $ne: profileObjectId },
         seen: false,
       });
-
-      return {
-        conversationId: conv._id,
-        userData: {
-          userId: otherUser._id,
-          name: otherUser.name,
-          profileImage: otherUser.photo,
-          online: onlineUsers.has(otherUser._id.toString()),
-        },
-        unseenMsg: unseenCount,
-        lastMsg: {
-          ...conv.lastMessage.toObject(),
-          text: conv.lastMessage.text
-            ? conv.lastMessage.text
-            : `send ${conv.lastMessage.imageUrl.length} file`,
-        },
-      };
+     
+   return {
+      conversationId: conv._id,
+      userData: {
+        userId: otherUser._id,
+        name: otherUser.name,
+        profileImage: otherUser.photo,
+        online: onlineUsers.has(otherUser._id.toString()),
+      },
+      unseenMsg: unseenCount,
+      lastMsg: conv.lastMessage
+        ? {
+            ...conv.lastMessage.toObject(),
+            text: conv.lastMessage.text
+              ? conv.lastMessage.text
+              : `send ${conv.lastMessage.imageUrl?.length || 0} file`,
+          }
+        : null,
+    };
     }),
   );
-
   return {
     meta,
     result: conversationList,

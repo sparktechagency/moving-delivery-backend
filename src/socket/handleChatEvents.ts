@@ -22,11 +22,13 @@ const handleChatEvents = async (
 
   socket.on('get-conversations', async (query) => {
     try {
+      console.log("asdasdas")
       const convList = await getConversationList(
         currentUserId,
         onlineUser,
         query,
       );
+      console.log("convlist",convList)
       socket.emit('conversation-list', convList);
     } catch (err: any) {
       socket.emit('socket-error', { errorMessage: err.message });
@@ -154,13 +156,18 @@ const handleChatEvents = async (
       currentUserId,
       data?.receiverId,
     );
+    console.log("conversationSender",conversationSender)
     const conversationReceiver = await getSingleConversation(
       data?.receiverId,
       currentUserId,
     );
+     console.log("conversationreciever",conversationReceiver)
 
-    io.to(currentUserId).emit('conversation-updated', conversationSender);
-    io.to(data.receiverId).emit('conversation-updated', conversationReceiver);
+    const senderList = await getConversationList(currentUserId, onlineUser, {});
+     const recieverList = await getConversationList(currentUserId, onlineUser, {});
+
+    io.to(currentUserId.toString()).emit('conversation-list', senderList);
+    io.to(data.receiverId.toString()).emit('conversation-list', recieverList);
   });
 
   // seen message
