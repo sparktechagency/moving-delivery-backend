@@ -15,7 +15,7 @@ export const getSingleConversation = async (
 
   if (!conversation) return null;
 
-  // count unseen messages for current user
+  // count unseen messages
   const countUnseenMessage = await Message.countDocuments({
     conversationId: conversation._id,
     msgByUserId: { $ne: currentUserId },
@@ -26,8 +26,19 @@ export const getSingleConversation = async (
   const otherUser = conversation.participants.find(
     (u: any) => u._id.toString() !== currentUserId
   );
-  
-  console.log(conversation.lastMessage)
+
+  // prepare last message safely
+  let lastMsg = null;
+  if (conversation.lastMessage) {
+    const msgObj = conversation.lastMessage.toObject();
+    lastMsg = {
+      ...msgObj,
+      text: msgObj.text
+        ? msgObj.text
+        : `send ${msgObj.imageUrl?.length || 0} file`
+    };
+  }
+
   return {
     conversationId: conversation._id,
     userData: {
@@ -36,9 +47,6 @@ export const getSingleConversation = async (
       profileImage: otherUser?.photo,
     },
     unseenMsg: countUnseenMessage,
-    lastMsg: {
-      ...conversation.lastMessage.toObject(),
-      text: conversation.lastMessage.text ? conversation.lastMessage.text : `send ${conversation.lastMessage.imageUrl.length} file`,
-    }
+    lastMsg,
   };
 };

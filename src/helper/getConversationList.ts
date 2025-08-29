@@ -1,82 +1,151 @@
+// 
+
+
+
 import mongoose from 'mongoose';
-import QueryBuilder from '../app/builder/QueryBuilder';
 import Conversation from '../module/conversation/conversation.model';
-import Message from '../module/message/message.model';
 import User from '../module/user/user.model';
 
 export const getConversationList = async (
-  profileId: string,
-  onlineUsers: any,
-  query: any,
+  userId: string,
+  onlineUsers: Set<string>,
+  query: any
 ) => {
-  const profileObjectId = new mongoose.Types.ObjectId(profileId);
+  const userObjectId = new mongoose.Types.ObjectId(userId);
   const searchTerm = query.searchTerm as string;
-  console.log("online users",onlineUsers)
-  let userSearchFilter = {};
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 15;
+  const skip = (page - 1) * limit;
+
+  let userFilter: any = {};
   if (searchTerm) {
     const matchingUsers = await User.find(
       { name: { $regex: searchTerm, $options: 'i' } },
-      '_id',
+      '_id'
     );
     const matchingUserIds = matchingUsers.map((u) => u._id);
-    userSearchFilter = { participants: { $in: matchingUserIds } };
+    if (matchingUserIds.length > 0) {
+      userFilter = { participants: { $in: matchingUserIds } };
+    } else {
+      userFilter = { _id: null }; 
+    }
   }
-  
-console.log(userSearchFilter)
-  // Use your QueryBuilder
-  const conversationQuery = new QueryBuilder(
-    Conversation.find({
-      participants: profileObjectId,
-      ...userSearchFilter,
-    })
-      .sort({ updatedAt: -1 })
-      .populate({ path: 'participants', select: 'name photo _id' })
-      .populate('lastMessage'),
-    query,
-  )
-    .fields()
-    .filter()
-    .paginate()
-    .sort();
 
-  const conversations = await conversationQuery.modelQuery;
-  const meta = await conversationQuery.countTotal();
-  console.log("conversations",conversations)
-  // Format conversation list
-  const conversationList = await Promise.all(
-    conversations.map(async (conv: any) => {
-      const otherUser = conv.participants.find(
-        (u: any) => u._id.toString() !== profileId,
-      );
+  const conversations = await Conversation.aggregate([
+    { $match: { participants: userObjectId, ...userFilter } },
 
-      const unseenCount = await Message.countDocuments({
-        conversationId: conv._id,
-        msgByUserId: { $ne: profileObjectId },
-        seen: false,
-      });
-     
-   return {
-      conversationId: conv._id,
-      userData: {
-        userId: otherUser._id,
-        name: otherUser.name,
-        profileImage: otherUser.photo,
-        online: onlineUsers.has(otherUser._id.toString()),
+    {
+      $facet: {
+        metadata: [{ $count: 'total' }],
+        data: [
+          { $sort: { updatedAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+
+          // Lookup participants
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'participants',
+              foreignField: '_id',
+              as: 'participantsData',
+            },
+          },
+          // Lookup last message
+          {
+            $lookup: {
+              from: 'messages',
+              localField: 'lastMessage',
+              foreignField: '_id',
+              as: 'lastMessageData',
+            },
+          },
+          { $unwind: { path: '$lastMessageData', preserveNullAndEmptyArrays: true } },
+          // Count unseen messages
+          {
+            $lookup: {
+              from: 'messages',
+              let: { convId: '$_id' },
+              pipeline: [
+                { $match: { $expr: { $eq: ['$conversationId', '$$convId'] } } },
+                { $match: { msgByUserId: { $ne: userObjectId }, seen: false } },
+                { $count: 'unseenCount' },
+              ],
+              as: 'unseenData',
+            },
+          },
+          {
+            $addFields: {
+              unseenMsg: { $arrayElemAt: ['$unseenData.unseenCount', 0] },
+              otherUser: {
+                $arrayElemAt: [
+                  {
+                    $filter: {
+                      input: '$participantsData',
+                      cond: { $ne: ['$$this._id', userObjectId] },
+                    },
+                  },
+                  0,
+                ],
+              },
+            },
+          },
+          {
+            $project: {
+              conversationId: '$_id',
+              unseenMsg: { $ifNull: ['$unseenMsg', 0] },
+              userData: {
+                userId: '$otherUser._id',
+                name: '$otherUser.name',
+                profileImage: '$otherUser.photo',
+                online: {
+                  $in: [
+                    '$otherUser._id',
+                    Array.from(onlineUsers).map((id) => new mongoose.Types.ObjectId(id)),
+                  ],
+                },
+              },
+              lastMsg: {
+                $cond: {
+                  if: '$lastMessageData',
+                  then: {
+                    _id: '$lastMessageData._id',
+                    text: {
+                      $cond: {
+                        if: { $ifNull: ['$lastMessageData.text', false] },
+                        then: '$lastMessageData.text',
+                        else: {
+                          $concat: [
+                            'send ',
+                            { $toString: { $size: { $ifNull: ['$lastMessageData.imageUrl', []] } } },
+                            ' file',
+                          ],
+                        },
+                      },
+                    },
+                    imageUrl: '$lastMessageData.imageUrl',
+                    createdAt: '$lastMessageData.createdAt',
+                  },
+                  else: null,
+                },
+              },
+            },
+          },
+        ],
       },
-      unseenMsg: unseenCount,
-      lastMsg: conv.lastMessage
-        ? {
-            ...conv.lastMessage.toObject(),
-            text: conv.lastMessage.text
-              ? conv.lastMessage.text
-              : `send ${conv.lastMessage.imageUrl?.length || 0} file`,
-          }
-        : null,
-    };
-    }),
-  );
+    },
+  ]);
+
+  const total = conversations[0].metadata[0]?.total || 0;
+  const totalPages = Math.ceil(total / limit);
+
   return {
-    meta,
-    result: conversationList,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+    conversations: conversations[0].data,
   };
 };
