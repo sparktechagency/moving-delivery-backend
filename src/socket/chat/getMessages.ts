@@ -9,7 +9,7 @@ export const handleMessagePage = async (
   currentUserId:string,
   data:any
 ) => {
-  const { conversationId, page = 1, limit = 5, search = "" } = data;
+  const { conversationId, page = 1, limit = 15, search = "" } = data;
 
   const conversation = await Conversation.findById(conversationId).populate(
     "participants",
