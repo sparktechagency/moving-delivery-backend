@@ -11,7 +11,7 @@ const handleChatEvents = async (
   onlineUsers: any,
   currentUserId: string,
 ): Promise<void> => {
-  
+
   // join conversation
   socket.on('join-conversation', async (conversationId: string) => {
     socket.join(conversationId);
@@ -39,7 +39,7 @@ const handleChatEvents = async (
   });
 
   socket.on('send-message', (data) =>
-    handleSendMessage(io, currentUserId, data),
+    handleSendMessage(io, socket, currentUserId, data),
   );
 
   socket.on('seen', async ({ conversationId }) => {

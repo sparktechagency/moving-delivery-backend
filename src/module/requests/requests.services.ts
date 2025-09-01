@@ -1,15 +1,14 @@
 import httpStatus from 'http-status';
-import ApiError from '../../app/error/ApiError';
 import mongoose, { Types } from 'mongoose';
+import ApiError from '../../app/error/ApiError';
 import driververifications from '../driver_verification/driver_verification.model';
 import { RequestResponse, TRequest } from './requests.interface';
 
+import QueryBuilder from '../../app/builder/QueryBuilder';
+import notifications from '../notification/notification.modal';
+import NotificationServices from '../notification/notification.services';
 import SelectTruck from '../select_truck/select_truck.model';
 import requests from './requests.model';
-import QueryBuilder from '../../app/builder/QueryBuilder';
-import NotificationServices from '../notification/notification.services';
-import notifications from '../notification/notification.modal';
-import { fail } from 'assert';
 
 /**
  * @param userId
@@ -37,8 +36,6 @@ const sendRequestIntoDb = async (
       );
     }
 
-
-
     if (
       !payload.driverVerificationsId ||
       !Types.ObjectId.isValid(payload.driverVerificationsId)
@@ -61,7 +58,6 @@ const sendRequestIntoDb = async (
       { driverSelectedTruck: 1, userId: 1 },
       { session },
     );
-
 
     if (!verifiedDriver) {
       throw new ApiError(
@@ -222,13 +218,13 @@ const myClientRequestIntoDb = async (
             select: 'name from.coordinates to.coordinates',
           },
           {
-            path: "driverVerificationsId",
-            select: "driverSelectedTruck",
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
             populate: {
-              path: "driverSelectedTruck",
-              select: "truckcategories",
-            }
-          }
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+            },
+          },
         ])
         .select(
           '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime -price -avgRating -totalReviews -createdAt -updatedAt',
@@ -679,7 +675,6 @@ const completedTripeRequestIntoDb = async (
 
   console.log({ driverId, requestId });
 
-
   try {
     const request = await requests
       .findOne(
@@ -694,8 +689,6 @@ const completedTripeRequestIntoDb = async (
         { userId: 1, driverVerificationsId: 1 },
       )
       .session(session);
-
-
 
     if (!request) {
       throw new ApiError(
@@ -737,41 +730,41 @@ const completedTripeRequestIntoDb = async (
       );
     }
 
-    const data = {
-      title: 'Connection Request Accepted',
-      content: `Accepted your connection request`,
-      time: new Date(),
-    };
+    // const data = {
+    //   title: 'Connection Request Accepted',
+    //   content: `Accepted your connection request`,
+    //   time: new Date(),
+    // };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      request.userId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   request.userId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
-    const notificationsBuilder = new notifications({
-      userId: request.userId.toString(),
-      requestId: request._id,
-      title: data.time,
-      content: data.content,
-    });
+    // const notificationsBuilder = new notifications({
+    //   userId: request.userId.toString(),
+    //   requestId: request._id,
+    //   title: data.time,
+    //   content: data.content,
+    // });
 
-    const storeNotification = await notificationsBuilder.save({ session });
+    // const storeNotification = await notificationsBuilder.save({ session });
 
-    if (!storeNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!storeNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     await session.commitTransaction();
     session.endSession();
@@ -974,19 +967,17 @@ const user_upcomming_history_IntoDb = async (
             select: 'from.coordinates to.coordinates',
           },
           {
-            path: "driverId",
-            select: "name"
-
+            path: 'driverId',
+            select: 'name',
           },
           {
-            path: "driverVerificationsId",
-            select: "driverSelectedTruck",
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
             populate: {
-              path: "driverSelectedTruck",
-              select: "truckcategories",
-            }
-
-          }
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+            },
+          },
         ])
         .select(
           '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
@@ -1034,7 +1025,6 @@ const completed_history_IntoDb = async (
             path: 'userId',
             select: 'from.coordinates to.coordinates',
           },
-
         ])
         .select(
           '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
@@ -1185,15 +1175,11 @@ const user_cancel_tripe_request_IntoDb = async (
   }
 };
 
-
-
 const cancel_user_history_IntoDb = async (
   userId: string,
   query: Record<string, unknown>,
 ) => {
   try {
-
-
     const userTripHistory = new QueryBuilder(
       requests
         .find({
@@ -1202,14 +1188,12 @@ const cancel_user_history_IntoDb = async (
           isCompleted: false,
           isCanceled: true,
           isDelete: false,
-
         })
         .populate([
           {
             path: 'userId',
             select: 'from.coordinates to.coordinates',
           },
-
         ])
         .select(
           '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
@@ -1241,8 +1225,6 @@ const cancel_user_history_IntoDb = async (
   }
 };
 
-
-
 const RequestServices = {
   sendRequestIntoDb,
   myClientRequestIntoDb,
@@ -1257,7 +1239,7 @@ const RequestServices = {
   user_upcomming_history_IntoDb,
   completed_history_IntoDb,
   user_cancel_tripe_request_IntoDb,
-  cancel_user_history_IntoDb
+  cancel_user_history_IntoDb,
 };
 
 export default RequestServices;

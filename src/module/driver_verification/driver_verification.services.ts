@@ -362,6 +362,7 @@ console.log(userLocation)
       {
         $project: {
           _id: 1,
+          userId: 1,
           autoDetectLocation: 1,
           truckDetails: { $arrayElemAt: ['$truckDetails', 0] },
           isVerifyDriverNid: 1,
@@ -370,7 +371,7 @@ console.log(userLocation)
       },
     ]);
 
-     console.log(drivers)
+     console.log("drivers",drivers)
 
 
     if (!drivers.length) {
@@ -382,6 +383,7 @@ console.log(userLocation)
       drivers &&
       drivers?.map((driver) => {
         const [lng, lat] = driver?.autoDetectLocation;
+        console.log("driver",driver)
         const driverCoords = {
           longitude: parseFloat(lng?.toString()),
           latitude: parseFloat(lat?.toString()),
@@ -405,8 +407,8 @@ console.log(userLocation)
         )?.toFixed(2);
 
         return {
-          _id: driver._id.toString(),
-
+           _id: driver._id.toString(),
+           driverId: driver.userId,
           driverSelectedTruck: {
             _id: driver.truckDetails._id.toString(),
             truckcategories: driver.truckDetails.truckcategories,

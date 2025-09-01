@@ -1,48 +1,55 @@
-import Message from "../../module/message/message.model";
-import Conversation from "../../module/conversation/conversation.model";
+import Conversation from '../../module/conversation/conversation.model';
+import Message from '../../module/message/message.model';
 
-import { Server as IOServer } from "socket.io";
-import ApiError from "../../app/error/ApiError";
-import httpStatus from "http-status";
+import { Server as IOServer, Socket } from 'socket.io';
+import User from '../../module/user/user.model';
 
 export const handleSendMessage = async (
-  io:IOServer,
-  currentUserId:string,
-  data:any
+  io: IOServer,
+  socket: Socket,
+  currentUserId: string,
+  data: any,
 ) => {
   if (currentUserId === data.receiverId) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        'SenderId and receiverId cannot be the same',
-        '',
-      );
-    }
-    console.log('data', data);
-    let conversation = await Conversation.findOne({
-      participants: { $all: [currentUserId, data.receiverId], $size: 2 },
+     return socket.emit('socket-error', {
+      event: 'new-message',
+      message: `you can't chat with you`,
     });
+  }
 
-    if (!conversation) {
-      conversation = await Conversation.create({
-        participants: [currentUserId, data.receiverId],
-      });
-    }
+  const receiver = await User.findById(data.receiverId).select('_id');
+  console.log(receiver)
+  if (!receiver) {
+    return socket.emit('socket-error', {
+      event: 'new-message',
+      message: 'reciever Id not found',
+    });
+  }
+  console.log('data', data);
+  let conversation = await Conversation.findOne({
+    participants: { $all: [currentUserId, data.receiverId], $size: 2 },
+  });
 
-    const messageData = {
-      text: data.text,
-      imageUrl: data.imageUrl || [],
-      msgByUserId: currentUserId,
-      conversationId: conversation?._id,
-    };
+  if (!conversation) {
+    conversation = await Conversation.create({
+      participants: [currentUserId, data.receiverId],
+    });
+  }
 
-    const saveMessage = await Message.create(messageData);
-    await Conversation.updateOne(
-      { _id: conversation?._id },
-      {
-        lastMessage: saveMessage._id,
-      },
-    );
+  const messageData = {
+    text: data.text,
+    imageUrl: data.imageUrl || [],
+    msgByUserId: currentUserId,
+    conversationId: conversation?._id,
+  };
 
-    io.to(conversation._id.toString()).emit('new-message', saveMessage);
+  const saveMessage = await Message.create(messageData);
+  await Conversation.updateOne(
+    { _id: conversation?._id },
+    {
+      lastMessage: saveMessage._id,
+    },
+  );
 
+  io.to(conversation._id.toString()).emit('new-message', saveMessage);
 };

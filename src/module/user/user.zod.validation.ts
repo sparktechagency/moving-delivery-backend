@@ -101,12 +101,21 @@ const UpdateUserProfileSchema = z.object({
     name: z
       .string({ required_error: 'user name is required' })
       .min(3, { message: 'min 3 character accepted' })
-      .max(15, { message: 'max 15 character accepted' })
+      .max(50, { message: 'max 15 character accepted' })
       .optional(),
-    phoneNumber: z.string({ required_error: "phone number is not  required" }).optional(),
-    email: z.string({ required_error: " email is not required" }).email({ message: "needed email format" }).optional(),
-    location: z.string({ required_error: "location is  not required" }).optional(),
-    driverLicense: z.string({ required_error: "drive  license is not required" }).optional(),
+    phoneNumber: z
+      .string({ required_error: 'phone number is not  required' })
+      .optional(),
+    email: z
+      .string({ required_error: ' email is not required' })
+      .email({ message: 'needed email format' })
+      .optional(),
+    location: z
+      .string({ required_error: 'location is  not required' })
+      .optional(),
+    driverLicense: z
+      .string({ required_error: 'drive  license is not required' })
+      .optional(),
     photo: z.string({ required_error: 'optional photot' }).optional(),
   }),
 });
