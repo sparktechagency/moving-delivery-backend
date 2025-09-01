@@ -2,6 +2,7 @@ import Conversation from "../../module/conversation/conversation.model";
 import Message from "../../module/message/message.model";
 import QueryBuilder from "../../app/builder/QueryBuilder";
 import { Socket } from "socket.io";
+import { getSocketIO } from "../socketConnection";
 
 export const handleMessagePage = async (
   socket:Socket,
@@ -9,7 +10,7 @@ export const handleMessagePage = async (
   currentUserId:string,
   data:any
 ) => {
-  const { conversationId, page = 1, limit = 15, search = "" } = data;
+   const { conversationId, page = 1, limit = 15, search = "" } = data;
 
   const conversation = await Conversation.findById(conversationId).populate(
     "participants",
@@ -34,8 +35,10 @@ export const handleMessagePage = async (
     online: onlineUsers.has(otherUser._id.toString()),
   };
 
+
   socket.emit("message-user", payload);
 
+  
   const messageQuery = new QueryBuilder(Message.find({ conversationId }), {
     page,
     limit,
@@ -45,15 +48,41 @@ export const handleMessagePage = async (
     .sort()
     .paginate();
 
-  const result = await messageQuery.modelQuery;
+  const messages = await messageQuery.modelQuery;
   const meta = await messageQuery.countTotal();
+
+
+  const unseenMessages = messages.filter(
+    (msg: any) =>
+      msg.msgByUserId.toString() === otherUser._id.toString() && !msg.seen
+  );
+
+  if (unseenMessages.length > 0) {
+    const messageIds = unseenMessages.map((msg: any) => msg._id);
+
+    await Message.updateMany(
+      { _id: { $in: messageIds } },
+      { $set: { seen: true } }
+    );
+    
+    const io = getSocketIO();
+
+    io.to(conversationId.toString()).emit("messages-seen", {
+      conversationId,
+      seenBy: currentUserId,
+      messageIds,
+    });
+  }
 
   socket.emit("messages", {
     conversationId,
     userData: payload,
-    messages: result.reverse(),
+    messages: messages.reverse(),
     meta,
   });
 
+
   socket.join(conversationId.toString());
+
+  socket.data.currentConversationId = conversationId;
 };
