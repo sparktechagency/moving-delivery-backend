@@ -1,16 +1,11 @@
-// 
-
-
+//
 
 import mongoose from 'mongoose';
 import Conversation from '../module/conversation/conversation.model';
 import User from '../module/user/user.model';
+import { onlineUsers } from '../socket/socketConnection';
 
-export const getConversationList = async (
-  userId: string,
-  onlineUsers: Set<string>,
-  query: any
-) => {
+export const getConversationList = async (userId: string, query: any) => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
   const searchTerm = query.searchTerm as string;
   const page = parseInt(query.page) || 1;
@@ -21,15 +16,19 @@ export const getConversationList = async (
   if (searchTerm) {
     const matchingUsers = await User.find(
       { name: { $regex: searchTerm, $options: 'i' } },
-      '_id'
+      '_id',
     );
     const matchingUserIds = matchingUsers.map((u) => u._id);
     if (matchingUserIds.length > 0) {
       userFilter = { participants: { $in: matchingUserIds } };
     } else {
-      userFilter = { _id: null }; 
+      userFilter = { _id: null };
     }
   }
+
+  const onlineUserIds = Array.from(onlineUsers.keys()).map(
+    (id) => new mongoose.Types.ObjectId(id),
+  );
 
   const conversations = await Conversation.aggregate([
     { $match: { participants: userObjectId, ...userFilter } },
@@ -60,7 +59,12 @@ export const getConversationList = async (
               as: 'lastMessageData',
             },
           },
-          { $unwind: { path: '$lastMessageData', preserveNullAndEmptyArrays: true } },
+          {
+            $unwind: {
+              path: '$lastMessageData',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
           // Count unseen messages
           {
             $lookup: {
@@ -99,34 +103,47 @@ export const getConversationList = async (
                 name: '$otherUser.name',
                 profileImage: '$otherUser.photo',
                 online: {
-                  $in: [
-                    '$otherUser._id',
-                    Array.from(onlineUsers).map((id) => new mongoose.Types.ObjectId(id)),
-                  ],
+                  $in: ['$otherUser._id', { $literal: onlineUserIds }],
                 },
               },
               lastMsg: {
                 $cond: {
-                  if: '$lastMessageData',
-                  then: {
-                    _id: '$lastMessageData._id',
-                    text: {
-                      $cond: {
-                        if: { $ifNull: ['$lastMessageData.text', false] },
-                        then: '$lastMessageData.text',
-                        else: {
-                          $concat: [
-                            'send ',
-                            { $toString: { $size: { $ifNull: ['$lastMessageData.imageUrl', []] } } },
-                            ' file',
-                          ],
+                  if: { $ifNull: ['$lastMessageData.text', false] },
+                  then: '$lastMessageData.text',
+                  else: {
+                    $cond: {
+                      if: { $ifNull: ['$lastMessageData.audioUrl', false] },
+                      then: 'send 1 file',
+                      else: {
+                        $cond: {
+                          if: {
+                            $gt: [
+                              {
+                                $size: {
+                                  $ifNull: ['$lastMessageData.imageUrl', []],
+                                },
+                              },
+                              0,
+                            ],
+                          },
+                          then: {
+                            $concat: [
+                              'send ',
+                              {
+                                $toString: {
+                                  $size: {
+                                    $ifNull: ['$lastMessageData.imageUrl', []],
+                                  },
+                                },
+                              },
+                              ' file',
+                            ],
+                          },
+                          else: '', 
                         },
                       },
                     },
-                    imageUrl: '$lastMessageData.imageUrl',
-                    createdAt: '$lastMessageData.createdAt',
                   },
-                  else: null,
                 },
               },
             },

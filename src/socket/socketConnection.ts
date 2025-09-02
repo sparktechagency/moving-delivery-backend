@@ -6,7 +6,7 @@ import handleChatEvents from './handleChatEvents';
 import { handleCallEvents } from './handleCallEvents';
 
 let io: chatServer;
-const onlineUsers = new Set();
+const onlineUsers = new Map<string, string>();
 const connectSocket = (server: HTTPServer) => {
   if (!io) {
     io = new chatServer(server, {
@@ -35,7 +35,7 @@ const connectSocket = (server: HTTPServer) => {
     const currentUserId = currentUser._id.toString();
     socket.join(currentUserId);
 
-    onlineUsers.add(currentUserId);
+    onlineUsers.set(currentUserId, socket.id);
 
     const userConversations = await Conversation.find({
       participants: currentUserId,
@@ -43,9 +43,9 @@ const connectSocket = (server: HTTPServer) => {
 
     userConversations.forEach((conv) => socket.join(conv._id.toString()));
 
-    handleChatEvents(io, socket, onlineUsers, currentUserId);
+    handleChatEvents(io, socket, currentUserId);
     handleCallEvents(io, socket, currentUserId)
-    
+
     console.log(onlineUsers);
     socket.on('disconnect', () => {
       console.log('Disconnected:', socket.id);
@@ -63,4 +63,4 @@ const getSocketIO = () => {
   return io;
 };
 
-export { connectSocket, getSocketIO };
+export { connectSocket, getSocketIO, onlineUsers };

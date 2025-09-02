@@ -14,11 +14,15 @@ const storage = multer.diskStorage({
       folderPath = './src/public/images';
     } else if (file.mimetype === 'application/pdf') {
       folderPath = './src/public/pdf';
+    }else if (
+      file.mimetype.startsWith('audio') 
+    ) {
+      folderPath = './src/public/audio';
     } else {
       cb(
         new ApiError(
           status.BAD_REQUEST,
-          'Only images and PDFs are allowed',
+          'Only images and audio PDFs are allowed',
           '',
         ),
         './src/public',

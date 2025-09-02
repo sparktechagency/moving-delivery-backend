@@ -38,13 +38,11 @@ export const handleSendMessage = async (
     
   }
 
-
   socket.join(conversation._id.toString())
   socket.data.currentConversationId = conversation._id;
 
   const messageData = {
     text: data.text,
-    imageUrl: data.imageUrl || [],
     msgByUserId: currentUserId,
     conversationId: conversation._id,
   };
@@ -56,17 +54,16 @@ export const handleSendMessage = async (
     { lastMessage: saveMessage._id }
   );
 
-
   // auto-seen logic
   const room = io.sockets.adapter.rooms.get(conversation._id.toString());
   console.log("room",room)
   if (room && room.size > 1) {
     for (const socketId of room) {
       const s = io.sockets.sockets.get(socketId);
-      console.log("socket",s)
+
       if (s && s.data?.currentConversationId === conversation._id.toString() && s.id !== socket.id) {
     
-        await Message.updateOne(
+       await Message.updateOne(
           { _id: saveMessage._id },
           { $set: { seen: true } }
         );
@@ -82,14 +79,15 @@ export const handleSendMessage = async (
     }
   }
 
-  io.to(conversation._id.toString()).emit('new-message', saveMessage);
+  const updatedMsg = await Message.findById(saveMessage._id).select("text conversationId seen");
+  io.to(conversation._id.toString()).emit('new-message', updatedMsg);
 
    if (isNewConversation) {
-    io.to(data.receiverId.toString()).emit("conversation-created", { conversationId: conversation._id, lastMessage: saveMessage, });
-    io.to(data.receiverId.toString()).emit('new-message', saveMessage)
+    io.to(data.receiverId.toString()).emit("conversation-created", { conversationId: conversation._id, lastMessage: updatedMsg, });
+    io.to(data.receiverId.toString()).emit('new-message', updatedMsg)
     socket.emit("conversation-created", {
       conversationId: conversation._id,
-      message: saveMessage,
+      message: updatedMsg,
     });
   }
 };

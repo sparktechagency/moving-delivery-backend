@@ -1,26 +1,23 @@
 import express, { NextFunction, Request, Response } from 'express';
 
+import httpStatus from 'http-status';
+import ApiError from '../../app/error/ApiError';
+import auth from '../../middleware/auth';
+import validationRequest from '../../middleware/validationRequest';
+import upload from '../../utility/uplodeFile';
 import { USER_ROLE } from '../user/user.constant';
 import MessageController from './message.controller';
-import auth from '../../middleware/auth';
-import upload from '../../utility/uplodeFile';
-import ApiError from '../../app/error/ApiError';
-import httpStatus from 'http-status';
-import validationRequest from '../../middleware/validationRequest';
 import MessageValidationSchema from './message.zod.validation';
 
 const router = express.Router();
 
-router.get(
-  '/get-messages/:conversationId',
-  auth(USER_ROLE.user,USER_ROLE.driver),
-  MessageController.getMessages,
-);
-
 router.post(
   '/new_message',
   auth(USER_ROLE.user, USER_ROLE.driver),
-  upload.fields([{ name: 'imageUrl', maxCount: 5 }]),
+  upload.fields([
+    { name: 'imageUrl', maxCount: 10 },
+    { name: 'audioUrl', maxCount: 1 },
+  ]),
   (req: Request, _res: Response, next: NextFunction) => {
     try {
       if (req.body.data && typeof req.body.data === 'string') {
@@ -37,6 +34,16 @@ router.post(
         req.body.imageUrl = files.imageUrl.map((file) =>
           file.path.replace(/\\/g, '/'),
         );
+      }
+
+      if (files?.audioUrl && files.audioUrl.length > 0) {
+        const audioPaths = files.audioUrl.map((file) =>
+          file.path.replace(/\\/g, '/'),
+        );
+
+        req.body.audioUrl =
+        audioPaths.length === 1 ? audioPaths[0] : audioPaths;
+        console.log(req.body.audioUrl);
       }
 
       next();

@@ -4,6 +4,7 @@ const messageSchema = z.object({
   body: z.object({
     text: z.string().optional(),
     imageUrl: z.array(z.string()).optional(),
+    audioUrl: z.string().optional(),
     receiverId: z.string({ required_error: "receiver id is required" }),
 
   }).strict({ message: 'Only text | imageUrl| recieverId  is allowed in the request body' }).superRefine((data, ctx) => {
@@ -11,7 +12,7 @@ const messageSchema = z.object({
       ctx.addIssue({
         code: "custom",
         message: "Either text or imageUrl is required",
-        path: ["text"], // you can also point to ["imageUrl"]
+        path: ["text"], 
       });
     }
   }),

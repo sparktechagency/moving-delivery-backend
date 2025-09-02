@@ -3,9 +3,17 @@ import { Types } from 'mongoose';
 export interface IMessage {
   text: string;
   imageUrl: string[];
+  audioUrl: string;
   seen: boolean;
   msgByUserId: Types.ObjectId;
   conversationId: Types.ObjectId;
+}
+
+export interface NewMessagePayload {
+  receiverId: string;
+  text: string;
+  imageUrl?: string[];
+  audioUrl?: string;
 }
 
 export interface MulterRequest extends Request {

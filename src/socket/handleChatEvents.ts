@@ -8,25 +8,27 @@ import { handleSendMessage } from './chat/sendMessage';
 const handleChatEvents = async (
   io: IOServer,
   socket: Socket,
-  onlineUsers: any,
   currentUserId: string,
 ): Promise<void> => {
-
   // join conversation
   socket.on('join-conversation', async (conversationId: string) => {
     socket.join(conversationId);
+    socket.data.currentConversationId = conversationId;
     console.log(`User ${currentUserId} joined room ${conversationId}`);
   });
 
-  socket.on('get-conversations', (query) =>
-    handleGetConversations(socket, onlineUsers, currentUserId, query),
-  );
+  socket.on('get-conversations', async(query) => {
+    try {
+      const conversations = await handleGetConversations(currentUserId, query);
+      socket.emit('conversation-list', conversations);
+    } catch (err: any) {
+      socket.emit('socket-error', { errorMessage: err.message });
+    }
+  });
 
-
-  socket.on('message-page', (data) =>
-    handleMessagePage(socket, onlineUsers, currentUserId, data),
-  );
-
+  socket.on('message-page', (data) => {
+    handleMessagePage(socket,currentUserId, data);
+  });
 
   socket.on('typing', ({ conversationId, userId }) => {
     socket.to(conversationId).emit('user-typing', { conversationId, userId });
@@ -42,9 +44,6 @@ const handleChatEvents = async (
     handleSendMessage(io, socket, currentUserId, data),
   );
 
-  socket.on('seen', async ({ conversationId }) => {
-    handleSeenMessage(io, socket, currentUserId, conversationId);
-  });
 };
 
 export default handleChatEvents;
