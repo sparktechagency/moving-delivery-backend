@@ -6,17 +6,21 @@ const messageSchema = z.object({
     imageUrl: z.array(z.string()).optional(),
     audioUrl: z.string().optional(),
     receiverId: z.string({ required_error: "receiver id is required" }),
-
-  }).strict({ message: 'Only text | imageUrl| recieverId  is allowed in the request body' }).superRefine((data, ctx) => {
-    if (!data.text?.trim() && (!data.imageUrl || data.imageUrl.length === 0)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Either text or imageUrl is required",
-        path: ["text"], 
-      });
-    }
-  }),
-})
+  }).strict({ message: 'Only text | imageUrl | audioUrl | receiverId is allowed in the request body' })
+    .superRefine((data, ctx) => {
+      if (
+        !data.text?.trim() &&
+        (!data.imageUrl || data.imageUrl.length === 0) &&
+        !data.audioUrl?.trim()
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Either text, imageUrl, or audioUrl is required",
+          path: ["text"], 
+        });
+      }
+    }),
+});
 
 const messageUpdateSchema = z.object({
   body: z.object({

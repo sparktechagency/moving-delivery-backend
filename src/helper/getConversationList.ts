@@ -108,12 +108,22 @@ export const getConversationList = async (userId: string, query: any) => {
               },
               lastMsg: {
                 $cond: {
-                  if: { $ifNull: ['$lastMessageData.text', false] },
+                  if: {
+                    $and: [
+                      { $ne: ['$lastMessageData.text', null] },
+                      { $ne: ['$lastMessageData.text', ''] },
+                    ],
+                  },
                   then: '$lastMessageData.text',
                   else: {
                     $cond: {
-                      if: { $ifNull: ['$lastMessageData.audioUrl', false] },
-                      then: 'send 1 file',
+                      if: {
+                        $and: [
+                          { $ne: ['$lastMessageData.audioUrl', null] },
+                          { $ne: ['$lastMessageData.audioUrl', ''] },
+                        ],
+                      },
+                      then: 'sent an audio file',
                       else: {
                         $cond: {
                           if: {
@@ -128,7 +138,7 @@ export const getConversationList = async (userId: string, query: any) => {
                           },
                           then: {
                             $concat: [
-                              'send ',
+                              'sent ',
                               {
                                 $toString: {
                                   $size: {
@@ -136,16 +146,18 @@ export const getConversationList = async (userId: string, query: any) => {
                                   },
                                 },
                               },
-                              ' file',
+                              ' image(s)',
                             ],
                           },
-                          else: '', 
+                          else: '[unsupported message]',
                         },
                       },
                     },
                   },
                 },
               },
+
+              lastMsgCreatedAt: '$lastMessageData.createdAt',
             },
           },
         ],

@@ -691,8 +691,9 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
       status: false,
       message: 'Unhandled event',
     };
-
+     console.log("event",event.type)
     switch (event.type) {
+     
       case 'checkout.session.completed': {
         const session_data: any = event.data.object as Stripe.Checkout.Session;
 

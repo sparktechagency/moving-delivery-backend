@@ -53,6 +53,7 @@ export const handleMessagePage = async (
       msg.msgByUserId.toString() === otherUser._id.toString() && !msg.seen,
   );
 
+  console.log("unseenmessage",unseenMessages)
   if (unseenMessages.length > 0) {
     const messageIds = unseenMessages.map((msg: any) => msg._id);
 

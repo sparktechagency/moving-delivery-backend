@@ -79,7 +79,7 @@ export const handleSendMessage = async (
     }
   }
 
-  const updatedMsg = await Message.findById(saveMessage._id).select("text conversationId seen");
+  const updatedMsg = await Message.findById(saveMessage._id)
   io.to(conversation._id.toString()).emit('new-message', updatedMsg);
 
    if (isNewConversation) {

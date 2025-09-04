@@ -9,7 +9,7 @@ import ApiError from '../app/error/ApiError';
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let folderPath = './src/public';
-
+    console.log("file",file)
     if (file.mimetype.startsWith('image')) {
       folderPath = './src/public/images';
     } else if (file.mimetype === 'application/pdf') {
@@ -39,7 +39,8 @@ const storage = multer.diskStorage({
   },
 
   filename(_req, file, cb) {
-    const fileExt = path.extname(file.originalname);
+      let fileExt = path.extname(file.originalname);
+      if (file.mimetype === 'audio/mp4') fileExt = '.m4a';
     const fileName = `${file.originalname
       .replace(fileExt, '')
       .toLocaleLowerCase()
@@ -53,3 +54,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 export default upload;
+
+/*
+prefer-tops-trump-freed
+*/
