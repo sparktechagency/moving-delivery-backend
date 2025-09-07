@@ -28,42 +28,42 @@ const generateUniqueOTP = async (): Promise<number> => {
 };
 
 const createUserIntoDb = async (payload: TUser) => {
+  // 1. Check user existence before starting transaction
+  const isExistUser = await User.findOne(
+    {
+      $and: [
+        { email: payload.email },
+        { isDelete: false },
+        { status: USER_ACCESSIBILITY.isProgress },
+      ],
+    },
+    { _id: 1, email: 1, phoneNumber: 1, role: 1 },
+  );
+
+  if (isExistUser) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'This email already exists in our database',
+      '',
+    );
+  }
+
+  // 2. Start transaction only if we’re creating a new user
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const otp = await generateUniqueOTP();
 
-    const isExistUser = await User.findOne(
-      {
-        $and: [
-          {
-            email: payload.email,
-            isDelete: false,
-            isVerify: true,
-            status: USER_ACCESSIBILITY.isProgress,
-          },
-        ],
-      },
-      { _id: 1, email: 1, phoneNumber: 1, role: 1 },
-    );
-
     payload.verificationCode = otp;
-    payload.phoneNumber = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-    if (isExistUser) {
-      // await session.abortTransaction();
-      // session.endSession();
-      throw new ApiError(
-        httpStatus.FOUND,
-        'this email alredy exist in our database',
-        '',
-      );
-    }
+    payload.phoneNumber = `temp-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
 
     const authBuilder = new User(payload);
 
     const result = await authBuilder.save({ session });
+
     await sendEmail(
       payload.email,
       emailcontext.sendvarificationData(
@@ -77,14 +77,18 @@ const createUserIntoDb = async (payload: TUser) => {
     await session.commitTransaction();
     session.endSession();
 
-    return result && { status: true, message: 'checked your email box' };
+    return result && { status: true, message: 'Check your email inbox' };
   } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
 
+    if (error instanceof ApiError) {
+      throw error; 
+    }
+
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'server unavailable',
+      'Server unavailable',
       error,
     );
   }

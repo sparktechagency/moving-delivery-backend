@@ -1,138 +1,49 @@
 import { Server as IOServer, Socket } from 'socket.io';
 
-import Conversation from '../module/conversation/conversation.model';
-import Message from '../module/message/message.model';
-import User from '../module/user/user.model';
-import { getSingleConversation } from '../helper/getSingleConversation';
+import { handleGetConversations } from './chat/getConversation';
+import { handleMessagePage } from './chat/getMessages';
+import { handleSeenMessage } from './chat/seenMessage';
+import { handleSendMessage } from './chat/sendMessage';
 
 const handleChatEvents = async (
   io: IOServer,
   socket: Socket,
-  onlineUser: any,
   currentUserId: string,
 ): Promise<void> => {
-  // message page
-  socket.on('message-page', async (userId) => {
-    const userDetails = await User.findById(userId).select('-password');
-    if (userDetails) {
-      const payload = {
-        _id: userDetails._id,
-        name: userDetails.name,
-        email: userDetails.email,
-        profile_image: userDetails?.photo,
-        online: onlineUser.has(userId),
-      };
-      socket.emit('message-user', payload);
-    } else {
-      socket.emit('socket-error', {
-        errorMessage: 'Current user is not exits',
-      });
+  // join conversation
+  socket.on('join-conversation', async (conversationId: string) => {
+    socket.join(conversationId);
+    socket.data.currentConversationId = conversationId;
+    console.log(`User ${currentUserId} joined room ${conversationId}`);
+  });
+
+  socket.on('get-conversations', async(query) => {
+    try {
+      const conversations = await handleGetConversations(currentUserId, query);
+      socket.emit('conversation-list', conversations);
+    } catch (err: any) {
+      socket.emit('socket-error', { errorMessage: err.message });
     }
-    //get previous message
-    const conversation = await Conversation.findOne({
-      $or: [
-        { sender: currentUserId, receiver: userId },
-        { sender: userId, receiver: currentUserId },
-      ],
-    });
-    const messages = await Message.find({ conversationId: conversation?._id });
-    console.log(messages);
-    socket.emit('messages', messages || []);
   });
 
-  // new message
-  // socket.on('new-message', async (data) => {
-
-  //    console.log(data);
-  //   let conversation = await Conversation.findOne({
-  //     $or: [
-  //       { sender: data?.sender, receiver: data?.receiver },
-  //       { sender: data?.receiver, receiver: data?.sender },
-  //     ],
-  //   });
-
-  //   if (!conversation) {
-  //     conversation = await Conversation.create({
-  //       sender: data?.sender,
-  //       receiver: data?.receiver,
-  //     });
-  //   }
-  //   const messageData = {
-  //     text: data.text,
-  //     imageUrl: data.imageUrl || [],
-  //     videoUrl: data.videoUrl || [],
-  //     msgByUserId: data?.msgByUserId,
-  //     conversationId: conversation?._id,
-  //   };
-  //   // console.log('message dta', messageData);
-  //   const saveMessage = await Message.create(messageData);
-  //   await Conversation.updateOne(
-  //     { _id: conversation?._id },
-  //     {
-  //       lastMessage: saveMessage._id,
-  //     },
-  //   );
-
-  //   io.to(data?.sender.toString()).emit(
-  //     `message-${data?.receiver}`,
-  //     saveMessage,
-  //   );
-  //   io.to(data?.receiver.toString()).emit(
-  //     `message-${data?.sender}`,
-  //     saveMessage,
-  //   );
-
-  //   const conversationSender = await getSingleConversation(
-  //       data?.sender,
-  //       data?.receiver,
-  //     );
-  //     const conversationReceiver = await getSingleConversation(
-  //       data?.receiver,
-  //       data?.sender,
-  //     );
-  //     io.to(data?.sender).emit('conversation', conversationSender);
-  //     io.to(data?.receiver).emit('conversation', conversationReceiver);
-
-  //   });
-
-  // send
-  socket.on('seen', async ({ conversationId, msgByUserId }) => {
-    await Message.updateMany(
-      { conversationId: conversationId, msgByUserId: msgByUserId },
-      { $set: { seen: true } },
-    );
-
-    //send conversation --------------
-    const conversationSender = await getSingleConversation(
-      currentUserId,
-      msgByUserId,
-    );
-    const conversationReceiver = await getSingleConversation(
-      msgByUserId,
-      currentUserId,
-    );
-
-    io.to(currentUserId as string).emit('conversation', conversationSender);
-    io.to(msgByUserId).emit('conversation', conversationReceiver);
+  socket.on('message-page', (data) => {
+    handleMessagePage(socket,currentUserId, data);
   });
 
-  socket.on('message-updated', (updatedMessage) => {
-    //  if (updatedMessage.conversationId === activeConversationId) {
-    //     console.log('Message updated:', updatedMessage);
-
-    //     // Update message list in UI
-    //     update MessageInUI(updatedMessage);
-    //   }
-
-    console.log(updatedMessage);
+  socket.on('typing', ({ conversationId, userId }) => {
+    socket.to(conversationId).emit('user-typing', { conversationId, userId });
   });
 
-  socket.on('message-deleted', ({ messageId }) => {
-    console.log('Message deleted:', messageId);
-
-    // // Remove message from UI
-    // removeMessageFromUI(messageId);
+  socket.on('stop-typing', ({ conversationId, userId }) => {
+    socket
+      .to(conversationId)
+      .emit('user-stop-typing', { conversationId, userId });
   });
+
+  socket.on('send-message', (data) =>
+    handleSendMessage(io, socket, currentUserId, data),
+  );
+
 };
 
 export default handleChatEvents;

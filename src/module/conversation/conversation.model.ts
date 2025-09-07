@@ -13,13 +13,14 @@ const conversationSchema = new Schema<IConversation>(
     lastMessage: {
       type: Schema.Types.ObjectId,
       ref: 'Message',
+      default: null
     },
   },
   {
     timestamps: true,
   },
 );
-conversationSchema.index({ sender: 1, receiver: 1 });
+
 
 const Conversation = model<IConversation>('Conversation', conversationSchema);
 

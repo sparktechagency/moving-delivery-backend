@@ -1,15 +1,16 @@
 import httpStatus from 'http-status';
 import ApiError from '../../app/error/ApiError';
-import { USER_ACCESSIBILITY } from '../user/user.constant';
+import { USER_ACCESSIBILITY, USER_ROLE } from '../user/user.constant';
 
+import mongoose from 'mongoose';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 import config from '../../app/config';
 import { jwtHelpers } from '../../app/jwtHalpers/jwtHalpers';
+import driververifications from '../driver_verification/driver_verification.model';
 import { TUser } from '../user/user.interface';
 import User from '../user/user.model';
-import { user_search_filed } from './auth.constant';
+import { socialAuth, user_search_filed } from './auth.constant';
 import { RequestResponse } from './auth.interface';
-import mongoose from 'mongoose';
 
 const loginUserIntoDb = async (payload: {
   email: string;
@@ -17,11 +18,9 @@ const loginUserIntoDb = async (payload: {
   fcm?: string;
 }) => {
   const session = await mongoose.startSession();
-
   try {
     session.startTransaction();
-
-    const isUserExist = await User.findOne(
+    const isUserExist: any = await User.findOne(
       {
         $and: [
           { email: payload.email },
@@ -30,12 +29,24 @@ const loginUserIntoDb = async (payload: {
           { isDelete: false },
         ],
       },
-      { password: 1, _id: 1, isVerify: 1, email: 1, role: 1 },
+      { password: 1, _id: 1, isVerify: 1, email: 1, role: 1, provider: 1 },
       { session },
     );
-
     if (!isUserExist) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
+    }
+
+    // Fixed: Throw error instead of returning object for social auth
+    if (
+      isUserExist?.provider === socialAuth.googleauth ||
+      isUserExist?.provider === socialAuth.appleauth
+    ) {
+      console.log('jhGZFCGJSD');
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `This email is registered with ${isUserExist?.provider} social login. Please use social login instead.`,
+        '',
+      );
     }
 
     const checkedFcm = await User.findOneAndUpdate(
@@ -47,7 +58,6 @@ const loginUserIntoDb = async (payload: {
       },
       { new: true, upsert: true, session },
     );
-
     if (!checkedFcm) {
       throw new ApiError(
         httpStatus.NOT_FOUND,
@@ -55,29 +65,25 @@ const loginUserIntoDb = async (payload: {
         '',
       );
     }
-
     if (
       !(await User.isPasswordMatched(payload?.password, isUserExist.password))
     ) {
       throw new ApiError(httpStatus.FORBIDDEN, 'This Password Not Matched', '');
     }
-
     const jwtPayload = {
       id: isUserExist.id,
       role: isUserExist.role,
       email: isUserExist.email,
+      photo: isUserExist?.photo,
     };
-
     let accessToken: string | null = null;
     let refreshToken: string | null = null;
-
     if (isUserExist.isVerify) {
       accessToken = jwtHelpers.generateToken(
         jwtPayload,
         config.jwt_access_secret as string,
         config.expires_in as string,
       );
-
       refreshToken = jwtHelpers.generateToken(
         jwtPayload,
         config.jwt_refresh_secret as string,
@@ -85,7 +91,6 @@ const loginUserIntoDb = async (payload: {
       );
     }
     await session.commitTransaction();
-
     return {
       accessToken,
       refreshToken,
@@ -155,7 +160,7 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
     session.startTransaction();
 
     if (![config?.googleauth, config?.appleauth].includes(payload?.provider)) {
-      throw new ApiError(httpStatus.FORBIDDEN, 'provided is not nfounded', '');
+      throw new ApiError(httpStatus.FORBIDDEN, 'provider is not found', '');
     }
 
     const isUserExist = await User.findOne(
@@ -175,7 +180,9 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
       const otp = Number(Math.floor(100000 + Math.random() * 9000).toString());
       payload.verificationCode = otp;
       payload.isVerify = true;
-      payload.phoneNumber = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      payload.phoneNumber = `temp-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
 
       const newUser = new User(payload);
       const savedUser = await newUser.save({ session });
@@ -200,17 +207,16 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
         config.expires_in as string,
       );
 
-      // added fcm token
       const isCheckedFcm = await User.findOneAndUpdate(
         { email: payload.email },
-        { $set: { fcm: payload?.fcm } },
+        { $set: { fcm: payload.fcm } },
         { new: true, upsert: true, session },
       );
 
       if (!isCheckedFcm) {
         throw new ApiError(
           httpStatus.NOT_ACCEPTABLE,
-          'issues by the fcm token include and updatation',
+          'issues by the fcm token include and updation',
           '',
         );
       }
@@ -237,22 +243,58 @@ const social_media_auth_IntoDb = async (payload: Partial<TUser>) => {
   }
 };
 
-const myprofileIntoDb = async (id: string) => {
-  try {
-    const result = await User.findById(id).select("-from -to");
+interface MyProfileResult {
+  name: string;
+  email: string;
+  phoneNumber: string;
+  photo?: string;
+  location?: string;
+  driverLicense?: string;
+}
 
-    return result;
-  } catch (error: any) {
+const myprofileIntoDb = async (
+  id: string,
+  role: string,
+): Promise<MyProfileResult | null> => {
+  try {
+    const user = await User.findById(id)
+      .select('name email phoneNumber photo location')
+      .lean(); // faster, returns plain JS object
+
+    if (!user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
+    }
+
+    if (role !== USER_ROLE.user) {
+      const driver = await driververifications
+        .findOne({ userId: id })
+        .select('driverLicense')
+        .lean();
+
+      if (driver?.driverLicense) {
+        (user as MyProfileResult).driverLicense = driver.driverLicense;
+      }
+    }
+
+    return user as MyProfileResult;
+  } catch (error: unknown) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'refresh Token generator error',
-      error,
+      'Failed to fetch profile',
+      '',
     );
   }
 };
-
-interface RequestWithFile extends Request {
-  file?: Express.Multer.File;
+/**
+ * @param req
+ * @param id
+ * @returns
+ */
+interface ProfileUpdateBody {
+  name?: string;
+  phoneNumber?: string;
+  email?: string;
+  location?: string;
 }
 
 interface ProfileUpdateResponse {
@@ -260,30 +302,29 @@ interface ProfileUpdateResponse {
   message: string;
 }
 
-/**
- * @param req
- * @param id
- * @returns
- */
 const changeMyProfileIntoDb = async (
-  req: RequestWithFile,
+  req: any,
   id: string,
 ): Promise<ProfileUpdateResponse> => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const file = req.file;
-    const { name } = req.body as { name?: string };
-
-    const updateData: { name?: string; photo?: string } = {};
-
-    if (name) {
-      updateData.name = name;
-    }
-
-    if (file) {
-      console.log(file);
-      updateData.photo = file.path.replace(/\\/g, '/');
-    }
-
+    const { name, phoneNumber, location } = req.body as ProfileUpdateBody;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const updateData: Partial<
+      ProfileUpdateBody & { photo?: string; driverLicense?: string }
+    > = {};
+    if (name) updateData.name = name;
+    if (phoneNumber) updateData.phoneNumber = phoneNumber;
+    if (location) updateData.location = location;
+    if (files?.photo?.[0])
+      updateData.photo = files.photo[0].path.replace(/\\/g, '/');
+    if (files?.driverLicense?.[0])
+      updateData.driverLicense = files.driverLicense[0].path.replace(
+        /\\/g,
+        '/',
+      );
     if (Object.keys(updateData).length === 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -291,36 +332,65 @@ const changeMyProfileIntoDb = async (
         '',
       );
     }
+    const userResult = await User.findByIdAndUpdate(
+      id,
+      {
+        ...(updateData.name && { name: updateData.name }),
+        ...(updateData.phoneNumber && { phoneNumber: updateData.phoneNumber }),
+        ...(updateData.location && { location: updateData.location }),
+        ...(updateData.photo && { photo: updateData.photo }),
+      },
+      { new: true, session },
+    );
 
-    const result = await User.findByIdAndUpdate(id, updateData, {
-      new: true,
-      upsert: true,
-    });
-
-    if (!result) {
+    if (!userResult) {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
-    };
+    }
+    if (updateData.driverLicense) {
+      const driverResult = await driververifications.updateOne(
+        { userId: id },
+        { $set: { driverLicense: updateData.driverLicense } },
+        { upsert: true, session },
+      );
+
+      if (!driverResult.acknowledged) {
+        throw new ApiError(
+          httpStatus.NOT_EXTENDED,
+          'Driver license update failed',
+          '',
+        );
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
 
     return {
       status: true,
       message: 'Successfully updated profile',
     };
   } catch (error: any) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
+    await session.abortTransaction();
+    session.endSession();
+
+    console.error('Profile update error:', error);
 
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'Profile update failed',
-      error.message,
+      error.message || error,
     );
   }
 };
 
 const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   try {
-    const allUsersdQuery = new QueryBuilder(User.find(), query)
+    const allUsersdQuery = new QueryBuilder(
+      User.find().select(
+        'name email phoneNumber isVerify role status photo provider location stripeAccountId',
+      ),
+      query,
+    )
       .search(user_search_filed)
       .filter()
       .sort()

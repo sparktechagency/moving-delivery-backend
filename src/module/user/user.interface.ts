@@ -28,8 +28,11 @@ export type TUser = {
   provider?: 'googleauth' | 'appleauth';
   from: IGeoLocation;
   to: IGeoLocation;
-  fcm?:string;
+  fcm?: string;
+  location?: string;
+  driverLicense?: string;
   isDelete: boolean;
+
 };
 
 export interface UserModel extends Model<TUser> {

@@ -1,14 +1,14 @@
 import httpStatus from 'http-status';
-import ApiError from '../../app/error/ApiError';
 import mongoose, { Types } from 'mongoose';
+import ApiError from '../../app/error/ApiError';
 import driververifications from '../driver_verification/driver_verification.model';
 import { RequestResponse, TRequest } from './requests.interface';
 
+import QueryBuilder from '../../app/builder/QueryBuilder';
+import notifications from '../notification/notification.modal';
+import NotificationServices from '../notification/notification.services';
 import SelectTruck from '../select_truck/select_truck.model';
 import requests from './requests.model';
-import QueryBuilder from '../../app/builder/QueryBuilder';
-import NotificationServices from '../notification/notification.services';
-import notifications from '../notification/notification.modal';
 
 /**
  * @param userId
@@ -139,42 +139,42 @@ const sendRequestIntoDb = async (
         '',
       );
     }
-    const data = {
-      title: 'Connection Request Accepted',
-      content: `Send Your Request This Driver`,
-      time: new Date(),
-    };
+    // const data = {
+    //   title: 'Connection Request Accepted',
+    //   content: `Send Your Request This Driver`,
+    //   time: new Date(),
+    // };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      userId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   userId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     // Fix: Use newRequest[0]._id instead of existingRequest._id
-    const notificationsBuilder = new notifications({
-      driverId: verifiedDriver.userId.toString(),
-      requestId: newRequest[0]._id.toString(),
-      title: data.time,
-      content: data.content,
-    });
+    // const notificationsBuilder = new notifications({
+    //   driverId: verifiedDriver.userId.toString(),
+    //   requestId: newRequest[0]._id.toString(),
+    //   title: data.time,
+    //   content: data.content,
+    // });
 
-    const storeNotification = await notificationsBuilder.save({ session });
+    // const storeNotification = await notificationsBuilder.save({ session });
 
-    if (!storeNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!storeNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     await session.commitTransaction();
     session.endSession();
@@ -212,8 +212,22 @@ const myClientRequestIntoDb = async (
           isAccepted: false,
           isCompleted: false,
         })
+        .populate([
+          {
+            path: 'userId',
+            select: 'name from.coordinates to.coordinates',
+          },
+          {
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
+            populate: {
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+            },
+          },
+        ])
         .select(
-          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete',
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime -price -avgRating -totalReviews -createdAt -updatedAt',
         ),
       query,
     )
@@ -429,11 +443,11 @@ const findByAllCancelRequstIntoDb = async (
         .populate([
           {
             path: 'userId',
-            select: 'name  from',
+            select: 'name from.coordinates to.coordinates',
           },
         ])
         .select(
-          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime',
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete  -trucktripeTime',
         ),
       query,
     )
@@ -617,11 +631,11 @@ const findByAllRemainingTripeIntoDb = async (
         .populate([
           {
             path: 'userId',
-            select: 'name  from',
+            select: 'name  from.coordinates to.coordinates',
           },
         ])
         .select(
-          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime',
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -trucktripeTime',
         ),
       query,
     )
@@ -658,7 +672,6 @@ const completedTripeRequestIntoDb = async (
 ): Promise<RequestResponse> => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
 
   try {
     const request = await requests
@@ -715,41 +728,41 @@ const completedTripeRequestIntoDb = async (
       );
     }
 
-    const data = {
-      title: 'Connection Request Accepted',
-      content: `Accepted your connection request`,
-      time: new Date(),
-    };
+    // const data = {
+    //   title: 'Connection Request Accepted',
+    //   content: `Accepted your connection request`,
+    //   time: new Date(),
+    // };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      request.userId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   request.userId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
-    const notificationsBuilder = new notifications({
-      userId: request.userId.toString(),
-      requestId: request._id,
-      title: data.time,
-      content: data.content,
-    });
+    // const notificationsBuilder = new notifications({
+    //   userId: request.userId.toString(),
+    //   requestId: request._id,
+    //   title: data.time,
+    //   content: data.content,
+    // });
 
-    const storeNotification = await notificationsBuilder.save({ session });
+    // const storeNotification = await notificationsBuilder.save({ session });
 
-    if (!storeNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!storeNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     await session.commitTransaction();
     session.endSession();
@@ -791,11 +804,19 @@ const findByAllCompletedTripeIntoDb = async (
         .populate([
           {
             path: 'userId',
-            select: 'name  from',
+            select: ' name from.coordinates to.coordinates',
           },
+          // {
+          //   path: "driverVerificationsId",
+          //   select: "driverSelectedTruck",
+          //   populate: {
+          //     path: "driverSelectedTruck",
+          //     select: "truckcategories",
+          //   }
+          // }
         ])
         .select(
-          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime',
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete  -trucktripeTime -price -avgRating -totalReviews -createdAt -updatedAt',
         ),
       query,
     )
@@ -943,6 +964,18 @@ const user_upcomming_history_IntoDb = async (
             path: 'userId',
             select: 'from.coordinates to.coordinates',
           },
+          {
+            path: 'driverId',
+            select: 'name',
+          },
+          {
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
+            populate: {
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+            },
+          },
         ])
         .select(
           '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
@@ -1026,6 +1059,11 @@ const completed_history_IntoDb = async (
  * @param requestId
  * @returns
  */
+/**
+ * @param userId
+ * @param requestId
+ * @returns
+ */
 const user_cancel_tripe_request_IntoDb = async (
   userId: string,
   requestId: string,
@@ -1034,10 +1072,11 @@ const user_cancel_tripe_request_IntoDb = async (
   session.startTransaction();
 
   try {
+    // Check if request exists
     const isExistTripeRequest: any = await requests
       .findOne({
         _id: requestId,
-        isAccepted: false,
+        isAccepted: true,
         isCompleted: false,
         isCanceled: false,
         isDelete: false,
@@ -1046,8 +1085,6 @@ const user_cancel_tripe_request_IntoDb = async (
       .session(session);
 
     if (!isExistTripeRequest) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.NOT_FOUND,
         'This trip is not available for cancellation',
@@ -1055,6 +1092,7 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
+    // Cancel request
     const cancelRequestResult = await requests.findByIdAndUpdate(
       requestId,
       { isCanceled: true },
@@ -1062,8 +1100,6 @@ const user_cancel_tripe_request_IntoDb = async (
     );
 
     if (!cancelRequestResult) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
         'Failed to cancel the trip request',
@@ -1071,6 +1107,7 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
+    // Create notification
     const data = {
       title: 'Trip Request Canceled',
       content: `User has canceled the trip request`,
@@ -1089,8 +1126,6 @@ const user_cancel_tripe_request_IntoDb = async (
     const storeNotification = await notificationsBuilder.save({ session });
 
     if (!storeNotification) {
-      await session.abortTransaction();
-      session.endSession();
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
         'Failed to store notification',
@@ -1098,24 +1133,13 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
-    try {
-      const sendNotification = await NotificationServices.sendPushNotification(
-        isExistTripeRequest.driverId.toString(),
-        data,
-      );
+    // Send push notification
+    const sendNotification = await NotificationServices.sendPushNotification(
+      isExistTripeRequest.driverId.toString(),
+      data,
+    );
 
-      if (!sendNotification) {
-        await session.abortTransaction();
-        session.endSession();
-        throw new ApiError(
-          httpStatus.INTERNAL_SERVER_ERROR,
-          'Failed to send push notification',
-          '',
-        );
-      }
-    } catch (notificationError) {
-      await session.abortTransaction();
-      session.endSession();
+    if (!sendNotification) {
       throw new ApiError(
         httpStatus.INTERNAL_SERVER_ERROR,
         'Failed to send push notification',
@@ -1123,16 +1147,16 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
+    // ✅ Commit only once
     await session.commitTransaction();
-    session.endSession();
 
     return {
       status: true,
       message: 'Successfully canceled your trip request',
     };
   } catch (error: any) {
+    // ❌ Abort only once here
     await session.abortTransaction();
-    session.endSession();
 
     if (error instanceof ApiError) {
       throw error;
@@ -1141,6 +1165,59 @@ const user_cancel_tripe_request_IntoDb = async (
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
       'Failed to cancel trip request',
+      error,
+    );
+  } finally {
+    // ✅ Always close the session
+    session.endSession();
+  }
+};
+
+const cancel_user_history_IntoDb = async (
+  userId: string,
+  query: Record<string, unknown>,
+) => {
+  try {
+    const userTripHistory = new QueryBuilder(
+      requests
+        .find({
+          userId,
+          isAccepted: true,
+          isCompleted: false,
+          isCanceled: true,
+          isDelete: false,
+        })
+        .populate([
+          {
+            path: 'userId',
+            select: 'from.coordinates to.coordinates',
+          },
+        ])
+        .select(
+          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
+        ),
+      query,
+    )
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const user_completed_history = await userTripHistory.modelQuery;
+    const meta = await userTripHistory.countTotal();
+
+    return {
+      meta,
+      user_completed_history,
+    };
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to fetch completed history into db ',
       error,
     );
   }
@@ -1160,6 +1237,7 @@ const RequestServices = {
   user_upcomming_history_IntoDb,
   completed_history_IntoDb,
   user_cancel_tripe_request_IntoDb,
+  cancel_user_history_IntoDb,
 };
 
 export default RequestServices;

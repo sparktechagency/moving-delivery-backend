@@ -337,6 +337,8 @@ const deleteDriverVerificationIntoDb = async (
 const searching_for_available_trip_truck_listsWithMongo = async (
   userLocation: IUserLocation,
 ): Promise<DriverWithMetrics[]> => {
+
+console.log(userLocation)
   try {
     const [destLong, destLat] = userLocation.to.coordinates;
     const drivers: Driver[] = await driververifications.aggregate([
@@ -360,6 +362,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       {
         $project: {
           _id: 1,
+          userId: 1,
           autoDetectLocation: 1,
           truckDetails: { $arrayElemAt: ['$truckDetails', 0] },
           isVerifyDriverNid: 1,
@@ -368,14 +371,19 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       },
     ]);
 
+     console.log("drivers",drivers)
+
+
     if (!drivers.length) {
       return [];
     }
 
+   
     const enrichedDrivers =
       drivers &&
       drivers?.map((driver) => {
         const [lng, lat] = driver?.autoDetectLocation;
+        console.log("driver",driver)
         const driverCoords = {
           longitude: parseFloat(lng?.toString()),
           latitude: parseFloat(lat?.toString()),
@@ -399,8 +407,8 @@ const searching_for_available_trip_truck_listsWithMongo = async (
         )?.toFixed(2);
 
         return {
-          _id: driver._id.toString(),
-
+           _id: driver._id.toString(),
+           driverId: driver.userId,
           driverSelectedTruck: {
             _id: driver.truckDetails._id.toString(),
             truckcategories: driver.truckDetails.truckcategories,

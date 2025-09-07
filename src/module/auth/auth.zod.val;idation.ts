@@ -7,7 +7,7 @@ const LoginSchema = z.object({
       .string({ required_error: 'password is required' })
       .min(6, { message: 'min 6 character accepted' }),
   }),
-  fcm: z.string({required_error:"fcm is not required"}).optional()
+  fcm: z.string({ required_error: 'fcm is not required' }).optional(),
 });
 
 const requestTokenValidationSchema = z.object({

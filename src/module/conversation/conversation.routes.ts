@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get(
   '/get-chat-list',
-  auth(USER_ROLE.user),
+  auth(USER_ROLE.user,USER_ROLE.driver),
   ConversationController.getChatList,
 );
 

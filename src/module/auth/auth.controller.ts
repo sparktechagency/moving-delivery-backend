@@ -1,13 +1,12 @@
 import { RequestHandler } from 'express';
-import catchAsync from '../../utility/catchAsync';
-import AuthServices from './auth.services';
-import config from '../../app/config';
-import sendRespone from '../../utility/sendRespone';
 import httpStatus from 'http-status';
+import config from '../../app/config';
+import catchAsync from '../../utility/catchAsync';
+import sendRespone from '../../utility/sendRespone';
+import AuthServices from './auth.services';
 
 const loginUser: RequestHandler = catchAsync(async (req, res) => {
   const result = await AuthServices.loginUserIntoDb(req.body);
-
   const { refreshToken, accessToken } = result;
   res.cookie('refreshToken', refreshToken, {
     secure: config.NODE_ENV === 'production',
@@ -50,7 +49,8 @@ const social_media_auth: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const myprofile: RequestHandler = catchAsync(async (req, res) => {
-  const result = await AuthServices.myprofileIntoDb(req.user.id);
+  const { id, role } = req.user;
+  const result = await AuthServices.myprofileIntoDb(id, role);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -60,6 +60,7 @@ const myprofile: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const chnageMyProfile: RequestHandler = catchAsync(async (req, res) => {
+  console.log('successfully uplode file');
   const result = await AuthServices.changeMyProfileIntoDb(
     req as any,
     req.user.id,
@@ -83,18 +84,15 @@ const findByAllUsersAdmin: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
-
-const  deleteAccount:RequestHandler=catchAsync(async(req , res)=>{
-
-    const result=await  AuthServices.deleteAccountIntoDb(req.params.id);
-     sendRespone(res, {
+const deleteAccount: RequestHandler = catchAsync(async (req, res) => {
+  const result = await AuthServices.deleteAccountIntoDb(req.params.id);
+  sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Successfully Delete your account ',
     data: result,
   });
-
-})
+});
 
 const AuthController = {
   loginUser,
@@ -103,7 +101,7 @@ const AuthController = {
   myprofile,
   chnageMyProfile,
   findByAllUsersAdmin,
-  deleteAccount
+  deleteAccount,
 };
 
 export default AuthController;

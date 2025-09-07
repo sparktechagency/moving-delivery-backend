@@ -1,8 +1,8 @@
 import { RequestHandler } from 'express';
-import catchAsync from '../../utility/catchAsync';
-import RequestServices from './requests.services';
-import sendRespone from '../../utility/sendRespone';
 import httpStatus from 'http-status';
+import catchAsync from '../../utility/catchAsync';
+import sendRespone from '../../utility/sendRespone';
+import RequestServices from './requests.services';
 
 const sendRequest: RequestHandler = catchAsync(async (req, res) => {
   const result = await RequestServices.sendRequestIntoDb(req.user.id, req.body);
@@ -169,7 +169,18 @@ const user_cancel_tripe_request: RequestHandler = catchAsync(
   },
 );
 
-
+const cancel_user_history: RequestHandler = catchAsync(async (req, res) => {
+  const result = await RequestServices.cancel_user_history_IntoDb(
+    req.user.id,
+    req.query,
+  );
+  sendRespone(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Successfully Find By All Cancel User History ',
+    data: result,
+  });
+});
 
 const RequestController = {
   sendRequest,
@@ -185,7 +196,7 @@ const RequestController = {
   user_upcomming_history,
   completed_history,
   user_cancel_tripe_request,
-
+  cancel_user_history,
 };
 
 export default RequestController;

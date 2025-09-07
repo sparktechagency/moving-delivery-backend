@@ -9,16 +9,20 @@ import ApiError from '../app/error/ApiError';
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let folderPath = './src/public';
-
+    console.log("file",file)
     if (file.mimetype.startsWith('image')) {
       folderPath = './src/public/images';
     } else if (file.mimetype === 'application/pdf') {
       folderPath = './src/public/pdf';
+    }else if (
+      file.mimetype.startsWith('audio') 
+    ) {
+      folderPath = './src/public/audio';
     } else {
       cb(
         new ApiError(
           status.BAD_REQUEST,
-          'Only images and PDFs are allowed',
+          'Only images and audio PDFs are allowed',
           '',
         ),
         './src/public',
@@ -35,7 +39,8 @@ const storage = multer.diskStorage({
   },
 
   filename(_req, file, cb) {
-    const fileExt = path.extname(file.originalname);
+      let fileExt = path.extname(file.originalname);
+      if (file.mimetype === 'audio/mp4') fileExt = '.m4a';
     const fileName = `${file.originalname
       .replace(fileExt, '')
       .toLocaleLowerCase()
@@ -49,3 +54,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 export default upload;
+
+/*
+prefer-tops-trump-freed
+*/

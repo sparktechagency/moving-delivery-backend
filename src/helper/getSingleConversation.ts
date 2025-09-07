@@ -1,6 +1,5 @@
-import Conversation from '../module/conversation/conversation.model';
-import Message from '../module/message/message.model';
-
+import Conversation from "../module/conversation/conversation.model";
+import Message from "../module/message/message.model";
 
 export const getSingleConversation = async (
   currentUserId: string,
@@ -9,36 +8,45 @@ export const getSingleConversation = async (
   if (!currentUserId || !receiverId) return null;
 
   const conversation:any = await Conversation.findOne({
-    $or: [
-      { sender: currentUserId, receiver: receiverId },
-      { sender: receiverId, receiver: currentUserId },
-    ],
+    participants: { $all: [currentUserId, receiverId], $size: 2 },
   })
-    .populate('sender')
-    .populate('receiver')
+    .populate({ path: 'participants', model: 'User' })
     .populate({ path: 'lastMessage', model: 'Message' });
 
   if (!conversation) return null;
+
+  // count unseen messages
   const countUnseenMessage = await Message.countDocuments({
     conversationId: conversation._id,
     msgByUserId: { $ne: currentUserId },
     seen: false,
   });
 
-  const otherUser: any =
-    conversation.sender._id.toString() == currentUserId
-      ? conversation.receiver
-      : conversation.sender;
+  // find "the other user"
+  const otherUser = conversation.participants.find(
+    (u: any) => u._id.toString() !== currentUserId
+  );
+
+  // prepare last message safely
+  let lastMsg = null;
+  if (conversation.lastMessage) {
+    const msgObj = conversation.lastMessage.toObject();
+    lastMsg = {
+      ...msgObj,
+      text: msgObj.text
+        ? msgObj.text
+        : `send ${msgObj.imageUrl?.length || 0} file`
+    };
+  }
 
   return {
-    _id: conversation._id,
+    conversationId: conversation._id,
     userData: {
-      _id: otherUser._id,
+      userId: otherUser?._id,
       name: otherUser?.name,
-      email: otherUser.email,
-      profileImage: otherUser?.profile_image,
+      profileImage: otherUser?.photo,
     },
     unseenMsg: countUnseenMessage,
-    lastMsg: conversation.lastMessage,
+    lastMsg,
   };
 };

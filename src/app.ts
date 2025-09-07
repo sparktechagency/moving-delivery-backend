@@ -1,4 +1,5 @@
 import cors from 'cors';
+
 import express, { Request, Response } from 'express';
 import globalErrorHandelar from './middleware/globalErrorHandelar';
 import notFound from './middleware/notFound';
@@ -16,6 +17,8 @@ import path from 'path';
 import config from './app/config';
 import handel_notification_delete from './utility/handel_notification_delete';
 
+
+
 declare global {
   namespace Express {
     interface Request {
@@ -23,6 +26,10 @@ declare global {
     }
   }
 }
+
+
+
+// Serve static files from public folder
 
 const app = express();
 
@@ -47,7 +54,10 @@ app.use(
   config.file_path as string,
   express.static(path.join(__dirname, 'public')),
 );
+
+
 app.use(cors());
+
 
 app.get('/', (_req, res) => {
   res.send({

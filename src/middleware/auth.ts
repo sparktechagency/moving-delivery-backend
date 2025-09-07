@@ -32,7 +32,7 @@ const auth = (...requireRoles: TUserRole[]) => {
       }
 
       const { role, id } = decoded;
-
+     console.log(role,id)
       const isUserExist = User.findOne(
         {
           _id: id,

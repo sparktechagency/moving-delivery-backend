@@ -73,6 +73,7 @@ export interface IUserLocation {
 }
 
 export interface Driver {
+  userId: any;
   _id: string;
   autoDetectLocation: [number, number];
   truckDetails: {

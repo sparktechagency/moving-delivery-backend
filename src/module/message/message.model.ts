@@ -11,6 +11,11 @@ const messageSchema = new Schema<IMessage>(
       type: [String],
       default: [],
     },
+    audioUrl: {
+     type: String,
+     required: false,
+     default: "",
+    },
     seen: {
       type: Boolean,
       default: false,
@@ -28,6 +33,7 @@ const messageSchema = new Schema<IMessage>(
   },
   {
     timestamps: true,
+    versionKey:false
   },
 );
 
