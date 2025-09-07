@@ -20,7 +20,7 @@ const stripe = new Stripe(
   config.stripe_payment_gateway.stripe_secret_key as string,
 );
 
-console.log(config.stripe_payment_gateway.stripe_secret_key)
+
 
 interface PaymentDetails {
   price: number;
@@ -348,9 +348,7 @@ const createCheckoutSessionForTruck = async (
       requestId,
     } = paymentDetails;
 
-    console.log(paymentDetails)
-
- 
+    console.log(paymentDetails);
 
     if (!price || price <= 0) {
       throw new ApiError(
@@ -377,8 +375,6 @@ const createCheckoutSessionForTruck = async (
       },
       { stripeAccountId: 1, email: 1 },
     );
-
-    
 
     if (!user) {
       throw new ApiError(

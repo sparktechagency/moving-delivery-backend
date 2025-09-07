@@ -15,7 +15,7 @@ async function main() {
     console.log('database connected succesfully');
 
     server = app.listen(config.port, () => {
-      console.log(`moving delivery app listening on port ${config.port}`);
+      console.log(`moving delivery app listening on port http://${config.host}:${config.port}`);
     });
 
     process.on('unhandledRejection', () => {
