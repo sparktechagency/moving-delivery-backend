@@ -139,42 +139,42 @@ const sendRequestIntoDb = async (
         '',
       );
     }
-    const data = {
-      title: 'Connection Request Accepted',
-      content: `Send Your Request This Driver`,
-      time: new Date(),
-    };
+    // const data = {
+    //   title: 'Connection Request Accepted',
+    //   content: `Send Your Request This Driver`,
+    //   time: new Date(),
+    // };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      userId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   userId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
 
-    const notificationsBuilder = new notifications({
-      driverId: verifiedDriver.userId.toString(),
-      requestId: newRequest[0]._id.toString(),
-      title: data.time,
-      content: data.content,
-    });
+    // const notificationsBuilder = new notifications({
+    //   driverId: verifiedDriver.userId.toString(),
+    //   requestId: newRequest[0]._id.toString(),
+    //   title: data.time,
+    //   content: data.content,
+    // });
 
-    const storeNotification = await notificationsBuilder.save({ session });
+    // const storeNotification = await notificationsBuilder.save({ session });
 
-    if (!storeNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!storeNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     await session.commitTransaction();
     session.endSession();
