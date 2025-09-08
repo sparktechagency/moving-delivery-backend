@@ -139,42 +139,42 @@ const sendRequestIntoDb = async (
         '',
       );
     }
-    // const data = {
-    //   title: 'Connection Request Accepted',
-    //   content: `Send Your Request This Driver`,
-    //   time: new Date(),
-    // };
+    const data = {
+      title: 'Connection Request Accepted',
+      content: `Send Your Request This Driver`,
+      time: new Date(),
+    };
 
-    // const sendNotification = await NotificationServices.sendPushNotification(
-    //   userId.toString(),
-    //   data,
-    // );
+    const sendNotification = await NotificationServices.sendPushNotification(
+      userId.toString(),
+      data,
+    );
 
-    // if (!sendNotification) {
-    //   throw new ApiError(
-    //     httpStatus.NO_CONTENT,
-    //     'Issues by the complete status notification section',
-    //     '',
-    //   );
-    // }
+    if (!sendNotification) {
+      throw new ApiError(
+        httpStatus.NO_CONTENT,
+        'Issues by the complete status notification section',
+        '',
+      );
+    }
 
-    // Fix: Use newRequest[0]._id instead of existingRequest._id
-    // const notificationsBuilder = new notifications({
-    //   driverId: verifiedDriver.userId.toString(),
-    //   requestId: newRequest[0]._id.toString(),
-    //   title: data.time,
-    //   content: data.content,
-    // });
 
-    // const storeNotification = await notificationsBuilder.save({ session });
+    const notificationsBuilder = new notifications({
+      driverId: verifiedDriver.userId.toString(),
+      requestId: newRequest[0]._id.toString(),
+      title: data.time,
+      content: data.content,
+    });
 
-    // if (!storeNotification) {
-    //   throw new ApiError(
-    //     httpStatus.NO_CONTENT,
-    //     'Issues by the complete status notification section',
-    //     '',
-    //   );
-    // }
+    const storeNotification = await notificationsBuilder.save({ session });
+
+    if (!storeNotification) {
+      throw new ApiError(
+        httpStatus.NO_CONTENT,
+        'Issues by the complete status notification section',
+        '',
+      );
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -1022,6 +1022,19 @@ const completed_history_IntoDb = async (
             path: 'userId',
             select: 'from.coordinates to.coordinates',
           },
+          {
+            path: 'driverId',
+            select: 'name',
+          },
+          {
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
+            populate: {
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+
+            },
+          },
         ])
         .select(
           '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
@@ -1187,9 +1200,22 @@ const cancel_user_history_IntoDb = async (
           isDelete: false,
         })
         .populate([
-          {
+        {
             path: 'userId',
             select: 'from.coordinates to.coordinates',
+          },
+          {
+            path: 'driverId',
+            select: 'name',
+          },
+          {
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
+            populate: {
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+
+            },
           },
         ])
         .select(

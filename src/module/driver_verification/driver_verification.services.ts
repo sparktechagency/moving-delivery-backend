@@ -340,6 +340,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
   userId: string
 ): Promise<DriverWithMetrics[]> => {
 
+
   try {
 
     const result = await User.updateOne(
