@@ -103,7 +103,7 @@ const searching_for_available_trip_truck_listsWithMongo: RequestHandler =
   catchAsync(async (req, res) => {
     const result =
       await DriverVerificationServices.searching_for_available_trip_truck_listsWithMongo(
-        req.body,
+        req.body, req.user.id
       );
     sendRespone(res, {
       success: true,

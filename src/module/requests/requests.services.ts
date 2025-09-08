@@ -956,7 +956,6 @@ const user_upcomming_history_IntoDb = async (
           userId,
           isCanceled: false,
           isDelete: false,
-          isAccepted: true,
           isCompleted: false,
         })
         .populate([
@@ -978,7 +977,7 @@ const user_upcomming_history_IntoDb = async (
           },
         ])
         .select(
-          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
+          '-userId -driverId -driverVerificationsId  -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
         ),
       query,
     )
