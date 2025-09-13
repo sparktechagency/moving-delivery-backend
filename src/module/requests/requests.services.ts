@@ -139,42 +139,42 @@ const sendRequestIntoDb = async (
         '',
       );
     }
-    // const data = {
-    //   title: 'Connection Request Accepted',
-    //   content: `Send Your Request This Driver`,
-    //   time: new Date(),
-    // };
+    const data = {
+      title: 'Connection Request Accepted',
+      content: `Send Your Request This Driver`,
+      time: new Date(),
+    };
 
-    // const sendNotification = await NotificationServices.sendPushNotification(
-    //   userId.toString(),
-    //   data,
-    // );
+    const sendNotification = await NotificationServices.sendPushNotification(
+      userId.toString(),
+      data,
+    );
 
-    // if (!sendNotification) {
-    //   throw new ApiError(
-    //     httpStatus.NO_CONTENT,
-    //     'Issues by the complete status notification section',
-    //     '',
-    //   );
-    // }
+    if (!sendNotification) {
+      throw new ApiError(
+        httpStatus.NO_CONTENT,
+        'Issues by the complete status notification section',
+        '',
+      );
+    }
 
     // Fix: Use newRequest[0]._id instead of existingRequest._id
-    // const notificationsBuilder = new notifications({
-    //   driverId: verifiedDriver.userId.toString(),
-    //   requestId: newRequest[0]._id.toString(),
-    //   title: data.time,
-    //   content: data.content,
-    // });
+    const notificationsBuilder = new notifications({
+      driverId: verifiedDriver.userId.toString(),
+      requestId: newRequest[0]._id.toString(),
+      title: data.time,
+      content: data.content,
+    });
 
-    // const storeNotification = await notificationsBuilder.save({ session });
+    const storeNotification = await notificationsBuilder.save({ session });
 
-    // if (!storeNotification) {
-    //   throw new ApiError(
-    //     httpStatus.NO_CONTENT,
-    //     'Issues by the complete status notification section',
-    //     '',
-    //   );
-    // }
+    if (!storeNotification) {
+      throw new ApiError(
+        httpStatus.NO_CONTENT,
+        'Issues by the complete status notification section',
+        '',
+      );
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -728,41 +728,41 @@ const completedTripeRequestIntoDb = async (
       );
     }
 
-    // const data = {
-    //   title: 'Connection Request Accepted',
-    //   content: `Accepted your connection request`,
-    //   time: new Date(),
-    // };
+    const data = {
+      title: 'Connection Request Accepted',
+      content: `Accepted your connection request`,
+      time: new Date(),
+    };
 
-    // const sendNotification = await NotificationServices.sendPushNotification(
-    //   request.userId.toString(),
-    //   data,
-    // );
+    const sendNotification = await NotificationServices.sendPushNotification(
+      request.userId.toString(),
+      data,
+    );
 
-    // if (!sendNotification) {
-    //   throw new ApiError(
-    //     httpStatus.NO_CONTENT,
-    //     'Issues by the complete status notification section',
-    //     '',
-    //   );
-    // }
+    if (!sendNotification) {
+      throw new ApiError(
+        httpStatus.NO_CONTENT,
+        'Issues by the complete status notification section',
+        '',
+      );
+    }
 
-    // const notificationsBuilder = new notifications({
-    //   userId: request.userId.toString(),
-    //   requestId: request._id,
-    //   title: data.time,
-    //   content: data.content,
-    // });
+    const notificationsBuilder = new notifications({
+      userId: request.userId.toString(),
+      requestId: request._id,
+      title: data.time,
+      content: data.content,
+    });
 
-    // const storeNotification = await notificationsBuilder.save({ session });
+    const storeNotification = await notificationsBuilder.save({ session });
 
-    // if (!storeNotification) {
-    //   throw new ApiError(
-    //     httpStatus.NO_CONTENT,
-    //     'Issues by the complete status notification section',
-    //     '',
-    //   );
-    // }
+    if (!storeNotification) {
+      throw new ApiError(
+        httpStatus.NO_CONTENT,
+        'Issues by the complete status notification section',
+        '',
+      );
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -1147,7 +1147,7 @@ const user_cancel_tripe_request_IntoDb = async (
       );
     }
 
-    // ✅ Commit only once
+    
     await session.commitTransaction();
 
     return {
@@ -1155,7 +1155,6 @@ const user_cancel_tripe_request_IntoDb = async (
       message: 'Successfully canceled your trip request',
     };
   } catch (error: any) {
-    // ❌ Abort only once here
     await session.abortTransaction();
 
     if (error instanceof ApiError) {
@@ -1168,7 +1167,7 @@ const user_cancel_tripe_request_IntoDb = async (
       error,
     );
   } finally {
-    // ✅ Always close the session
+   
     session.endSession();
   }
 };

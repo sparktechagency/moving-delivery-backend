@@ -290,7 +290,7 @@ const createPaymentIntent = async (
         transfer_group: `trip_${tripId}`,
       });
 
-      console.log('Payment successful:', paymentIntent.id);
+  
     } catch (stripeError: any) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,

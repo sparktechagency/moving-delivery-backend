@@ -17,6 +17,8 @@ const sendPushNotification = async (
   },
 ) => {
   try {
+
+   
     const isExistFcmToken = await User.findOne(
       {
         _id: userId,
@@ -40,6 +42,8 @@ const sendPushNotification = async (
     };
 
     const response = await firebaseAdmin?.messaging()?.send(message);
+
+      console.log(response);
 
     return response;
   } catch (error: any) {
