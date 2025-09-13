@@ -13,6 +13,7 @@ import QueryBuilder from '../../app/builder/QueryBuilder';
 import * as geolib from 'geolib'; // Important!
 import config from '../../app/config';
 import { classifyRouteType } from '../../utility/math/calculateDistance';
+import User from '../user/user.model';
 
 /**
  * @param req
@@ -336,10 +337,37 @@ const deleteDriverVerificationIntoDb = async (
 
 const searching_for_available_trip_truck_listsWithMongo = async (
   userLocation: IUserLocation,
+  userId: string
 ): Promise<DriverWithMetrics[]> => {
 
-console.log(userLocation)
+
   try {
+
+    if(!userLocation){
+      throw new ApiError(httpStatus.NOT_FOUND,'user location not founded','');
+    }
+   
+    const result = await User?.updateOne(
+      { _id: userId, isDelete: false },
+      { $set: userLocation },
+      {
+        new: true,
+        upsert: true,
+      },
+    );
+
+    if (!result) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'some issues by the  driver and user geolocation updated section',
+        '',
+      );
+    };
+
+    
+    
+
+
     const [destLong, destLat] = userLocation.to.coordinates;
     const drivers: Driver[] = await driververifications.aggregate([
       {
@@ -371,19 +399,19 @@ console.log(userLocation)
       },
     ]);
 
-     console.log("drivers",drivers)
+
 
 
     if (!drivers.length) {
       return [];
     }
 
-   
+
     const enrichedDrivers =
       drivers &&
       drivers?.map((driver) => {
         const [lng, lat] = driver?.autoDetectLocation;
-        console.log("driver",driver)
+       
         const driverCoords = {
           longitude: parseFloat(lng?.toString()),
           latitude: parseFloat(lat?.toString()),
@@ -407,8 +435,8 @@ console.log(userLocation)
         )?.toFixed(2);
 
         return {
-           _id: driver._id.toString(),
-           driverId: driver.userId,
+          _id: driver._id.toString(),
+          driverId: driver.userId,
           driverSelectedTruck: {
             _id: driver.truckDetails._id.toString(),
             truckcategories: driver.truckDetails.truckcategories,
@@ -434,6 +462,7 @@ console.log(userLocation)
     );
   }
 };
+
 
 const verify_driver_admin_IntoDb = async (
   payload: {
