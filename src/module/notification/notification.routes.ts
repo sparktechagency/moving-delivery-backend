@@ -26,6 +26,9 @@ router.patch(
   NotificationController.seenByNotification,
 );
 
+
+router.post("/sendPushNotification", auth(USER_ROLE.driver,USER_ROLE.user), NotificationController.sendPushNotification)
+
 const NotificationRoutes = router;
 
 export default NotificationRoutes;

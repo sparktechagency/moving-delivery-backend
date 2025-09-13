@@ -48,10 +48,25 @@ const  seenByNotification:RequestHandler=catchAsync(async(req , res)=>{
     });
 });
 
+
+const sendPushNotification :RequestHandler=catchAsync(async(req , res)=>{
+  
+
+  const result=await NotificationServices.sendPushNotification(req.user.id, req.body);
+  sendRespone(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Successfully Recoded  User Seen Notification Info',
+      data: result,
+    });
+
+});
+
 const NotificationController = {
   speciifcUserNotificationList,
   specificDriverNotificationList,
-  seenByNotification
+  seenByNotification,
+  sendPushNotification
 };
 
 export default NotificationController;

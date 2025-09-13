@@ -290,7 +290,7 @@ const createPaymentIntent = async (
         transfer_group: `trip_${tripId}`,
       });
 
-      console.log('Payment successful:', paymentIntent.id);
+  
     } catch (stripeError: any) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -685,7 +685,7 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
       status: false,
       message: 'Unhandled event',
     };
-    console.log("event", event.type)
+  
     switch (event.type) {
 
       case 'checkout.session.completed': {
@@ -767,18 +767,18 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
           );
         }
 
-        // const pushResult = await NotificationServices.sendPushNotification(
-        //   session_data.metadata.driverId.toString(),
-        //   notificationData,
-        // );
+        const pushResult = await NotificationServices.sendPushNotification(
+          session_data.metadata.driverId.toString(),
+          notificationData,
+        );
 
-        // if (!pushResult) {
-        //   throw new ApiError(
-        //     httpStatus.INTERNAL_SERVER_ERROR,
-        //     'Push notification failed',
-        //     '',
-        //   );
-        // }
+        if (!pushResult) {
+          throw new ApiError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Push notification failed',
+            '',
+          );
+        }
 
         const paymentIntentId = session_data.payment_intent as string;
         const paymentIntent =
