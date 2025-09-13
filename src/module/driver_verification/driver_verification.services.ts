@@ -343,11 +343,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
 
   try {
 
-    if(!userLocation){
-      throw new ApiError(httpStatus.NOT_FOUND,'user location not founded','');
-    }
-   
-    const result = await User?.updateOne(
+    const result = await User.updateOne(
       { _id: userId, isDelete: false },
       { $set: userLocation },
       {
@@ -362,10 +358,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
         'some issues by the  driver and user geolocation updated section',
         '',
       );
-    };
-
-    
-    
+    }
 
 
     const [destLong, destLat] = userLocation.to.coordinates;
@@ -411,7 +404,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       drivers &&
       drivers?.map((driver) => {
         const [lng, lat] = driver?.autoDetectLocation;
-       
+        console.log("driver", driver)
         const driverCoords = {
           longitude: parseFloat(lng?.toString()),
           latitude: parseFloat(lat?.toString()),
@@ -532,9 +525,9 @@ const delete_driver_verification_request_IntoDb = async (id: string) => {
     return result.deletedCount === 1
       ? { status: true, message: 'successfully delete driver verified requst' }
       : {
-          status: false,
-          message: 'already verified user can not be delete',
-        };
+        status: false,
+        message: 'already verified user can not be delete',
+      };
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,

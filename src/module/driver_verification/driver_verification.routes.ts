@@ -116,7 +116,8 @@ router.delete(
 );
 
 router.post(
-  '/searching_for_available_trip_truck_lists', auth(USER_ROLE.user),
+  '/searching_for_available_trip_truck_lists',
+  auth(USER_ROLE.user),
   validationRequest(
     DriverVerificationValidationSchema.automaticallyDetectLocationSchema,
   ),

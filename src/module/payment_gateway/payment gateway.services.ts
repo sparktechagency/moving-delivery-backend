@@ -685,9 +685,9 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
       status: false,
       message: 'Unhandled event',
     };
-     console.log("event",event.type)
+  
     switch (event.type) {
-     
+
       case 'checkout.session.completed': {
         const session_data: any = event.data.object as Stripe.Checkout.Session;
 
@@ -873,6 +873,7 @@ const driverWalletFromDb = async (driverId: string) => {
           $match: {
             driverId: driverObjectId,
             payment_status: payment_status.paid,
+            paymentmethod: payment_method.card,
             isDelete: false,
           },
         },
@@ -1280,18 +1281,19 @@ const sendWithdrawalNotification = async (driverId: string) => {
     time: new Date(),
   };
 
-  const pushResult = await NotificationServices.sendPushNotification(
-    driverId.toString(),
-    notificationData,
-  );
+  // const pushResult = await NotificationServices.sendPushNotification(
+  //   driverId.toString(),
+  //   notificationData,
+  // );
 
-  if (!pushResult) {
-    throw new ApiError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      'Failed to send push notification',
-      '',
-    );
-  }
+
+  // if (!pushResult) {
+  //   throw new ApiError(
+  //     httpStatus.INTERNAL_SERVER_ERROR,
+  //     'Failed to send push notification',
+  //     '',
+  //   );
+  // }
 };
 
 /**

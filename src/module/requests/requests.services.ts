@@ -158,13 +158,14 @@ const sendRequestIntoDb = async (
       );
     }
 
-    // Fix: Use newRequest[0]._id instead of existingRequest._id
+
     const notificationsBuilder = new notifications({
       driverId: verifiedDriver.userId.toString(),
       requestId: newRequest[0]._id.toString(),
       title: data.time,
       content: data.content,
     });
+
 
     const storeNotification = await notificationsBuilder.save({ session });
 
@@ -956,7 +957,6 @@ const user_upcomming_history_IntoDb = async (
           userId,
           isCanceled: false,
           isDelete: false,
-          isAccepted: true,
           isCompleted: false,
         })
         .populate([
@@ -978,7 +978,7 @@ const user_upcomming_history_IntoDb = async (
           },
         ])
         .select(
-          '-userId -driverId -driverVerificationsId -isAccepted -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
+          '-userId -driverId -driverVerificationsId  -isCompleted -isCanceled -isRemaining -isDelete -selectedProduct -trucktripeTime  -avgRating -totalReviews -createdAt -updatedAt',
         ),
       query,
     )
@@ -1022,6 +1022,19 @@ const completed_history_IntoDb = async (
           {
             path: 'userId',
             select: 'from.coordinates to.coordinates',
+          },
+          {
+            path: 'driverId',
+            select: 'name',
+          },
+          {
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
+            populate: {
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+
+            },
           },
         ])
         .select(
@@ -1187,9 +1200,22 @@ const cancel_user_history_IntoDb = async (
           isDelete: false,
         })
         .populate([
-          {
+        {
             path: 'userId',
             select: 'from.coordinates to.coordinates',
+          },
+          {
+            path: 'driverId',
+            select: 'name',
+          },
+          {
+            path: 'driverVerificationsId',
+            select: 'driverSelectedTruck',
+            populate: {
+              path: 'driverSelectedTruck',
+              select: 'truckcategories',
+
+            },
           },
         ])
         .select(
