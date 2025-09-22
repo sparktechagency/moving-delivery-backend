@@ -56,7 +56,11 @@ app.use(
   express.static(path.join(__dirname, 'public')),
 );
 
-// app.use('/src/public', express.static('public'));
+app.use(
+  "/src/public",
+  express.static(path.join(process.cwd(), "src", "public"))
+);
+
 app.use(cors());
 
 app.get('/', (_req, res) => {
