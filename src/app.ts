@@ -51,13 +51,13 @@ app.use(bodyParser.json());
 
 app.use(express.urlencoded({ extended: true }));
 app.use(
-  config.file_path as string,
+  // config.file_path as string,
+  '/src/public',
   express.static(path.join(__dirname, 'public')),
 );
 
-
+// app.use('/src/public', express.static('public'));
 app.use(cors());
-
 
 app.get('/', (_req, res) => {
   res.send({
