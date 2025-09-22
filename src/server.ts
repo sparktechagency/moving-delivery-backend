@@ -25,16 +25,12 @@ async function main() {
     console.log("✅ Database connected successfully");
 
    
-    server = app.listen(Number(config.port), () => {
+    server = app.listen(Number(config.port),config.base_url as string, () => {
       console.log(
-        `🚀 Server is listening at http://${config.host}:${config.port}`
+        `🚀 Server is listening at http://${config.base_url}:${config.port}`
       );
     });
-
-
     connectSocket(server);
-
-
     process.on("SIGTERM", () => {
       console.log("SIGTERM received");
       shutdown(0);
@@ -49,6 +45,7 @@ async function main() {
     process.exit(1);
   }
 }
+
 
 function shutdown(code: number) {
   if (server) {
