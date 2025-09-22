@@ -3,17 +3,17 @@ import { Schema, model } from 'mongoose';
 import config from '../../app/config';
 import { USER_ACCESSIBILITY, USER_ROLE } from './user.constant';
 import { IGeoLocation, TUser, UserModel } from './user.interface';
-import { Stream } from 'nodemailer/lib/xoauth2';
+
 
 const GeoLocationSchema = new Schema<IGeoLocation>(
   {
     address: {
       type: String,
-      required: [false, 'Address is required'],
+      default: '',
     },
     coordinates: {
       type: [Number],
-      required: [false, 'Coordinates are required'],
+      default: [0, 0], 
       validate: {
         validator: function (v: number[]) {
           return Array.isArray(v) && v.length === 2;
@@ -22,9 +22,8 @@ const GeoLocationSchema = new Schema<IGeoLocation>(
       },
     },
   },
-  { _id: false },
+  { _id: false }
 );
-
 const TUserSchema = new Schema<TUser, UserModel>(
   {
     name: { type: String, required: [false, 'user name is Required'] },
@@ -96,13 +95,19 @@ const TUserSchema = new Schema<TUser, UserModel>(
       default: 'email auth',
     },
 
-    from: {
+   from: {
       type: GeoLocationSchema,
-      required: [false, 'Origin location is required'],
+      default: () => ({
+        address: 'Unknown origin',
+        coordinates: [0, 0],
+      }),
     },
     to: {
       type: GeoLocationSchema,
-      required: [false, 'Destination location is required'],
+      default: () => ({
+        address: 'Unknown destination',
+        coordinates: [0, 0],
+      }),
     },
     fcm: {
       type: String,
