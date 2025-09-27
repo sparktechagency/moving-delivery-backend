@@ -25,9 +25,9 @@ async function main() {
     console.log("✅ Database connected successfully");
 
    
-    server = app.listen(Number(config.port),config.base_url as string, () => {
+    server = app.listen(Number(config.port),config.  host as string, () => {
       console.log(
-        `🚀 Server is listening at http://${config.base_url}:${config.port}`
+        `🚀 Server is listening at http://${config.  host}:${config.port}`
       );
     });
     connectSocket(server);

@@ -8,16 +8,16 @@ import ApiError from '../app/error/ApiError';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    let folderPath = './src/public';
+    let folderPath = './uploads';
     console.log("file",file)
     if (file.mimetype.startsWith('image')) {
-      folderPath = './src/public/images';
+      folderPath = './uploads/images';
     } else if (file.mimetype === 'application/pdf') {
-      folderPath = './src/public/pdf';
+      folderPath = './uploads/pdf';
     }else if (
       file.mimetype.startsWith('audio') 
     ) {
-      folderPath = './src/public/audio';
+      folderPath = './uploads/audio';
     } else {
       cb(
         new ApiError(
@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
           'Only images and audio PDFs are allowed',
           '',
         ),
-        './src/public',
+        './uploads',
       );
       return;
     }
