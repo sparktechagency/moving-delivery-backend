@@ -52,13 +52,13 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   // config.file_path as string,
-  '/src/public',
-  express.static(path.join(__dirname, 'public')),
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads')),
 );
 
 app.use(
-  "/src/public",
-  express.static(path.join(process.cwd(), "src", "public"))
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads", ""))
 );
 
 app.use(cors());
