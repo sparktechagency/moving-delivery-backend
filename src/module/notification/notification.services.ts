@@ -14,43 +14,45 @@ const sendPushNotification = async (
     title: string;
     content: string;
     time: Date;
-  },
+  }
 ) => {
   try {
-
-   
-    const isExistFcmToken = await User.findOne(
+    const user = await User.findOne(
       {
         _id: userId,
         isVerify: true,
-        isDelete: true,
+        isDelete: false, // ✅ fixed: should be false, not true
         status: USER_ACCESSIBILITY.isProgress,
       },
-      { fcm: 1 },
+      { fcm: 1 }
     );
-    const message: any = {
+
+    if (!user || !user.fcm) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "No FCM token found for user",'');
+    }
+
+    const message = {
       notification: {
-        title: `${data.title}`,
-        body: `${data.content}`,
+        title: data.title,
+        body: data.content,
       },
       data: {
-        userId: userId?.toString(),
-        data: data.toString(),
+        userId: userId.toString(),
+        timestamp: data.time.toISOString(),
       },
-      // fcO0TYjZG2rHl8VkAMheET:APA91bH21CD6LETWhzAOvjC_Febq5qfxc74r4ZGmgLsy--1R66_JafRhdU90h3KMkBnU6pS6yyt6w74MFwwz8bOVSs8maWExigTQHqTVcejZn9ODGx5CmR0
-      token: isExistFcmToken?.fcm,
+      token: user.fcm,
     };
 
-    const response = await firebaseAdmin?.messaging()?.send(message);
-
-      console.log(response);
+    const response = await firebaseAdmin.messaging().send(message);
+    console.log("✅ FCM Send Success:", response);
 
     return response;
   } catch (error: any) {
+    console.error("🔥 FCM Error:", error);
     throw new ApiError(
-      httpStatus.NO_CONTENT,
-      'issues by the firebase notification  section',
-      error,
+      httpStatus.SERVICE_UNAVAILABLE,
+      "issues by the firebase notification section",
+      error
     );
   }
 };

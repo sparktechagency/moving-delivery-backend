@@ -41,7 +41,7 @@ const loginUserIntoDb = async (payload: {
       isUserExist?.provider === socialAuth.googleauth ||
       isUserExist?.provider === socialAuth.appleauth
     ) {
-      console.log('jhGZFCGJSD');
+     
       throw new ApiError(
         httpStatus.BAD_REQUEST,
         `This email is registered with ${isUserExist?.provider} social login. Please use social login instead.`,
