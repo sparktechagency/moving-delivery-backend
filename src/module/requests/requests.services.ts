@@ -145,18 +145,18 @@ const sendRequestIntoDb = async (
       time: new Date(),
     };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      userId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   userId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
 
     const notificationsBuilder = new notifications({
@@ -374,18 +374,18 @@ const cancelRequestIntoDb = async (
       time: new Date(),
     };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      driverId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   driverId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     const notificationsBuilder = new notifications({
       userId: isExistRequest?.userId,
@@ -563,18 +563,18 @@ const acceptedRequestIntoDb = async (
       time: new Date(),
     };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      driverId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   driverId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     const notificationsBuilder = new notifications({
       userId: request?.userId,
@@ -735,18 +735,18 @@ const completedTripeRequestIntoDb = async (
       time: new Date(),
     };
 
-    const sendNotification = await NotificationServices.sendPushNotification(
-      request.userId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   request.userId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.NO_CONTENT,
-        'Issues by the complete status notification section',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.NO_CONTENT,
+    //     'Issues by the complete status notification section',
+    //     '',
+    //   );
+    // }
 
     const notificationsBuilder = new notifications({
       userId: request.userId.toString(),
@@ -1147,18 +1147,18 @@ const user_cancel_tripe_request_IntoDb = async (
     }
 
     // Send push notification
-    const sendNotification = await NotificationServices.sendPushNotification(
-      isExistTripeRequest.driverId.toString(),
-      data,
-    );
+    // const sendNotification = await NotificationServices.sendPushNotification(
+    //   isExistTripeRequest.driverId.toString(),
+    //   data,
+    // );
 
-    if (!sendNotification) {
-      throw new ApiError(
-        httpStatus.INTERNAL_SERVER_ERROR,
-        'Failed to send push notification',
-        '',
-      );
-    }
+    // if (!sendNotification) {
+    //   throw new ApiError(
+    //     httpStatus.INTERNAL_SERVER_ERROR,
+    //     'Failed to send push notification',
+    //     '',
+    //   );
+    // }
 
     
     await session.commitTransaction();

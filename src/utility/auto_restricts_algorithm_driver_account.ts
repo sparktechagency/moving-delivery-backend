@@ -195,19 +195,19 @@ const auto_restricts_algorithm_driver_account = async () => {
               );
             };
 
-            const sendNotification =
-              await NotificationServices.sendPushNotification(
-                request.driverId?.toString() as string,
-                data,
-              );
+            // const sendNotification =
+            //   await NotificationServices.sendPushNotification(
+            //     request.driverId?.toString() as string,
+            //     data,
+            //   );
 
-            if (!sendNotification) {
-              throw new ApiError(
-                httpStatus.INTERNAL_SERVER_ERROR,
-                'Failed to send push notification',
-                '',
-              );
-            }
+            // if (!sendNotification) {
+            //   throw new ApiError(
+            //     httpStatus.INTERNAL_SERVER_ERROR,
+            //     'Failed to send push notification',
+            //     '',
+            //   );
+            // }
 
             results.notificationsSent++;
           }

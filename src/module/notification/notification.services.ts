@@ -17,6 +17,8 @@ const sendPushNotification = async (
   }
 ) => {
   try {
+
+   
     const user = await User.findOne(
       {
         _id: userId,
@@ -26,6 +28,7 @@ const sendPushNotification = async (
       },
       { fcm: 1 }
     );
+ 
 
     if (!user || !user.fcm) {
       throw new ApiError(httpStatus.BAD_REQUEST, "No FCM token found for user",'');
