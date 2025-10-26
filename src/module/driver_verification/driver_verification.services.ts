@@ -335,33 +335,32 @@ const deleteDriverVerificationIntoDb = async (
   }
 };
 
+
+
 const searching_for_available_trip_truck_listsWithMongo = async (
   userLocation: IUserLocation,
   userId: string
 ): Promise<DriverWithMetrics[]> => {
-
-
   try {
-
+    // Step 1: Update user’s geolocation
     const result = await User.updateOne(
       { _id: userId, isDelete: false },
       { $set: userLocation },
-      {
-        new: true,
-        upsert: true,
-      },
+      { new: true, upsert: true }
     );
 
     if (!result) {
       throw new ApiError(
         httpStatus.NOT_FOUND,
-        'some issues by the  driver and user geolocation updated section',
-        '',
+        'Issue updating user geolocation.',
+        ''
       );
     }
 
-
+    // ✅ Step 2: Extract user destination coordinates
     const [destLong, destLat] = userLocation.to.coordinates;
+
+    // ✅ Step 3: Find verified, available drivers with truck info
     const drivers: Driver[] = await driververifications.aggregate([
       {
         $lookup: {
@@ -392,69 +391,71 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       },
     ]);
 
+    //  Step 4: No available drivers
+    if (!drivers.length) return [];
 
+    // --- Per km rates for France by truck category ---
+    const truckRatesPerKm: Record<string, number> = {
+      small: 1.5,
+      medium: 2,
+      large: 2.5,
+    };
 
+    //  Step 5: Enrich drivers with geo metrics & per km pricing
+    const enrichedDrivers = drivers.map((driver:any) => {
+      const [lng, lat] = driver.autoDetectLocation;
+      const driverCoords = {
+        longitude: parseFloat(lng?.toString()),
+        latitude: parseFloat(lat?.toString()),
+      };
+      const destinationCoords = { longitude: destLong, latitude: destLat };
 
-    if (!drivers.length) {
-      return [];
-    }
+      // --- Distance & time calculation ---
+      const distanceInMeters = geolib.getDistance(driverCoords, destinationCoords);
+      const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
+      const bearingDegrees = Number(
+        geolib.getRhumbLineBearing(driverCoords, destinationCoords).toFixed(1)
+      );
+      const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
+      const routeType = classifyRouteType(distanceKm);
 
+      // ---  Price per km based on truck category ---
+      const ratePerKm = truckRatesPerKm[driver.truckDetails.truckcategories] || 2;
+      const totalPrice = distanceKm * ratePerKm;
+      const price = totalPrice.toFixed(2);
 
-    const enrichedDrivers =
-      drivers &&
-      drivers?.map((driver) => {
-        const [lng, lat] = driver?.autoDetectLocation;
-        console.log("driver", driver)
-        const driverCoords = {
-          longitude: parseFloat(lng?.toString()),
-          latitude: parseFloat(lat?.toString()),
-        };
-        const destinationCoords = { longitude: destLong, latitude: destLat };
+      return {
+        _id: driver._id.toString(),
+        driverId: driver.userId,
+        driverSelectedTruck: {
+          _id: driver.truckDetails._id.toString(),
+          truckcategories: driver.truckDetails.truckcategories,
+          photo: driver.truckDetails.photo,
+          price,
+        },
+        geoMetrics: {
+          distanceKm,
+          estimatedDurationMin,
+          bearingDegrees,
+          routeType,
+        },
+      };
+    });
 
-        const distanceInMeters = geolib?.getDistance(
-          driverCoords,
-          destinationCoords,
-        );
-        const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
-        const bearingDegrees = Number(
-          geolib
-            .getRhumbLineBearing(driverCoords, destinationCoords)
-            .toFixed(1),
-        );
-        const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
-        const routeType = classifyRouteType(distanceKm);
-        const price = (
-          distanceKm * Number(config?.per_kilometer_price)
-        )?.toFixed(2);
-
-        return {
-          _id: driver._id.toString(),
-          driverId: driver.userId,
-          driverSelectedTruck: {
-            _id: driver.truckDetails._id.toString(),
-            truckcategories: driver.truckDetails.truckcategories,
-            photo: driver.truckDetails.photo,
-            price,
-          },
-          geoMetrics: {
-            distanceKm,
-            estimatedDurationMin,
-            bearingDegrees,
-            routeType,
-          },
-        };
-      });
+    //  Step 6: Sort by nearest driver and limit results
     return enrichedDrivers
-      .sort((a, b) => a?.geoMetrics?.distanceKm - b?.geoMetrics?.distanceKm)
-      ?.slice(0, 5);
+      .sort((a, b) => a.geoMetrics.distanceKm - b.geoMetrics.distanceKm)
+      .slice(0, 5);
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'Error finding nearest available trip truck drivers',
-      error,
+      error
     );
   }
 };
+
+
 
 
 const verify_driver_admin_IntoDb = async (
