@@ -14,7 +14,7 @@ import handel_auto_delete_request from './utility/handel_auto_delete_request';
 import auto_restricts_algorithm_driver_account from './utility/auto_restricts_algorithm_driver_account';
 import auto_delete_unverifyed_user from './utility/auto_delete_unverifyed_user';
 import path from 'path';
-import config from './app/config';
+// import config from './app/config';
 import handel_notification_delete from './utility/handel_notification_delete';
 
 
