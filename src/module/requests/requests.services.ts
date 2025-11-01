@@ -560,6 +560,7 @@ const acceptedRequestIntoDb = async (
     // send accepted notification
 
     const data = {
+    
       title: 'Connection Request Accepted',
       content: `Driver Accepted Your Request`,
       time: new Date(),

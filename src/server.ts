@@ -9,7 +9,8 @@ let server: Server;
 
 async function main() {
   try {
- 
+    
+
     process.on("uncaughtException", (err) => {
       console.error("Uncaught Exception:", err);
       shutdown(1);

@@ -100,7 +100,7 @@ const specificDriverNotificationListIntoDb = async (
     const allNotificationQuery = new QueryBuilder(
       notifications
         .find({ driverId })
-        .select('-userId -status -priority -createdAt -updatedAt -driverId '),
+        .select('-userId -status -priority  -updatedAt -driverId '),
 
       query,
     )
