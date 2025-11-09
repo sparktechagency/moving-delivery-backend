@@ -62,7 +62,7 @@ export interface IDriver extends Document {
 }
 
 export interface IUserLocation {
-  from?: {
+  from: {
     address: string;
     coordinates: number[];
   };

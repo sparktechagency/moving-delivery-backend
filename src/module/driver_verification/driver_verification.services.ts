@@ -342,12 +342,12 @@ const searching_for_available_trip_truck_listsWithMongo = async (
   userId: string
 ): Promise<DriverWithMetrics[]> => {
   try {
-    // Step 1: Update user’s geolocation
     const result = await User.updateOne(
       { _id: userId, isDelete: false },
       { $set: userLocation },
       { new: true, upsert: true }
     );
+
 
     if (!result) {
       throw new ApiError(
@@ -357,10 +357,16 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       );
     }
 
-    // ✅ Step 2: Extract user destination coordinates
+    const [fromLong, fromLat] = userLocation.from.coordinates;
     const [destLong, destLat] = userLocation.to.coordinates;
 
-    // ✅ Step 3: Find verified, available drivers with truck info
+    // ✅ Calculate user trip distance (from → to)
+    const userTripDistanceMeters = geolib.getDistance(
+      { longitude: fromLong, latitude: fromLat },
+      { longitude: destLong, latitude: destLat }
+    );
+    const userTripDistanceKm = Number((userTripDistanceMeters / 1000).toFixed(2));
+
     const drivers: Driver[] = await driververifications.aggregate([
       {
         $lookup: {
@@ -391,18 +397,13 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       },
     ]);
 
-    //  Step 4: No available drivers
     if (!drivers.length) return [];
 
-    // --- Per km rates for France by truck category ---
-    const truckRatesPerKm: Record<string, number> = {
-      small: 1.5,
-      medium: 2,
-      large: 2.5,
-    };
+    const FLAT_RATE = 50; 
+    const EXTRA_KM_THRESHOLD = 20; 
+    const EXTRA_RATE_PER_KM = 2.5; 
 
-    //  Step 5: Enrich drivers with geo metrics & per km pricing
-    const enrichedDrivers = drivers.map((driver:any) => {
+    const enrichedDrivers = drivers?.map((driver: any) => {
       const [lng, lat] = driver.autoDetectLocation;
       const driverCoords = {
         longitude: parseFloat(lng?.toString()),
@@ -419,10 +420,20 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
       const routeType = classifyRouteType(distanceKm);
 
-      // ---  Price per km based on truck category ---
-      const ratePerKm = truckRatesPerKm[driver.truckDetails.truckcategories] || 2;
-      const totalPrice = distanceKm * ratePerKm;
-      const price = totalPrice.toFixed(2);
+      // const ratePerKm = truckRatesPerKm[driver.truckDetails.truckcategories] || 2;
+      // const basePerKmPrice = distanceKm * ratePerKm;
+   
+
+
+      let finalPrice = FLAT_RATE;
+
+      if (userTripDistanceKm > EXTRA_KM_THRESHOLD) {
+        const extraKm = userTripDistanceKm - EXTRA_KM_THRESHOLD;
+        const extraCharge = extraKm * EXTRA_RATE_PER_KM;
+        finalPrice += extraCharge;
+      }
+
+      const price = finalPrice.toFixed(2);
 
       return {
         _id: driver._id.toString(),
@@ -431,7 +442,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           _id: driver.truckDetails._id.toString(),
           truckcategories: driver.truckDetails.truckcategories,
           photo: driver.truckDetails.photo,
-          price,
+          price, 
         },
         geoMetrics: {
           distanceKm,
@@ -439,13 +450,16 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           bearingDegrees,
           routeType,
         },
+  
+        userTripDistanceKm,
       };
     });
 
-    //  Step 6: Sort by nearest driver and limit results
+    // Step 6: Sort by nearest driver and limit results
     return enrichedDrivers
       .sort((a, b) => a.geoMetrics.distanceKm - b.geoMetrics.distanceKm)
       .slice(0, 5);
+
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
@@ -454,6 +468,8 @@ const searching_for_available_trip_truck_listsWithMongo = async (
     );
   }
 };
+
+
 
 
 

@@ -121,7 +121,10 @@ const update_selected_truckIntoDb = async (
     }
 
     if (file) {
-      updateData.photo = file.path;
+      updateData.photo = file.path.replace(
+        /\\/g,
+        '/',
+      );
     }
 
     if (Object.keys(updateData).length === 0) {
