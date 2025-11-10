@@ -3,6 +3,7 @@ import QueryBuilder from '../../app/builder/QueryBuilder';
 import ApiError from '../../app/error/ApiError';
 import { select_truck_search_filed } from './select_truck.constant';
 import SelectTruck from './select_truck.model';
+import { strict } from 'assert';
 
 interface RequestWithFile extends Request {
   file?: Express.Multer.File;
@@ -19,11 +20,12 @@ const createSelectTruckIntoDb = async (
 ): Promise<CreateSelectedTruckResponse> => {
   try {
     const file = req.file;
-    const { truckcategories } = req.body as { truckcategories?: string };
+    const { truckcategories, price } = req.body as any;
 
-    const createSelectTruck: { truckcategories?: string; photo?: string } = {};
+    const createSelectTruck: { truckcategories?: string; photo?: string,  price?:string } = {};
     createSelectTruck.truckcategories = truckcategories;
     createSelectTruck.photo = file?.path;
+    createSelectTruck.price=price
 
     const select_truck_builder = new SelectTruck({
       ...createSelectTruck,
@@ -113,11 +115,14 @@ const update_selected_truckIntoDb = async (
 ): Promise<CreateSelectedTruckResponse> => {
   try {
     const file = req.file;
-    const { truckcategories } = req.body as { truckcategories?: string };
-    const updateData: { truckcategories?: string; photo?: string } = {};
+    const { truckcategories, price } = req.body as { truckcategories?: string,price?:string };
+    const updateData: { truckcategories?: string; photo?: string, price?:string } = {};
 
     if (truckcategories) {
       updateData.truckcategories = truckcategories;
+    }
+    if(price){
+      updateData.price=price
     }
 
     if (file) {
@@ -150,9 +155,10 @@ const update_selected_truckIntoDb = async (
           '',
         );
       }
-    }
+    };
 
-    const result = await SelectTruck.findByIdAndUpdate(id, updateData, {
+
+    const result = await SelectTruck.findByIdAndUpdate(id,{$set: updateData}, {
       new: true,
       runValidators: true,
     });
@@ -169,7 +175,6 @@ const update_selected_truckIntoDb = async (
     if (error instanceof ApiError) {
       throw error;
     }
-
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'update_selected_truckIntoDb server unavailable',

@@ -17,6 +17,11 @@ const TselectTruckSchema = new Schema<TSelectTruck, SelectTruckModel>(
       type: String,
       required: [true, 'photo is require'],
     },
+     price:{
+      type:Number,
+      required:[false,'price is require'],
+     },
+
     isDelete: {
       type: Boolean,
       default: false,

@@ -6,7 +6,7 @@ const selectTruckSchema = z.object({
     truckcategories: z.string({
       required_error: 'Truck category is required',
     }),
-
+     price:z.number({required_error:"price is required"}),
     photo: z.string({
       required_error: 'Photo is required',
     }).optional(),
@@ -20,7 +20,7 @@ const UpdateselectTruckSchema = z.object({
     truckcategories: z.string({
       required_error: 'Truck category is required',
     }).optional(),
-
+     price:z.number({required_error:"price is required"}).optional(),
     photo: z.string({
       required_error: 'Photo is required',
     }).optional(),

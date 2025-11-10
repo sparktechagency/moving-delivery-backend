@@ -342,12 +342,12 @@ const searching_for_available_trip_truck_listsWithMongo = async (
   userId: string
 ): Promise<DriverWithMetrics[]> => {
   try {
+    // ✅ Update user location
     const result = await User.updateOne(
       { _id: userId, isDelete: false },
       { $set: userLocation },
       { new: true, upsert: true }
     );
-
 
     if (!result) {
       throw new ApiError(
@@ -360,14 +360,15 @@ const searching_for_available_trip_truck_listsWithMongo = async (
     const [fromLong, fromLat] = userLocation.from.coordinates;
     const [destLong, destLat] = userLocation.to.coordinates;
 
-    // ✅ Calculate user trip distance (from → to)
+    // ✅ Calculate user's trip distance (from → to)
     const userTripDistanceMeters = geolib.getDistance(
       { longitude: fromLong, latitude: fromLat },
       { longitude: destLong, latitude: destLat }
     );
     const userTripDistanceKm = Number((userTripDistanceMeters / 1000).toFixed(2));
 
-    const drivers: Driver[] = await driververifications.aggregate([
+    // ✅ Find all verified and ready drivers with truck details
+    const drivers = await driververifications.aggregate([
       {
         $lookup: {
           from: 'selecttrucks',
@@ -399,41 +400,38 @@ const searching_for_available_trip_truck_listsWithMongo = async (
 
     if (!drivers.length) return [];
 
-    const FLAT_RATE = 50; 
-    const EXTRA_KM_THRESHOLD = 20; 
-    const EXTRA_RATE_PER_KM = 2.5; 
+    // ✅ Constants
+    const FLAT_RATE = 50;
+    const EXTRA_KM_THRESHOLD = 20;
+    const EXTRA_RATE_PER_KM = 2.5;
+    const MAX_DISTANCE_KM = 30; 
 
-    const enrichedDrivers = drivers?.map((driver: any) => {
+    const enrichedDrivers = drivers.map((driver: any) => {
       const [lng, lat] = driver.autoDetectLocation;
       const driverCoords = {
-        longitude: parseFloat(lng?.toString()),
-        latitude: parseFloat(lat?.toString()),
+        longitude: parseFloat(lng.toString()),
+        latitude: parseFloat(lat.toString()),
       };
-      const destinationCoords = { longitude: destLong, latitude: destLat };
 
-      // --- Distance & time calculation ---
+      const destinationCoords = { longitude: destLong, latitude: destLat };
       const distanceInMeters = geolib.getDistance(driverCoords, destinationCoords);
       const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
+
       const bearingDegrees = Number(
         geolib.getRhumbLineBearing(driverCoords, destinationCoords).toFixed(1)
       );
       const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
       const routeType = classifyRouteType(distanceKm);
 
-      // const ratePerKm = truckRatesPerKm[driver.truckDetails.truckcategories] || 2;
-      // const basePerKmPrice = distanceKm * ratePerKm;
-   
-
-
-      let finalPrice = FLAT_RATE;
-
+      // 💰 Pricing logic
+      let finalPrice = driver?.truckDetails?.price;
       if (userTripDistanceKm > EXTRA_KM_THRESHOLD) {
         const extraKm = userTripDistanceKm - EXTRA_KM_THRESHOLD;
         const extraCharge = extraKm * EXTRA_RATE_PER_KM;
         finalPrice += extraCharge;
       }
 
-      const price = finalPrice.toFixed(2);
+      const price = Number(finalPrice).toFixed(2);
 
       return {
         _id: driver._id.toString(),
@@ -442,7 +440,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           _id: driver.truckDetails._id.toString(),
           truckcategories: driver.truckDetails.truckcategories,
           photo: driver.truckDetails.photo,
-          price, 
+          price,
         },
         geoMetrics: {
           distanceKm,
@@ -450,13 +448,13 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           bearingDegrees,
           routeType,
         },
-  
         userTripDistanceKm,
       };
     });
 
-    // Step 6: Sort by nearest driver and limit results
+    
     return enrichedDrivers
+      .filter(driver => driver.geoMetrics.distanceKm <= MAX_DISTANCE_KM)
       .sort((a, b) => a.geoMetrics.distanceKm - b.geoMetrics.distanceKm)
       .slice(0, 5);
 

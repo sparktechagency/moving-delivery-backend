@@ -4,6 +4,7 @@ export type TSelectTruck = {
   userId: Types.ObjectId;
   truckcategories: string;
   photo: string;
+  price:number;
   isDelete?: boolean;
 };
 
