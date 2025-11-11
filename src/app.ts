@@ -84,17 +84,19 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
-cron.schedule('*/30 * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
   try {
-    await handel_auto_delete_request();
+    await handel_auto_delete_request(); // ensure function name is correct
+    console.log('✅ Auto delete request cron ran successfully');
   } catch (error: any) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      ' issues by the auto user request delete Cron failed ',
-      error,
+    console.error(
+      '❌ Auto user request deletion cron failed:',
+      error.message || error
     );
+    // Optional: send notification to admin/log service instead of throwing
   }
 });
+
 
 cron.schedule('0 2 * * *', async () => {
   try {
