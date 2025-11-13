@@ -336,7 +336,7 @@ const deleteDriverVerificationIntoDb = async (
 };
 
 
-
+//const googleUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${fromLat},${fromLong}&destinations=${destLat},${destLong}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
 const searching_for_available_trip_truck_listsWithMongo = async (
   userLocation: IUserLocation,
   userId: string
@@ -350,24 +350,25 @@ const searching_for_available_trip_truck_listsWithMongo = async (
     );
 
     if (!result) {
-      throw new ApiError(
-        httpStatus.NOT_FOUND,
-        'Issue updating user geolocation.',
-        ''
-      );
+      throw new ApiError(httpStatus.NOT_FOUND, 'Issue updating user geolocation.', '');
     }
 
     const [fromLong, fromLat] = userLocation.from.coordinates;
     const [destLong, destLat] = userLocation.to.coordinates;
 
-    // ✅ Calculate user's trip distance (from → to)
-    const userTripDistanceMeters = geolib.getDistance(
+    // ✅ Calculate straight-line distance
+    const straightLineMeters = geolib.getDistance(
       { longitude: fromLong, latitude: fromLat },
       { longitude: destLong, latitude: destLat }
     );
-    const userTripDistanceKm = Number((userTripDistanceMeters / 1000).toFixed(2));
 
-    // ✅ Find all verified and ready drivers with truck details
+    const straightLineKm = Number((straightLineMeters / 1000).toFixed(2));
+
+    // ✅ Estimate realistic road distance (Google-like)
+    // On average, road distance ≈ straightLine × 1.4
+    const estimatedRoadKm = Number((straightLineKm * 1.6).toFixed(2));
+
+    // ✅ Find all verified & ready drivers with truck details
     const drivers = await driververifications.aggregate([
       {
         $lookup: {
@@ -404,7 +405,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
     const FLAT_RATE = 50;
     const EXTRA_KM_THRESHOLD = 20;
     const EXTRA_RATE_PER_KM = 2.5;
-    const MAX_DISTANCE_KM = 30; 
+    const MAX_DISTANCE_KM = 30;
 
     const enrichedDrivers = drivers.map((driver: any) => {
       const [lng, lat] = driver.autoDetectLocation;
@@ -414,19 +415,22 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       };
 
       const destinationCoords = { longitude: destLong, latitude: destLat };
+
       const distanceInMeters = geolib.getDistance(driverCoords, destinationCoords);
       const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
 
       const bearingDegrees = Number(
         geolib.getRhumbLineBearing(driverCoords, destinationCoords).toFixed(1)
       );
+
       const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
+
       const routeType = classifyRouteType(distanceKm);
 
       // 💰 Pricing logic
       let finalPrice = driver?.truckDetails?.price;
-      if (userTripDistanceKm > EXTRA_KM_THRESHOLD) {
-        const extraKm = userTripDistanceKm - EXTRA_KM_THRESHOLD;
+      if (estimatedRoadKm > EXTRA_KM_THRESHOLD) {
+        const extraKm = estimatedRoadKm - EXTRA_KM_THRESHOLD;
         const extraCharge = extraKm * EXTRA_RATE_PER_KM;
         finalPrice += extraCharge;
       }
@@ -448,16 +452,14 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           bearingDegrees,
           routeType,
         },
-        userTripDistanceKm,
+        userTripDistanceKm: estimatedRoadKm, // ✅ realistic driving distance
       };
     });
 
-    
     return enrichedDrivers
       .filter(driver => driver.geoMetrics.distanceKm <= MAX_DISTANCE_KM)
       .sort((a, b) => a.geoMetrics.distanceKm - b.geoMetrics.distanceKm)
       .slice(0, 5);
-
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
@@ -466,6 +468,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
     );
   }
 };
+
 
 
 
