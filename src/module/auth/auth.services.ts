@@ -11,6 +11,7 @@ import { TUser } from '../user/user.interface';
 import User from '../user/user.model';
 import { socialAuth, user_search_filed } from './auth.constant';
 import { RequestResponse } from './auth.interface';
+import { RequestWithMultipleFiles } from '../driver_verification/driver_verification.interface';
 
 const loginUserIntoDb = async (payload: {
   email: string;
@@ -285,103 +286,57 @@ const myprofileIntoDb = async (
     );
   }
 };
-/**
- * @param req
- * @param id
- * @returns
- */
-interface ProfileUpdateBody {
-  name?: string;
-  phoneNumber?: string;
-  email?: string;
-  location?: string;
-}
 
-interface ProfileUpdateResponse {
-  status: boolean;
-  message: string;
-}
 
 const changeMyProfileIntoDb = async (
   req: any,
-  id: string,
-): Promise<ProfileUpdateResponse> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  id: string
+): Promise<{ status: boolean; message: string }> => {
   try {
-    const { name, phoneNumber, location } = req.body as ProfileUpdateBody;
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    const updateData: Partial<
-      ProfileUpdateBody & { photo?: string; driverLicense?: string }
-    > = {};
+    const file = req.file;
+
+    let parsedBody = req.body;
+
+    if (req.body.data) {
+      
+      parsedBody = JSON.parse(req.body.data);
+    }
+
+    const { name, phoneNumber, location } = parsedBody;
+
+    const updateData: any = {};
+
     if (name) updateData.name = name;
     if (phoneNumber) updateData.phoneNumber = phoneNumber;
     if (location) updateData.location = location;
-    if (files?.photo?.[0])
-      updateData.photo = files.photo[0].path.replace(/\\/g, '/');
-    if (files?.driverLicense?.[0])
-      updateData.driverLicense = files.driverLicense[0].path.replace(
-        /\\/g,
-        '/',
-      );
-    if (Object.keys(updateData).length === 0) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        'No data provided for update',
-        '',
-      );
-    }
-    const userResult = await User.findByIdAndUpdate(
-      id,
-      {
-        ...(updateData.name && { name: updateData.name }),
-        ...(updateData.phoneNumber && { phoneNumber: updateData.phoneNumber }),
-        ...(updateData.location && { location: updateData.location }),
-        ...(updateData.photo && { photo: updateData.photo }),
-      },
-      { new: true, session },
-    );
 
-    if (!userResult) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'User not found', '');
-    }
-    if (updateData.driverLicense) {
-      const driverResult = await driververifications.updateOne(
-        { userId: id },
-        { $set: { driverLicense: updateData.driverLicense } },
-        { upsert: true, session },
-      );
-
-      if (!driverResult.acknowledged) {
-        throw new ApiError(
-          httpStatus.NOT_EXTENDED,
-          'Driver license update failed',
-          '',
-        );
-      }
+    if (file) {
+      updateData.photo = file.path.replace(/\\/g, "/");
     }
 
-    await session.commitTransaction();
-    session.endSession();
+    console.log(updateData);
 
-    return {
-      status: true,
-      message: 'Successfully updated profile',
-    };
+    const result = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+
+    if (!result) {
+      throw new ApiError(httpStatus.NOT_FOUND, "User not found", "");
+    }
+
+    return { status: true, message: "Successfully updated profile" };
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
-
-    console.error('Profile update error:', error);
+    if (error instanceof ApiError) throw error;
 
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'Profile update failed',
-      error.message || error,
+      "Profile update failed",
+      error.message
     );
   }
 };
+
+
+
+
 
 const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   try {
@@ -434,6 +389,38 @@ const deleteAccountIntoDb = async (id: string): Promise<RequestResponse> => {
   }
 };
 
+
+const isBlockAccountIntoDb = async (
+  id: string,
+  payload: Partial<TUser>
+) => {
+ 
+
+  try {
+    const result = await User.findByIdAndUpdate(
+      id,
+      { status: payload.status },
+      { new: true } 
+    );
+
+    if (!result) {
+      throw new ApiError(httpStatus.NOT_FOUND, "User not found",'');
+    }
+
+    return {
+      success: true,
+      message: `User successfully ${payload.status}`,
+  
+    };
+  } catch (error: any) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      "Block account operation failed",
+      error
+    );
+  }
+};
+
 const AuthServices = {
   loginUserIntoDb,
   refreshTokenIntoDb,
@@ -442,6 +429,7 @@ const AuthServices = {
   changeMyProfileIntoDb,
   findByAllUsersAdminIntoDb,
   deleteAccountIntoDb,
+  isBlockAccountIntoDb
 };
 
 export default AuthServices;

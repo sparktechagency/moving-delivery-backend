@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { USER_ACCESSIBILITY } from '../user/user.constant';
 
 const LoginSchema = z.object({
   body: z.object({
@@ -44,11 +45,23 @@ const changeMyProfileSchema = z.object({
     .optional(),
 });
 
+const changeUserAccountStatus = z.object({
+  body: z.object({
+    status: z
+    .enum([
+      USER_ACCESSIBILITY.isProgress,
+      USER_ACCESSIBILITY.blocked,
+    ])
+   
+  }),
+})
+
 const LoginValidationSchema = {
   LoginSchema,
   requestTokenValidationSchema,
   forgetPasswordValidation,
   resetVerification,
   changeMyProfileSchema,
+  changeUserAccountStatus
 };
 export default LoginValidationSchema;

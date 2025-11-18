@@ -39,13 +39,12 @@ router.patch(
   '/update_my_profile',
   auth(USER_ROLE.user, USER_ROLE.driver, USER_ROLE.admin),
   upload.fields([
-    { name: 'photo', maxCount: 1 },
-    { name: 'driverLicense', maxCount: 1 },
+    { name: 'photo', maxCount: 1 }
+    
   ]),
   (req: Request, res: Response, next: NextFunction) => {
     try {
       if (req.body.data && typeof req.body.data === 'string') {
-        console.log(req.body.data);
         req.body = JSON.parse(req.body.data);
       }
 
@@ -53,12 +52,7 @@ router.patch(
         [fieldname: string]: Express.Multer.File[];
       };
 
-      if (files?.driverLicense && files?.driverLicense[0]) {
-        req.body.driverLicense = files.driverLicense[0]?.path?.replace(
-          /\\/g,
-          '/',
-        );
-      }
+ 
 
       if (files?.photo && files?.photo[0]) {
         req.body.photo = files?.photo[0]?.path?.replace(/\\/g, '/');
@@ -83,6 +77,14 @@ router.delete(
   '/delete_account/:id',
   auth(USER_ROLE.admin, USER_ROLE.driver, USER_ROLE.admin),
   AuthController.deleteAccount,
+);
+
+
+router.patch(
+  "/change_status/:id",
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  validationRequest(LoginValidationSchema.changeUserAccountStatus),
+  AuthController.isBlockAccount
 );
 
 const AuthRouter = router;
