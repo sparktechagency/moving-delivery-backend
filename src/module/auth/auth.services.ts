@@ -298,11 +298,11 @@ const changeMyProfileIntoDb = async (
     let parsedBody = req.body;
 
     if (req.body.data) {
-      
+
       parsedBody = JSON.parse(req.body.data);
     }
 
-    const { name, phoneNumber, location } = parsedBody;
+    const { name, phoneNumber, location,photo } = parsedBody;
 
     const updateData: any = {};
 
@@ -310,11 +310,13 @@ const changeMyProfileIntoDb = async (
     if (phoneNumber) updateData.phoneNumber = phoneNumber;
     if (location) updateData.location = location;
 
-    if (file) {
-      updateData.photo = file.path.replace(/\\/g, "/");
+    if (photo) {
+      updateData.photo = photo;
     }
 
-    console.log(updateData);
+    console.log("file",updateData)
+
+  
 
     const result = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true });
 
