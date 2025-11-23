@@ -314,7 +314,7 @@ const changeMyProfileIntoDb = async (
       updateData.photo = photo;
     }
 
-    console.log("file",updateData)
+   
 
   
 
