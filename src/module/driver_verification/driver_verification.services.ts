@@ -14,6 +14,14 @@ import * as geolib from 'geolib'; // Important!
 import config from '../../app/config';
 import { classifyRouteType } from '../../utility/math/calculateDistance';
 import User from '../user/user.model';
+import Conversation from '../conversation/conversation.model';
+import Message from '../message/message.model';
+import notifications from '../notification/notification.modal';
+import { request } from 'http';
+import requests from '../requests/requests.model';
+import stripepaymentgateways from '../payment_gateway/payment gateway.model';
+import drivertransactionInfos from '../drivers_transaction_info/drivers_transaction_info.model';
+import ratingreview from '../rating_review/rating.review.model';
 
 /**
  * @param req
@@ -527,33 +535,73 @@ const verify_driver_admin_IntoDb = async (
   }
 };
 
-const delete_driver_verification_request_IntoDb = async (id: string) => {
+const delete_driver_verification_request_IntoDb = async (id: string, userId: string) => {
   try {
-    const result = await driververifications.deleteOne({
-      $and: [
-        {
-          _id: id,
-          isVerifyDriverLicense: false,
-          isVerifyDriverNid: false,
-          isReadyToDrive: false,
-        },
-      ],
-    });
+    const retry = async (fn: () => Promise<any>) => {
+      try {
+        return await fn();
+      } catch {
+        return await fn(); 
+      }
+    };
 
-    return result.deletedCount === 1
-      ? { status: true, message: 'successfully delete driver verified requst' }
-      : {
-        status: false,
-        message: 'already verified user can not be delete',
-      };
+   await driververifications.deleteOne({ _id: id });
+
+    await Promise.all([
+      retry(() =>
+        Conversation.deleteMany({ participants: { $in: [userId] } })
+      ),
+
+      retry(() =>
+        Message.deleteMany({ msgByUserId: userId })
+      ),
+
+      retry(() =>
+        notifications.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+
+      retry(() =>
+        requests.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+
+      retry(() =>
+        stripepaymentgateways.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+
+      retry(() =>
+        drivertransactionInfos.deleteMany({
+          $or: [{ driverId: userId }],
+        })
+      ),
+
+      retry(() =>
+        ratingreview.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+    ]);
+
+    return {
+      status: true,
+      message: "Successfully deleted driver verification request & related data",
+    };
+
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'Error finding delete_driver_verification_request_IntoDb',
-      error,
+      "Error deleting driver verification request",
+      error
     );
   }
 };
+
+
 
 const DriverVerificationServices = {
   recordDriverVerificationIntoDb,

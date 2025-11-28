@@ -12,6 +12,13 @@ import User from '../user/user.model';
 import { socialAuth, user_search_filed } from './auth.constant';
 import { RequestResponse } from './auth.interface';
 import { RequestWithMultipleFiles } from '../driver_verification/driver_verification.interface';
+import Conversation from '../conversation/conversation.model';
+import Message from '../message/message.model';
+import notifications from '../notification/notification.modal';
+import requests from '../requests/requests.model';
+import stripepaymentgateways from '../payment_gateway/payment gateway.model';
+import drivertransactionInfos from '../drivers_transaction_info/drivers_transaction_info.model';
+import ratingreview from '../rating_review/rating.review.model';
 
 const loginUserIntoDb = async (payload: {
   email: string;
@@ -367,29 +374,70 @@ const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   }
 };
 
-const deleteAccountIntoDb = async (id: string): Promise<RequestResponse> => {
+const deleteAccountIntoDb = async (id: string, userId: string): Promise<RequestResponse> => {
   try {
     const result = await User.deleteOne({ _id: id, isVerify: true });
 
-    if (!result) {
+    if (result.deletedCount !== 1) {
       throw new ApiError(
         httpStatus.NOT_FOUND,
-        'issues by the delete account into db',
-        '',
+        "User not found or not verified",
+        ""
       );
     }
+    const retry = async (fn: () => Promise<any>) => {
+      try {
+        return await fn();
+      } catch {
+        return await fn(); 
+      }
+    };
+    await Promise.all([
+      retry(() =>
+        Conversation.deleteMany({ participants: { $in: [userId] } })
+      ),
+      retry(() => Message.deleteMany({ msgByUserId: userId })),
+      retry(() =>
+        notifications.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+      retry(() =>
+        requests.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+      retry(() =>
+        stripepaymentgateways.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+      retry(() =>
+        drivertransactionInfos.deleteMany({
+          $or: [{ driverId: userId }],
+        })
+      ),
+      retry(() =>
+        ratingreview.deleteMany({
+          $or: [{ driverId: userId }, { userId }],
+        })
+      ),
+      retry(() => driververifications.deleteOne({ driverId: userId })),
+    ]);
 
-    return result.deletedCount === 1
-      ? { status: true, message: 'successfully delete account' }
-      : { status: false, message: 'some issues by the  delete section' };
+    return {
+      status: true,
+      message: "Account & all related data deleted successfully",
+    };
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
-      'delete Account Into Db server unavailable',
-      error,
+      "Delete Account Into DB server unavailable",
+      error
     );
   }
 };
+
 
 
 const isBlockAccountIntoDb = async (

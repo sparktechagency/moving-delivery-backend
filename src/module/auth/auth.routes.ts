@@ -75,7 +75,7 @@ router.get(
 
 router.delete(
   '/delete_account/:id',
-  auth(USER_ROLE.admin, USER_ROLE.driver, USER_ROLE.admin),
+  auth(USER_ROLE.admin, USER_ROLE.driver, USER_ROLE.user),
   AuthController.deleteAccount,
 );
 

@@ -85,7 +85,7 @@ const findByAllUsersAdmin: RequestHandler = catchAsync(async (req, res) => {
 });
 
 const deleteAccount: RequestHandler = catchAsync(async (req, res) => {
-  const result = await AuthServices.deleteAccountIntoDb(req.params.id);
+  const result = await AuthServices.deleteAccountIntoDb(req.params.id, req.user.id);
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.OK,

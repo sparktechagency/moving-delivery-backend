@@ -131,7 +131,7 @@ const delete_driver_verification_request: RequestHandler = catchAsync(
   async (req, res) => {
     const result =
       await DriverVerificationServices.delete_driver_verification_request_IntoDb(
-        req.params.id,
+        req.params.id, req.user.id
       );
     sendRespone(res, {
       success: true,
