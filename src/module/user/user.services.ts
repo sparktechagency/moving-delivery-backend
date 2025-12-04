@@ -56,9 +56,7 @@ const createUserIntoDb = async (payload: TUser) => {
     const otp = await generateUniqueOTP();
 
     payload.verificationCode = otp;
-    payload.phoneNumber = `temp-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}`;
+    payload.phoneNumber = `+8812322305054`;
 
     const authBuilder = new User(payload);
 

@@ -31,6 +31,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
     email: {
       type: String,
       required: [false, 'Email is Required'],
+      unique:true , 
       trim: true,
     },
     phoneNumber: {

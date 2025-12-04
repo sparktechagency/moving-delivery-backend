@@ -361,8 +361,9 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       throw new ApiError(httpStatus.NOT_FOUND, 'Issue updating user geolocation.', '');
     }
 
-    const [fromLong, fromLat] = userLocation.from.coordinates;
-    const [destLong, destLat] = userLocation.to.coordinates;
+
+    const [fromLong, fromLat] = userLocation.to.coordinates;
+    const [destLong, destLat] = userLocation.from.coordinates;
 
     // ✅ Calculate straight-line distance
     const straightLineMeters = geolib.getDistance(
