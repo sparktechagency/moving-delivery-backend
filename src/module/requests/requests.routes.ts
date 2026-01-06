@@ -79,7 +79,7 @@ router.get(
 
 router.get(
   '/find_by_all_upcomming_history',
-  auth(USER_ROLE.user),
+  auth(USER_ROLE.driver, USER_ROLE.user),
   RequestController.user_upcomming_history,
 );
 

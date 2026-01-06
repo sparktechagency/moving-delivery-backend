@@ -77,6 +77,11 @@ const TdriverVerificationSchema = new Schema<TDriverVerification>(
       type: String,
       required: true,
     },
+    request_status:{
+      type:String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
     isVerifyDriverNid: {
       type: Boolean,
       default: false,

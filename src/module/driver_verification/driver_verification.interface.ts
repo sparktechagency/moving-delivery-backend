@@ -40,6 +40,7 @@ export type TDriverVerification = {
   vehicleAge: number;
   workingPreferredDate: string;
   isDelete?: boolean;
+  request_status?: string; 
 };
 
 export interface DriverOasisModel extends Model<TDriverVerification> {

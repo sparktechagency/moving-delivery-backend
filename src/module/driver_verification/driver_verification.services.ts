@@ -22,6 +22,7 @@ import requests from '../requests/requests.model';
 import stripepaymentgateways from '../payment_gateway/payment gateway.model';
 import drivertransactionInfos from '../drivers_transaction_info/drivers_transaction_info.model';
 import ratingreview from '../rating_review/rating.review.model';
+import sendEmail from '../../utility/sendEmail';
 
 /**
  * @param req
@@ -166,7 +167,15 @@ const findByDriverVerifictionAdminIntoDb = async (
 
 const findBySpecificDriverVerificationIntoDb = async (id: string) => {
   try {
-    return await driververifications.isDriverVerificationExistByCustomId(id);
+    const verification =  await driververifications.isDriverVerificationExistByCustomId(id);
+
+    return {
+      
+      ...verification,
+      driverVerificationStatus:verification?.request_status || 'not_applied',
+
+    }
+
   } catch (error: any) {
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
@@ -182,6 +191,8 @@ const updateDriverVerificationIntoDb = async (
 ): Promise<DriverVerificationResponse> => {
   try {
     const data = req.body;
+
+    console.log(data)
     if (!data) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -206,6 +217,8 @@ const updateDriverVerificationIntoDb = async (
     if (!isDriverVerificationExist) {
       throw new ApiError(httpStatus.NOT_FOUND, 'driver is not verified ', '');
     }
+
+   
 
     const result = await driververifications.findByIdAndUpdate(id, data, {
       new: true,
@@ -482,8 +495,6 @@ const searching_for_available_trip_truck_listsWithMongo = async (
 
 
 
-
-
 const verify_driver_admin_IntoDb = async (
   payload: {
     isVerifyDriverLicense: boolean;
@@ -506,15 +517,19 @@ const verify_driver_admin_IntoDb = async (
       );
     }
 
+    console.log("wsedrftgyhwsedrtyui", payload)
+
     const result = await driververifications.findByIdAndUpdate(
       id,
       {
-        isVerifyDriverLicense: true,
-        isVerifyDriverNid: true,
-        isReadyToDrive: true,
+        isVerifyDriverLicense: payload.isVerifyDriverLicense,
+        isVerifyDriverNid: payload.isVerifyDriverNid,
+        isReadyToDrive: payload.isReadyToDrive,
+        request_status: payload.isReadyToDrive ? 'approved' : 'rejected'
       },
       { new: true, upsert: true },
     );
+
     if (!result) {
       throw new ApiError(
         httpStatus.NOT_ACCEPTABLE,
@@ -522,6 +537,7 @@ const verify_driver_admin_IntoDb = async (
         '',
       );
     }
+  
 
     return {
       status: true,

@@ -16,6 +16,7 @@ import requests from '../requests/requests.model';
 import drivertransactionInfos from '../drivers_transaction_info/drivers_transaction_info.model';
 import QueryBuilder from '../../app/builder/QueryBuilder';
 
+
 const stripe = new Stripe(
   config.stripe_payment_gateway.stripe_secret_key as string,
 );

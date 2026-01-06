@@ -25,6 +25,8 @@ const loginUserIntoDb = async (payload: {
   password: string;
   fcm?: string;
 }) => {
+
+  console.log("Payload in loginUserIntoDb:", payload); // Debug log
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -98,7 +100,31 @@ const loginUserIntoDb = async (payload: {
         config.refresh_expires_in as string,
       );
     }
+
+    
+    if(isUserExist.role === USER_ROLE.driver){
+
+      const driverVerification = await driververifications.findOne(
+        { userId: isUserExist.id },
+        { isReadyToDrive: 1 , isVerifyDriverNid:1, isVerifyDriverLicense:1, request_status:1},
+      );
+
+      await session.commitTransaction();
+
+      console.log("Driver Verification Status:", driverVerification); // Debug log
+      return {
+        accessToken,
+        refreshToken,
+        driverVerificationStatus:driverVerification?.request_status || 'not_applied',
+        isReadyToDrive: driverVerification?.isReadyToDrive || false,
+        isVerifyDriverNid: driverVerification?.isVerifyDriverNid || false,
+        isVerifyDriverLicense: driverVerification?.isVerifyDriverLicense || false,
+      }
+    }
+
     await session.commitTransaction();
+
+  
     return {
       accessToken,
       refreshToken,
