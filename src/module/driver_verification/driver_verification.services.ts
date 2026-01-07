@@ -517,8 +517,6 @@ const verify_driver_admin_IntoDb = async (
       );
     }
 
-    console.log("wsedrftgyhwsedrtyui", payload)
-
     const result = await driververifications.findByIdAndUpdate(
       id,
       {
@@ -537,11 +535,34 @@ const verify_driver_admin_IntoDb = async (
         '',
       );
     }
+    if(result.request_status === 'approved'){
+      // send email to driver that verification is approved
+      const user = await User.findById(payload.driverId);
+      if(user){
+        await sendEmail(
+          user.email,
+          `Dear ${user.name}, your driver verification has been approved. You can now start accepting trips.`,
+          'Driver Verification Approved',
+          
+        );
+      }
+    } else if (result.request_status === 'rejected'){
+      // send email to driver that verification is rejected
+
+      const user = await User.findById(payload.driverId);
+      if(user){
+        await sendEmail(
+          user.email,
+          `Dear ${user.name}, we regret to inform you that your driver verification has been rejected. Please review the documents and try again.  \n${!result.isVerifyDriverLicense && "Driving license"} \n ${!result.isVerifyDriverNid && "NID"} `,
+          'Driver Verification Rejected',
+        );
+      }
+    }
   
 
     return {
       status: true,
-      message: 'Successfylly Verified',
+      message: 'verification status successfully updated',
     };
   } catch (error: any) {
     throw new ApiError(
