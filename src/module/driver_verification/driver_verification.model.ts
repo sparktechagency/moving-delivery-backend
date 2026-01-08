@@ -59,11 +59,11 @@ const TdriverVerificationSchema = new Schema<TDriverVerification>(
     },
     picCities: {
       type: String,
-      required: [true, 'pic cities is required'],
+      required: [false, 'pic cities is required'],
     },
     picState: {
       type: String,
-      required: [true, 'pic state is required'],
+      required: [false, 'pic state is required'],
     },
     isVerifyDriverLicense: {
       type: Boolean,

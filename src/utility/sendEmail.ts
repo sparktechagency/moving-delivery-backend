@@ -2,6 +2,9 @@ import nodemailer from 'nodemailer';
 import config from '../app/config';
 
 const sendEmail = async (to: string, html: string, subject?: string) => {
+
+  try{
+    console.log("Sending email to:", to);
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com.',
     port: 587,
@@ -19,6 +22,9 @@ const sendEmail = async (to: string, html: string, subject?: string) => {
     text: 'Varify Email with in 10 mins',
     html,
   });
+  }catch(error){
+    console.log("Error sending email:", error);
+  }
 };
 
 export default sendEmail;

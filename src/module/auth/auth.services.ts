@@ -375,10 +375,11 @@ const changeMyProfileIntoDb = async (
 
 const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
   try {
+
+  
+    console.log(query)
     const allUsersdQuery = new QueryBuilder(
-      User.find().select(
-        'name email phoneNumber isVerify role status photo provider location stripeAccountId',
-      ),
+      User.find().select('-password'),
       query,
     )
       .search(user_search_filed)
@@ -388,12 +389,30 @@ const findByAllUsersAdminIntoDb = async (query: Record<string, unknown>) => {
       .fields();
 
     const all_users = await allUsersdQuery.modelQuery;
+    console.log("All Users fetched:", all_users); // Debug log
     const meta = await allUsersdQuery.countTotal();
+
+    for(const user of all_users){
+      if (user.role === USER_ROLE.driver){
+        const driverVerification = await driververifications.findOne(
+          { userId: user.id },
+          { isReadyToDrive: 1 , isVerifyDriverNid:1, isVerifyDriverLicense:1, request_status:1, driverLicense:1, driverLocation:1, driverNidCard:1, driverSelectedTruck:1},
+        );
+        (user as any)._doc.driverVerificationStatus = driverVerification?.request_status || 'not_applied';
+        (user as any)._doc.isReadyToDrive = driverVerification?.isReadyToDrive || false;
+        (user as any)._doc.isVerifyDriverNid = driverVerification?.isVerifyDriverNid || false;
+        (user as any)._doc.isVerifyDriverLicense = driverVerification?.isVerifyDriverLicense || false;
+        (user as any)._doc.driverLicense = driverVerification?.driverLicense || null;
+        (user as any)._doc.driverLocation = driverVerification?.driverLocation || null;
+        (user as any)._doc.driverNidCard = driverVerification?.driverNidCard || null;
+        (user as any)._doc.driverSelectedTruck = driverVerification?.driverSelectedTruck || null;
+      }
+    }
 
     return { meta, all_users };
   } catch (error: any) {
     throw new ApiError(
-      httpStatus.SERVICE_UNAVAILABLE,
+      httpStatus.BAD_REQUEST,
       'find By All User Admin IntoDb server unavailable',
       error,
     );

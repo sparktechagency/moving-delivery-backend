@@ -1,4 +1,5 @@
 import { FilterQuery, Query } from 'mongoose';
+import escapeRegex from '../../utility/escape-string';
 
 class QueryBuilder<T> {
   public modelQuery: Query<T[], T>;
@@ -10,28 +11,23 @@ class QueryBuilder<T> {
   }
 
   search(searchableFields: string[]) {
-    const searchTerm = this?.query?.searchTerm;
+  const searchTerm = this.query?.search as string;
+  console.log('searchTerm:', searchTerm);
 
-    if (searchTerm) {
-      // Apply $regex only to fields that are strings
-      const stringFields = searchableFields.filter((field) => {
-        // Check if the field type in your schema is `String`
-        const schemaPath = this.modelQuery.model.schema.path(field);
-        return schemaPath && schemaPath.instance === 'String';
-      });
+  if (searchTerm) {
+    const orConditions = searchableFields.map((field) => ({
+      [field]: { $regex: escapeRegex(searchTerm), $options: 'i' },
+    }));
 
-      this.modelQuery = this.modelQuery.find({
-        $or: stringFields.map(
-          (field) =>
-            ({
-              [field]: { $regex: searchTerm, $options: 'i' },
-            }) as FilterQuery<T>,
-        ),
-      });
-    }
+    console.log('orConditions:', orConditions);
 
-    return this;
+    this.modelQuery = this.modelQuery.find({
+      $or: orConditions as FilterQuery<T>[],
+    });
   }
+
+  return this;
+}
 
   //finter function
   filter() {
@@ -53,7 +49,7 @@ class QueryBuilder<T> {
       };
     }
 
-    const excludeField = ['searchTerm', 'sort', 'limit', 'page', 'fields'];
+    const excludeField = ['search', 'sort', 'limit', 'page', 'fields'];
     excludeField.forEach((el) => delete queryObject[el]);
 
     this.modelQuery = this.modelQuery.find(queryObject as FilterQuery<T>);

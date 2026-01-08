@@ -15,7 +15,7 @@ const recordDriverVerification: RequestHandler = catchAsync(
     sendRespone(res, {
       success: true,
       statusCode: httpStatus.CREATED,
-      message: 'Successfully Driver Verification Record ',
+      message: 'Driver verification data successfully recorded. Now waiting for admin approval.',
       data: result,
     });
   },

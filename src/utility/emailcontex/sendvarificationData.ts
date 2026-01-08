@@ -75,6 +75,222 @@ const emailcontext = {
             </html>
             `;
     },
+    sendDriverPendingVerification: (username: string, otp: number, subject:string) => {
+      return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${subject}</title>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333333;
+                  max-width: 600px;
+                  margin: 0 auto;
+                }
+                .container {
+                  padding: 20px;
+                  border-radius: 5px;
+                  background-color: #f9f9f9;
+                  border: 1px solid #dddddd;
+                }
+                .header {
+                  text-align: center;
+                  padding: 10px;
+                  background-color: #4CAF50;
+                  color: white;
+                  border-radius: 5px 5px 0 0;
+                }
+                .content {
+                  padding: 20px;
+                  background-color: white;
+                  border-radius: 0 0 5px 5px;
+                }
+                .otp-code {
+                  font-size: 24px;
+                  font-weight: bold;
+                  text-align: center;
+                  letter-spacing: 5px;
+                  padding: 10px;
+                  margin: 20px 0;
+                  background-color: #f0f0f0;
+                  border-radius: 4px;
+                }
+                .footer {
+                  font-size: 12px;
+                  text-align: center;
+                  margin-top: 20px;
+                  color: #666666;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2>Email Verification</h2>
+                </div>
+                <div class="content">
+                  <p>Hello ${username || 'User'},</p>
+                  <p>Your driver verification request has been received and is under review. We will notify you once the verification process is complete.</p>
+                  <p>If you have any questions, please feel free to contact our support team.</p>
+                  <p>Best regards,<br>The Support Team</p>
+                </div>
+                <div class="footer">
+                  <p>This is an automated message, please do not reply to this email.</p>
+                  <p>&copy; ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+            </html>
+            `;
+    },
+
+    sendDriverVerificationStatus: (username: string, otp: number, subject:string, status:string) => {
+      return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${subject}</title>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333333;
+                  max-width: 600px;
+                  margin: 0 auto;
+                }
+                .container {
+                  padding: 20px;
+                  border-radius: 5px;
+                  background-color: #f9f9f9;
+                  border: 1px solid #dddddd;
+                }
+                .header {
+                  text-align: center;
+                  padding: 10px;
+                  background-color: #4CAF50;
+                  color: white;
+                  border-radius: 5px 5px 0 0;
+                }
+                .content {
+                  padding: 20px;
+                  background-color: white;
+                  border-radius: 0 0 5px 5px;
+                }
+                .otp-code {
+                  font-size: 24px;
+                  font-weight: bold;
+                  text-align: center;
+                  letter-spacing: 5px;
+                  padding: 10px;
+                  margin: 20px 0;
+                  background-color: #f0f0f0;
+                  border-radius: 4px;
+                }
+                .footer {
+                  font-size: 12px;
+                  text-align: center;
+                  margin-top: 20px;
+                  color: #666666;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2>Email Verification</h2>
+                </div>
+                <div class="content">
+                  <p>Hello ${username || 'User'},</p>
+                  <p>Your driver verification request has been ${status}.</p>
+                  <p>If you have any questions, please feel free to contact our support team.</p>
+                  <p>Best regards,<br>The Support Team</p>
+                </div>
+                <div class="footer">
+                  <p>This is an automated message, please do not reply to this email.</p>
+                  <p>&copy; ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+            </html>
+            `;
+    },
+    sendDriverVerificationNotification: (username: string, otp: number, subject:string) => {
+      return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${subject}</title>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333333;
+                  max-width: 600px;
+                  margin: 0 auto;
+                }
+                .container {
+                  padding: 20px;
+                  border-radius: 5px;
+                  background-color: #f9f9f9;
+                  border: 1px solid #dddddd;
+                }
+                .header {
+                  text-align: center;
+                  padding: 10px;
+                  background-color: #4CAF50;
+                  color: white;
+                  border-radius: 5px 5px 0 0;
+                }
+                .content {
+                  padding: 20px;
+                  background-color: white;
+                  border-radius: 0 0 5px 5px;
+                }
+                .otp-code {
+                  font-size: 24px;
+                  font-weight: bold;
+                  text-align: center;
+                  letter-spacing: 5px;
+                  padding: 10px;
+                  margin: 20px 0;
+                  background-color: #f0f0f0;
+                  border-radius: 4px;
+                }
+                .footer {
+                  font-size: 12px;
+                  text-align: center;
+                  margin-top: 20px;
+                  color: #666666;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2>Email Verification</h2>
+                </div>
+                <div class="content">
+                  <p>Hello ${username || 'User'},</p>
+                  <p>A new driver verification request has been submitted.</p>
+                  <p>Please review the request at your earliest convenience.</p>
+                </div>
+                <div class="footer">
+                  <p>This is an automated message, please do not reply to this email.</p>
+                  <p>&copy; ${new Date().getFullYear()} Your Company Name. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+            </html>
+            `;
+    },
   };
 
   

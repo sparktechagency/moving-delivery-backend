@@ -10,7 +10,7 @@ const createUser: RequestHandler = catchAsync(async (req, res) => {
   sendRespone(res, {
     success: true,
     statusCode: httpStatus.CREATED,
-    message: 'Successfully create account',
+    message: 'Otp sent to your email successfully. Please check your mail inbox',
     data: result,
   });
 });

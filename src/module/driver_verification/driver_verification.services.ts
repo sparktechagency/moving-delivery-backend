@@ -23,6 +23,7 @@ import stripepaymentgateways from '../payment_gateway/payment gateway.model';
 import drivertransactionInfos from '../drivers_transaction_info/drivers_transaction_info.model';
 import ratingreview from '../rating_review/rating.review.model';
 import sendEmail from '../../utility/sendEmail';
+import emailcontext from '../../utility/emailcontex/sendvarificationData';
 
 /**
  * @param req
@@ -49,46 +50,65 @@ const recordDriverVerificationIntoDb = async (
         $and: [
           { userId },
           { isDelete: false },
-          { isReadyToDrive: true },
-          { isVerifyDriverLicense: true },
-          { isVerifyDriverNid: true },
         ],
       },
       { _id: 1, driverLicense: 1, driverNidCard: 1 },
     );
 
     if (isDriverVerificationExist) {
-      try {
-        if (isDriverVerificationExist?.driverLicense) {
-          const licenseExists = await fileExists(
-            isDriverVerificationExist.driverLicense,
-          );
-          if (licenseExists) {
-            await fs.unlink(isDriverVerificationExist.driverLicense);
-          }
-        }
+      // try {
+      //   if (isDriverVerificationExist?.driverLicense) {
+      //     const licenseExists = await fileExists(
+      //       isDriverVerificationExist.driverLicense,
+      //     );
+      //     if (licenseExists) {
+      //       await fs.unlink(isDriverVerificationExist.driverLicense);
+      //     }
+      //   }
 
-        if (isDriverVerificationExist?.driverNidCard) {
-          const nidExists = await fileExists(
-            isDriverVerificationExist.driverNidCard,
-          );
-          if (nidExists) {
-            await fs.unlink(isDriverVerificationExist.driverNidCard);
-          }
-        }
-      } catch (fileError: any) {
+      //   if (isDriverVerificationExist?.driverNidCard) {
+      //     const nidExists = await fileExists(
+      //       isDriverVerificationExist.driverNidCard,
+      //     );
+      //     if (nidExists) {
+      //       await fs.unlink(isDriverVerificationExist.driverNidCard);
+      //     }
+      //   }
+      // } catch (fileError: any) {
+      //   throw new ApiError(
+      //     httpStatus.NOT_EXTENDED,
+      //     'Error while deleting files',
+      //     fileError,
+      //   );
+      // }
+      if(isDriverVerificationExist.request_status === 'pending'){
         throw new ApiError(
-          httpStatus.NOT_EXTENDED,
-          'Error while deleting files',
-          fileError,
+          httpStatus.CONFLICT,
+          'Driver verification request is already pending approval',
+          '',
+        );
+      }
+      if(isDriverVerificationExist.request_status === 'approved'){
+        throw new ApiError(
+          httpStatus.CONFLICT,
+          'Driver is already verified',
+          '',
         );
       }
 
-      throw new ApiError(
-        httpStatus.CONFLICT,
-        'Driver verification already exists for this user',
-        '',
-      );
+      if(isDriverVerificationExist.request_status === 'rejected'){
+        throw new ApiError(
+          httpStatus.CONFLICT,  
+          'Previous driver verification request was rejected. Please contact support for further assistance.',
+          '',
+        );
+      }
+
+      // throw new ApiError(
+      //   httpStatus.CONFLICT,
+      //   'Driver verification already exists for this user',
+      //   '',
+      // );
     }
 
     const driverVerificationDoc = new driververifications({
@@ -98,9 +118,40 @@ const recordDriverVerificationIntoDb = async (
 
     await driverVerificationDoc.save();
 
+    const driver = await User.findById(userId);
+
+    if(driver){
+      sendEmail(
+      driver.email,
+      emailcontext.sendDriverPendingVerification(
+        driver.name,
+        0,
+        'Driver Verification Request Received',
+      ),
+      'Driver Verification Received',
+    );
+    }
+
+    const admins = await User.find({ role: { $in: ['admin', 'superAdmin'] } });
+
+    console.log("admins", admins)
+
+    for (const admin of admins) {
+      sendEmail(
+        admin.email,
+        emailcontext.sendDriverVerificationNotification(
+          admin.name,
+          0,
+          'New Driver Verification Request',
+        ),
+        'New Driver Verification Request',
+      );
+    }
+
+    
     return {
       status: true,
-      message: 'Driver verification data successfully recorded',
+      message: 'Driver verification data successfully recorded. Now waiting for admin approval.',
     };
   } catch (error: any) {
     if (error instanceof ApiError) {
@@ -147,12 +198,16 @@ const findByDriverVerifictionAdminIntoDb = async (
         }),
       query,
     )
+    .search(["userId.name", "userId.email" ,"userId.phoneNumber"])
       .filter()
       .sort()
       .paginate()
       .fields();
+    
+
 
     const all_driver_verification = await allDriverVerificationQuery.modelQuery;
+    console.log("all_driver_verification", all_driver_verification)
     const meta = await allDriverVerificationQuery.countTotal();
 
     return { meta, all_driver_verification };
@@ -537,11 +592,19 @@ const verify_driver_admin_IntoDb = async (
     }
     if(result.request_status === 'approved'){
       // send email to driver that verification is approved
-      const user = await User.findById(payload.driverId);
+
+     
+      const user = await User.findById(payload.driverId); 
+
       if(user){
-        await sendEmail(
+         sendEmail(
           user.email,
-          `Dear ${user.name}, your driver verification has been approved. You can now start accepting trips.`,
+          emailcontext.sendDriverVerificationStatus(
+            user.name,
+            0,
+            'Driver Verification Approved',
+            "approved"
+            ),
           'Driver Verification Approved',
           
         );
@@ -550,11 +613,17 @@ const verify_driver_admin_IntoDb = async (
       // send email to driver that verification is rejected
 
       const user = await User.findById(payload.driverId);
+
       if(user){
-        await sendEmail(
+         sendEmail(
           user.email,
-          `Dear ${user.name}, we regret to inform you that your driver verification has been rejected. Please review the documents and try again.  \n${!result.isVerifyDriverLicense && "Driving license"} \n ${!result.isVerifyDriverNid && "NID"} `,
-          'Driver Verification Rejected',
+          emailcontext.sendDriverVerificationStatus(
+            user.name,
+            0,
+            'Driver Verification Request Rejected',
+            "rejected"
+            ),
+          'Driver Verification Request Rejected',
         );
       }
     }

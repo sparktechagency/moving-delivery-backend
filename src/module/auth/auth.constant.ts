@@ -1,4 +1,4 @@
-export const user_search_filed = ['name', 'email', 'role', 'status', 'provider'];
+export const user_search_filed = ['name', 'email', 'status', 'provider'];
 
 export const socialAuth = {
     googleauth: "googleauth",

@@ -22,8 +22,8 @@ const driverVerificationSchema = z.object({
       required_error: 'truck size is  required',
     }),
     loadCapacity: z.string({ required_error: 'load capacity is  required' }),
-    picCities: z.string({ required_error: 'pic cities is  required' }),
-    picState: z.string({ required_error: 'pic state is required' }),
+    picCities: z.string({ required_error: 'pic cities is  required' }).optional(),
+    picState: z.string({ required_error: 'pic state is required' }).optional(),
 
     driverLicense: z.string().min(1, { message: 'Driver license is required' }),
     isVerifyDriverLicense: z.boolean().default(false),
