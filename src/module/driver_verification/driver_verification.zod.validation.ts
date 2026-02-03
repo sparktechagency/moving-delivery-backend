@@ -15,9 +15,12 @@ const driverVerificationSchema = z.object({
     driverSelectedTruck: z
       .string({ required_error: 'driver selected truck is required' })
       .min(1, { message: 'At least one truck must be selected' }),
-    autoDetectLocation: z.array(
-      z.number({ required_error: 'auto detect location is required' }),
-    ),
+    autoDetectLocation: z.object({
+      type: z.literal('Point').default('Point'),
+      coordinates: z.array(
+        z.number({ required_error: 'coordinates are required' })
+      ).length(2, 'Coordinates must be [longitude, latitude]'),
+    }).or(z.array(z.number()).length(2)), // Allow both formats for backward compatibility
     truckSize: z.string({
       required_error: 'truck size is  required',
     }),
@@ -67,7 +70,13 @@ const updateDriverVerificationSchema = z.object({
         .optional(),
       isVerifyDriverLicense: z.boolean().default(false).optional(),
       autoDetectLocation: z
-        .array(z.number({ required_error: 'auto detect location is required' }))
+        .object({
+          type: z.literal('Point').default('Point'),
+          coordinates: z.array(
+            z.number({ required_error: 'coordinates are required' })
+          ).length(2, 'Coordinates must be [longitude, latitude]'),
+        })
+        .or(z.array(z.number()).length(2))
         .optional(),
       driverNidCard: z
         .string()
@@ -83,7 +92,13 @@ const detectedDriverAutoLiveLocationSchema = z.object({
   body: z
     .object({
       autoDetectLocation: z
-        .array(z.number({ required_error: 'auto detect location is required' }))
+        .object({
+          type: z.literal('Point').default('Point'),
+          coordinates: z.array(
+            z.number({ required_error: 'coordinates are required' })
+          ).length(2, 'Coordinates must be [longitude, latitude]'),
+        })
+        .or(z.array(z.number()).length(2))
         .optional(),
     })
     .optional(),

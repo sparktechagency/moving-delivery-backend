@@ -12,8 +12,10 @@ import {
 } from '../../utility/math/calculateDistance';
 import sendEmail from '../../utility/sendEmail';
 import { USER_ACCESSIBILITY } from './user.constant';
-import { TUser, UserResponse } from './user.interface';
+import { IGeoLocation, TUser, UserResponse } from './user.interface';
 import User from './user.model';
+import { Socket } from 'socket.io';
+import driververifications from '../driver_verification/driver_verification.model';
 
 const generateUniqueOTP = async (): Promise<number> => {
   const otp = Math.floor(1000 + Math.random() * 9000);
@@ -81,7 +83,7 @@ const createUserIntoDb = async (payload: TUser) => {
     session.endSession();
 
     if (error instanceof ApiError) {
-      throw error; 
+      throw error;
     }
 
     throw new ApiError(
@@ -93,7 +95,7 @@ const createUserIntoDb = async (payload: TUser) => {
 };
 
 const userVarificationIntoDb = async (verificationCode: number) => {
-  console.log(verificationCode);
+
   try {
     if (!verificationCode) {
       throw new ApiError(
@@ -439,7 +441,7 @@ const autoMaticallyDetectLocationIntoDb = async (
   payload: TUser,
   userId: string,
 ): Promise<UserResponse> => {
- 
+
 
   try {
     const isExistUser = await User.findOne(
@@ -553,7 +555,7 @@ const recentSearchingLocationIntoDb = async (userId: string) => {
     throw new ApiError(
       error.statusCode || httpStatus.SERVICE_UNAVAILABLE,
       error.message ||
-        'Server unavailable in recent Searching Location IntoDb function',
+      'Server unavailable in recent Searching Location IntoDb function',
       error,
     );
   }
@@ -585,7 +587,66 @@ const chnage_onboarding_status_intoDb = async (
     throw new ApiError(
       error.statusCode || httpStatus.SERVICE_UNAVAILABLE,
       error.message ||
-        'Server unavailable in  chnage_onboarding_status function',
+      'Server unavailable in  chnage_onboarding_status function',
+      error,
+    );
+  }
+};
+
+const handleUpdateLocation = async (socket: Socket, userId: string, location: { lat: number, long: number }) => {
+  try {
+    const result = await driververifications.findOneAndUpdate(
+      { userId: userId },
+      { autoDetectLocation: { type: 'Point', coordinates: [location.long, location.lat] } },
+      { new: true },
+    );
+    console.log(result);
+    if (!result) {
+
+      socket.emit('location-update-failed', { message: 'location update failed' });
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'location update database error',
+        '',
+      );
+    }
+
+    socket.emit('location-update-success', { message: 'location update success' });
+    return result;
+  } catch (error: any) {
+    socket.emit('location-update-failed', { message: 'location update failed' });
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'location update failed',
+      error,
+    );
+  }
+};
+
+const handleGetLocation = async (socket: Socket, userId: string) => {
+  try {
+    const result = await driververifications.findOne(
+      { userId: userId },
+      { autoDetectLocation: 1 },
+    );
+    console.log(result);
+    if (!result) {
+
+      socket.emit('location-get-failed', { message: 'location get failed' });
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        'location get database error',
+        '',
+      );
+    }
+
+    socket.emit('driver-location', { data: result });
+    return result;
+  } catch (error: any) {
+    socket.emit('driver-location-failed', { message: 'location get failed' });
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'location get failed',
       error,
     );
   }
@@ -601,6 +662,8 @@ const UserServices = {
   autoMaticallyDetectLocationIntoDb,
   recentSearchingLocationIntoDb,
   chnage_onboarding_status_intoDb,
+  handleUpdateLocation,
+  handleGetLocation
 };
 
 export default UserServices;

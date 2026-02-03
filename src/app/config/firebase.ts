@@ -9,8 +9,8 @@ dotenv.config();
 if (
   !config.firebase_account_key.clientEmail ||
   !config.firebase_account_key.privateKey ||
-  !config.firebase_account_key.projectId 
-  
+  !config.firebase_account_key.projectId
+
 ) {
   throw new ApiError(
     httpStatus.NOT_FOUND,
@@ -26,13 +26,13 @@ admin.initializeApp({
     projectId: config.firebase_account_key.projectId,
     privateKey: config.firebase_account_key.privateKey.replace(/\\n/g, '\n'), // ✅ Critical Fix
     clientEmail: config.firebase_account_key.clientEmail,
-    
+
   } as admin.ServiceAccount),
 });
 
 
- 
-const firebaseAdmin=admin
+
+const firebaseAdmin = admin
 
 
-export default  firebaseAdmin;
+export default firebaseAdmin;

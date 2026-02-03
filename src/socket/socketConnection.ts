@@ -4,6 +4,7 @@ import Conversation from '../module/conversation/conversation.model';
 import User from '../module/user/user.model';
 import handleChatEvents from './handleChatEvents';
 import { handleCallEvents } from './handleCallEvents';
+import handleUpdateLocation from './handleUpdateLocation';
 
 let io: chatServer;
 const onlineUsers = new Map<string, string>();
@@ -45,6 +46,7 @@ const connectSocket = (server: HTTPServer) => {
 
     handleChatEvents(io, socket, currentUserId);
     handleCallEvents(io, socket, currentUserId)
+    handleUpdateLocation(io, socket, currentUserId)
 
     console.log(onlineUsers);
     socket.on('disconnect', () => {

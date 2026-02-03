@@ -23,7 +23,10 @@ export type TDriverVerification = {
   isReadyToDrive: boolean;
   driverLocation: string;
   vehicleNumber: string;
-  autoDetectLocation: number[];
+  autoDetectLocation: {
+    type: 'Point';
+    coordinates: number[];
+  };
   // fuleType:
   //   | 'Diesel'
   //   | 'Gasoline'
@@ -40,7 +43,7 @@ export type TDriverVerification = {
   vehicleAge: number;
   workingPreferredDate: string;
   isDelete?: boolean;
-  request_status?: string; 
+  request_status?: string;
 };
 
 export interface DriverOasisModel extends Model<TDriverVerification> {
@@ -58,7 +61,10 @@ export interface ITruck {
 export interface IDriver extends Document {
   _id: string;
   driverSelectedTruck: ITruck;
-  autoDetectLocation: number[];
+  autoDetectLocation: {
+    type: 'Point';
+    coordinates: number[];
+  };
   id: string;
 }
 
@@ -76,7 +82,10 @@ export interface IUserLocation {
 export interface Driver {
   userId: any;
   _id: string;
-  autoDetectLocation: [number, number];
+  autoDetectLocation: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
   truckDetails: {
     _id: string;
     truckcategories: string[];
@@ -86,6 +95,7 @@ export interface Driver {
 
 export interface DriverWithMetrics {
   _id: string;
+  driverId: string;
   driverSelectedTruck: {
     _id: string;
     truckcategories: string[];
@@ -98,4 +108,6 @@ export interface DriverWithMetrics {
     bearingDegrees: number;
     routeType: string;
   };
+  suggestionPriority: number;
+  userTripDistanceKm: number;
 }

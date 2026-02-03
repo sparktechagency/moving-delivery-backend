@@ -291,7 +291,7 @@ const createPaymentIntent = async (
         transfer_group: `trip_${tripId}`,
       });
 
-  
+
     } catch (stripeError: any) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -686,7 +686,7 @@ const handleWebhookIntoDb = async (event: Stripe.Event) => {
       status: false,
       message: 'Unhandled event',
     };
-  
+
     switch (event.type) {
 
       case 'checkout.session.completed': {

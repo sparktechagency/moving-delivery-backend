@@ -24,6 +24,7 @@ const GeoLocationSchema = new Schema<IGeoLocation>(
   },
   { _id: false }
 );
+
 const TUserSchema = new Schema<TUser, UserModel>(
   {
     name: { type: String, required: [false, 'user name is Required'] },
@@ -103,6 +104,7 @@ const TUserSchema = new Schema<TUser, UserModel>(
         coordinates: [0, 0],
       }),
     },
+    
     to: {
       type: GeoLocationSchema,
       default: () => ({

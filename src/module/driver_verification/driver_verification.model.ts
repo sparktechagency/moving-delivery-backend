@@ -53,9 +53,17 @@ const TdriverVerificationSchema = new Schema<TDriverVerification>(
     //   required: [true, 'workingPreferredDate is required'],
     // },
 
+
     autoDetectLocation: {
-      type: [String],
-      required: true,
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: "Point"
+      },
+      coordinates: {
+        type: [Number],
+      },
+
     },
     picCities: {
       type: String,
@@ -77,8 +85,8 @@ const TdriverVerificationSchema = new Schema<TDriverVerification>(
       type: String,
       required: true,
     },
-    request_status:{
-      type:String,
+    request_status: {
+      type: String,
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
     },
@@ -120,7 +128,7 @@ TdriverVerificationSchema.pre('findOne', function (next) {
   next();
 });
 
-TdriverVerificationSchema.index({ location: '2dsphere' });
+TdriverVerificationSchema.index({ autoDetectLocation: '2dsphere' });
 
 // Static method implementation
 TdriverVerificationSchema.statics.isDriverVerificationExistByCustomId =

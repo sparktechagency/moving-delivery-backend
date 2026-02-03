@@ -24,6 +24,8 @@ const sendRequestIntoDb = async (
   userId: string,
   payload: Partial<TRequest>,
 ): Promise<RequestResponse> => {
+
+  console.log("Request sending....")
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -140,15 +142,26 @@ const sendRequestIntoDb = async (
       );
     }
     const data = {
-      title: 'Connection Request Accepted',
-      content: `Send Your Request This Driver`,
+      title: 'Trip Request Sent',
+      content: `Your trip request has been sent`,
       time: new Date(),
     };
 
-    // const sendNotification = await NotificationServices.sendPushNotification(
-    //   userId.toString(),
-    //   data,
-    // );
+    NotificationServices.sendPushNotification(
+      userId.toString(),
+      data,
+    );
+
+    const driverNotificationData = {
+      title: 'Trip Request Received',
+      content: `You have received a new trip request`,
+      time: new Date(),
+    };
+
+    NotificationServices.sendPushNotification(
+      verifiedDriver.userId.toString(),
+      driverNotificationData,
+    );
 
     // if (!sendNotification) {
     //   throw new ApiError(
@@ -409,6 +422,15 @@ const cancelRequestIntoDb = async (
     await session.commitTransaction();
     session.endSession();
 
+
+    const notificationData = {
+      title: 'Request Cancelled',
+      content: `Your Request Cancelled!`,
+      time: new Date(),
+    };
+
+    NotificationServices.sendPushNotification(isExistRequest?.userId.toString(), notificationData);
+
     return {
       status: true,
       message: 'successfully accepted cancel request ',
@@ -560,7 +582,7 @@ const acceptedRequestIntoDb = async (
     // send accepted notification
 
     const data = {
-    
+
       title: 'Connection Request Accepted',
       content: `Driver Accepted Your Request`,
       time: new Date(),
@@ -598,6 +620,14 @@ const acceptedRequestIntoDb = async (
 
     await session.commitTransaction();
     session.endSession();
+
+    const notificationData = {
+      title: 'Trip Request Accepted',
+      content: `Driver Accepted Your Trip Request`,
+      time: new Date(),
+    };
+
+    NotificationServices.sendPushNotification(request?.userId.toString(), notificationData);
 
     return {
       status: true,
@@ -771,6 +801,14 @@ const completedTripeRequestIntoDb = async (
     await session.commitTransaction();
     session.endSession();
 
+    const notificationData = {
+      title: 'Trip Completed',
+      content: `Your Trip Completed`,
+      time: new Date(),
+    };
+
+    NotificationServices.sendPushNotification(request?.userId.toString(), notificationData);
+
     return {
       status: true,
       message: 'Trip completed successfully',
@@ -804,6 +842,7 @@ const findByAllCompletedTripeIntoDb = async (
           isDelete: false,
           isAccepted: true,
           isCompleted: true,
+          isDriverEndTrip: true
         })
         .populate([
           {
@@ -960,7 +999,10 @@ const user_upcomming_history_IntoDb = async (
           userId,
           isCanceled: false,
           isDelete: false,
-          isCompleted: false,
+          $or: [
+            { isCompleted: false },
+            { isDriverEndTrip: false }
+          ]
         })
         .populate([
           {
@@ -973,7 +1015,7 @@ const user_upcomming_history_IntoDb = async (
           },
           {
             path: 'driverVerificationsId',
-            select: 'driverSelectedTruck',
+            select: 'driverSelectedTruck autoDetectLocation',
             populate: {
               path: 'driverSelectedTruck',
               select: 'truckcategories',
@@ -1163,7 +1205,7 @@ const user_cancel_tripe_request_IntoDb = async (
     //   );
     // }
 
-    
+
     await session.commitTransaction();
 
     return {
@@ -1183,7 +1225,7 @@ const user_cancel_tripe_request_IntoDb = async (
       error,
     );
   } finally {
-   
+
     session.endSession();
   }
 };
@@ -1203,7 +1245,7 @@ const cancel_user_history_IntoDb = async (
           isDelete: false,
         })
         .populate([
-        {
+          {
             path: 'userId',
             select: 'from.coordinates to.coordinates',
           },

@@ -126,7 +126,7 @@ router.post(
 
 router.patch(
   '/driver_verification/:id',
-  auth(USER_ROLE.admin, USER_ROLE.admin),
+  auth(USER_ROLE.superAdmin, USER_ROLE.admin),
   validationRequest(
     DriverVerificationValidationSchema.verify_driver_admin_Schema,
   ),

@@ -18,7 +18,7 @@ const sendPushNotification = async (
 ) => {
   try {
 
-   
+
     const user = await User.findOne(
       {
         _id: userId,
@@ -28,10 +28,10 @@ const sendPushNotification = async (
       },
       { fcm: 1 }
     );
- 
+
 
     if (!user || !user.fcm) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "No FCM token found for user",'');
+      throw new ApiError(httpStatus.BAD_REQUEST, "No FCM token found for user", '');
     }
 
     const message = {
@@ -52,11 +52,7 @@ const sendPushNotification = async (
     return response;
   } catch (error: any) {
     console.error("🔥 FCM Error:", error);
-    throw new ApiError(
-      httpStatus.SERVICE_UNAVAILABLE,
-      "issues by the firebase notification section",
-      error
-    );
+
   }
 };
 

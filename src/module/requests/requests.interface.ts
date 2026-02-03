@@ -7,12 +7,16 @@ export interface TRequest {
   selectedProduct: [];
   trucktripeTime: string;
   isAccepted: Boolean;
+  isDriverArrived: Boolean;
+  isDriverStartTrip: Boolean;
+  isDriverEndTrip: Boolean;
+  isPaymentCompleted: Boolean;
   isCompleted: Boolean;
   isCanceled: Boolean;
   isRemaining: Boolean;
   isDelete: Boolean;
   avgRating?: number;
-  price?:number;
+  price?: number;
   totalReviews?: number;
 }
 

@@ -34,6 +34,26 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [false, 'isAccepted is not required'],
       default: false,
     },
+    isDriverArrived: {
+      type: Boolean,
+      required: [false, 'isDriverArrived is not required'],
+      default: false,
+    },
+    isDriverStartTrip: {
+      type: Boolean,
+      required: [false, 'isDriverStartTrip is not required'],
+      default: false,
+    },
+    isDriverEndTrip: {
+      type: Boolean,
+      required: [false, 'isDriverEndTrip is not required'],
+      default: false,
+    },
+    isPaymentCompleted: {
+      type: Boolean,
+      required: [false, 'isPaymentCompleted is not required'],
+      default: false,
+    },
     isCompleted: {
       type: Boolean,
       required: [false, 'isCompleted is not required'],

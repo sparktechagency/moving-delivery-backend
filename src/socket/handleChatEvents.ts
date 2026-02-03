@@ -4,6 +4,7 @@ import { handleGetConversations } from './chat/getConversation';
 import { handleMessagePage } from './chat/getMessages';
 import { handleSeenMessage } from './chat/seenMessage';
 import { handleSendMessage } from './chat/sendMessage';
+import UserServices from '../module/user/user.services';
 
 const handleChatEvents = async (
   io: IOServer,
@@ -17,7 +18,7 @@ const handleChatEvents = async (
     console.log(`User ${currentUserId} joined room ${conversationId}`);
   });
 
-  socket.on('get-conversations', async(query) => {
+  socket.on('get-conversations', async (query) => {
     try {
       const conversations = await handleGetConversations(currentUserId, query);
       socket.emit('conversation-list', conversations);
@@ -27,12 +28,16 @@ const handleChatEvents = async (
   });
 
   socket.on('message-page', (data) => {
-    handleMessagePage(socket,currentUserId, data);
+    handleMessagePage(socket, currentUserId, data);
   });
 
   socket.on('typing', ({ conversationId, userId }) => {
     socket.to(conversationId).emit('user-typing', { conversationId, userId });
   });
+
+  socket.on("update-location", (data: { lat: number, long: number }) => {
+    UserServices.handleUpdateLocation(socket, currentUserId, data);
+  })
 
   socket.on('stop-typing', ({ conversationId, userId }) => {
     socket

@@ -35,7 +35,7 @@ const recordDriverVerificationIntoDb = async (
   userId: string,
 ): Promise<DriverVerificationResponse> => {
   try {
-    const data = req.body;
+    const data = req.body as any;
 
     if (!data) {
       throw new ApiError(
@@ -81,14 +81,14 @@ const recordDriverVerificationIntoDb = async (
       //     fileError,
       //   );
       // }
-      if(isDriverVerificationExist.request_status === 'pending'){
+      if (isDriverVerificationExist.request_status === 'pending') {
         throw new ApiError(
           httpStatus.CONFLICT,
           'Driver verification request is already pending approval',
           '',
         );
       }
-      if(isDriverVerificationExist.request_status === 'approved'){
+      if (isDriverVerificationExist.request_status === 'approved') {
         throw new ApiError(
           httpStatus.CONFLICT,
           'Driver is already verified',
@@ -96,9 +96,9 @@ const recordDriverVerificationIntoDb = async (
         );
       }
 
-      if(isDriverVerificationExist.request_status === 'rejected'){
+      if (isDriverVerificationExist.request_status === 'rejected') {
         throw new ApiError(
-          httpStatus.CONFLICT,  
+          httpStatus.CONFLICT,
           'Previous driver verification request was rejected. Please contact support for further assistance.',
           '',
         );
@@ -110,9 +110,13 @@ const recordDriverVerificationIntoDb = async (
       //   '',
       // );
     }
-
+    console.log("data", data)
     const driverVerificationDoc = new driververifications({
       ...data,
+      autoDetectLocation: {
+        type: 'Point',
+        coordinates: [data.autoDetectLocation[1], data.autoDetectLocation[0]],
+      },
       userId,
     });
 
@@ -120,16 +124,16 @@ const recordDriverVerificationIntoDb = async (
 
     const driver = await User.findById(userId);
 
-    if(driver){
+    if (driver) {
       sendEmail(
-      driver.email,
-      emailcontext.sendDriverPendingVerification(
-        driver.name,
-        0,
-        'Driver Verification Request Received',
-      ),
-      'Driver Verification Received',
-    );
+        driver.email,
+        emailcontext.sendDriverPendingVerification(
+          driver.name,
+          0,
+          'Driver Verification Request Received',
+        ),
+        'Driver Verification Received',
+      );
     }
 
     const admins = await User.find({ role: { $in: ['admin', 'superAdmin'] } });
@@ -148,7 +152,7 @@ const recordDriverVerificationIntoDb = async (
       );
     }
 
-    
+
     return {
       status: true,
       message: 'Driver verification data successfully recorded. Now waiting for admin approval.',
@@ -198,12 +202,12 @@ const findByDriverVerifictionAdminIntoDb = async (
         }),
       query,
     )
-    .search(["userId.name", "userId.email" ,"userId.phoneNumber"])
+      .search(["userId.name", "userId.email", "userId.phoneNumber"])
       .filter()
       .sort()
       .paginate()
       .fields();
-    
+
 
 
     const all_driver_verification = await allDriverVerificationQuery.modelQuery;
@@ -222,12 +226,12 @@ const findByDriverVerifictionAdminIntoDb = async (
 
 const findBySpecificDriverVerificationIntoDb = async (id: string) => {
   try {
-    const verification =  await driververifications.isDriverVerificationExistByCustomId(id);
+    const verification = await driververifications.isDriverVerificationExistByCustomId(id);
 
     return {
-      
+
       ...verification,
-      driverVerificationStatus:verification?.request_status || 'not_applied',
+      driverVerificationStatus: verification?.request_status || 'not_applied',
 
     }
 
@@ -273,7 +277,7 @@ const updateDriverVerificationIntoDb = async (
       throw new ApiError(httpStatus.NOT_FOUND, 'driver is not verified ', '');
     }
 
-   
+
 
     const result = await driververifications.findByIdAndUpdate(id, data, {
       new: true,
@@ -345,7 +349,14 @@ const detected_Driver_Auto_Live_Location_IntoDb = async (
 
     const result = await driververifications.findOneAndUpdate(
       query,
-      { $set: { autoDetectLocation: coordinates } },
+      {
+        $set: {
+          autoDetectLocation: {
+            type: 'Point',
+            coordinates: coordinates
+          }
+        }
+      },
       { new: true },
     );
 
@@ -412,41 +423,220 @@ const deleteDriverVerificationIntoDb = async (
 };
 
 
-//const googleUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${fromLat},${fromLong}&destinations=${destLat},${destLong}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+// ==================== Helper Functions ====================
+
+/**
+ * Calculate location-based suggestion priority
+ * @param driverCity - Driver's preferred city
+ * @param driverState - Driver's preferred state
+ * @param userAddress - User's pickup address
+ * @returns Priority level (1 = high priority/location match, 2 = nearby)
+ */
+const calculateLocationPriority = (
+  driverCity: string | undefined,
+  driverState: string | undefined,
+  userAddress: string
+): number => {
+  const normalizedAddress = userAddress.toLowerCase();
+  const normalizedCity = driverCity?.toLowerCase();
+  const normalizedState = driverState?.toLowerCase();
+
+  // Priority 1: Driver operates in the same city or state as pickup location
+  if (normalizedCity && normalizedAddress.includes(normalizedCity)) {
+    return 1;
+  }
+
+  if (normalizedState && normalizedAddress.includes(normalizedState)) {
+    return 1;
+  }
+
+  // Priority 2: Driver is nearby but not in preferred operating area
+  return 2;
+};
+
+/**
+ * Calculate dynamic pricing based on distance
+ * @param basePrice - Base price from truck details
+ * @param estimatedRoadKm - Estimated road distance in kilometers
+ * @returns Calculated final price
+ */
+const calculateDynamicPrice = (
+  basePrice: number,
+  estimatedRoadKm: number
+): string => {
+  const EXTRA_KM_THRESHOLD = 20;
+  const EXTRA_RATE_PER_KM = 2.5;
+
+  let finalPrice = basePrice;
+
+  if (estimatedRoadKm > EXTRA_KM_THRESHOLD) {
+    const extraKm = estimatedRoadKm - EXTRA_KM_THRESHOLD;
+    const extraCharge = extraKm * EXTRA_RATE_PER_KM;
+    finalPrice += extraCharge;
+  }
+
+  return finalPrice.toFixed(2);
+};
+
+/**
+ * Calculate geo metrics for driver
+ * @param distanceInMeters - Distance in meters from $geoNear
+ * @param driverCoords - Driver's coordinates
+ * @param userCoords - User's pickup coordinates
+ * @returns Geo metrics object with distance, duration, bearing, and route type
+ */
+const calculateGeoMetrics = (
+  distanceInMeters: number,
+  driverCoords: { longitude: number; latitude: number },
+  userCoords: { longitude: number; latitude: number }
+) => {
+  const ROAD_DISTANCE_FACTOR = 1.4; // Realistic road distance multiplier
+  const CITY_TRAFFIC_FACTOR = 1.5; // Minutes per km in city traffic
+
+  const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
+  const estimatedRoadKm = Number((distanceKm * ROAD_DISTANCE_FACTOR).toFixed(2));
+
+  const bearingDegrees = Number(
+    geolib.getRhumbLineBearing(driverCoords, userCoords).toFixed(1)
+  );
+
+  const estimatedDurationMin = Number((distanceKm * CITY_TRAFFIC_FACTOR).toFixed(1));
+  const routeType = classifyRouteType(distanceKm);
+
+  return {
+    distanceKm,
+    estimatedRoadKm,
+    bearingDegrees,
+    estimatedDurationMin,
+    routeType,
+  };
+};
+
+/**
+ * Enrich driver data with calculated metrics
+ * @param driver - Raw driver data from aggregation
+ * @param userOriginCoords - User's pickup coordinates
+ * @param userAddress - User's pickup address
+ * @returns Enriched driver object with all metrics
+ */
+const enrichDriverWithMetrics = (
+  driver: any,
+  userOriginCoords: { longitude: number; latitude: number },
+  userAddress: string
+): DriverWithMetrics => {
+  const driverCoords = {
+    longitude: driver.autoDetectLocation.coordinates[0],
+    latitude: driver.autoDetectLocation.coordinates[1],
+  };
+
+  const geoMetrics = calculateGeoMetrics(
+    driver.geoMetrics.distanceInMeters,
+    driverCoords,
+    userOriginCoords
+  );
+
+  const suggestionPriority = calculateLocationPriority(
+    driver.picCities,
+    driver.picState,
+    userAddress
+  );
+
+  const basePrice = Number(driver?.truckDetails?.price || 0);
+  const price = calculateDynamicPrice(basePrice, geoMetrics.estimatedRoadKm);
+
+  return {
+    _id: driver._id.toString(),
+    driverId: driver.userId,
+    driverSelectedTruck: {
+      _id: driver.truckDetails._id.toString(),
+      truckcategories: driver.truckDetails.truckcategories,
+      photo: driver.truckDetails.photo,
+      price,
+    },
+    geoMetrics: {
+      distanceKm: geoMetrics.distanceKm,
+      estimatedDurationMin: geoMetrics.estimatedDurationMin,
+      bearingDegrees: geoMetrics.bearingDegrees,
+      routeType: geoMetrics.routeType,
+    },
+    suggestionPriority,
+    userTripDistanceKm: geoMetrics.estimatedRoadKm,
+  };
+};
+
+/**
+ * Sort drivers by priority and distance
+ * @param drivers - Array of enriched drivers
+ * @returns Sorted array of drivers
+ */
+const sortDriversByPriorityAndDistance = (
+  drivers: DriverWithMetrics[]
+): DriverWithMetrics[] => {
+  return drivers.sort((a, b) => {
+    // First sort by priority (1 is higher than 2)
+    if (a.suggestionPriority !== b.suggestionPriority) {
+      return a.suggestionPriority - b.suggestionPriority;
+    }
+    // Then sort by distance (closer is better)
+    return a.geoMetrics.distanceKm - b.geoMetrics.distanceKm;
+  });
+};
+
+// ==================== Main Function ====================
+
+/**
+ * Search for available drivers within 30 km radius
+ * @param userLocation - User's pickup and destination location
+ * @param userId - User's ID
+ * @returns Array of available drivers with calculated metrics, sorted by priority and distance
+ */
 const searching_for_available_trip_truck_listsWithMongo = async (
   userLocation: IUserLocation,
   userId: string
 ): Promise<DriverWithMetrics[]> => {
   try {
-    // ✅ Update user location
-    const result = await User.updateOne(
+    // Update user location in database
+    const updateResult = await User.updateOne(
       { _id: userId, isDelete: false },
       { $set: userLocation },
       { new: true, upsert: true }
     );
 
-    if (!result) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Issue updating user geolocation.', '');
+    if (!updateResult) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        'Issue updating user geolocation.',
+        ''
+      );
     }
 
+    // Extract coordinates
+    const [fromLong, fromLat] = userLocation.from.coordinates;
+    const userAddress = userLocation.from.address.toLowerCase();
+    const userOriginCoords = { longitude: fromLong, latitude: fromLat };
 
-    const [fromLong, fromLat] = userLocation.to.coordinates;
-    const [destLong, destLat] = userLocation.from.coordinates;
+    // Search radius: 30 kilometers
+    const SEARCH_RADIUS_KM = 30;
+    const SEARCH_RADIUS_METERS = SEARCH_RADIUS_KM * 1000;
 
-    // ✅ Calculate straight-line distance
-    const straightLineMeters = geolib.getDistance(
-      { longitude: fromLong, latitude: fromLat },
-      { longitude: destLong, latitude: destLat }
-    );
-
-    const straightLineKm = Number((straightLineMeters / 1000).toFixed(2));
-
-    // ✅ Estimate realistic road distance (Google-like)
-    // On average, road distance ≈ straightLine × 1.4
-    const estimatedRoadKm = Number((straightLineKm * 1.6).toFixed(2));
-
-    // ✅ Find all verified & ready drivers with truck details
-    const drivers = await driververifications.aggregate([
+    // Find verified drivers within radius using geospatial query
+    // Note: Using collection.aggregate() instead of model.aggregate() to bypass
+    // the pre-aggregate middleware that adds $match before $geoNear
+    const drivers = await driververifications.collection.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [fromLong, fromLat] },
+          distanceField: 'geoMetrics.distanceInMeters',
+          maxDistance: SEARCH_RADIUS_METERS,
+          query: {
+            isVerifyDriverNid: true,
+            isVerifyDriverLicense: true,
+            isReadyToDrive: true,
+            isDelete: false,
+          },
+          spherical: true,
+        },
+      },
       {
         $lookup: {
           from: 'selecttrucks',
@@ -458,10 +648,6 @@ const searching_for_available_trip_truck_listsWithMongo = async (
       {
         $match: {
           'truckDetails.0': { $exists: true },
-          'autoDetectLocation.0': { $exists: true },
-          'autoDetectLocation.1': { $exists: true },
-          isVerifyDriverNid: true,
-          isReadyToDrive: true,
         },
       },
       {
@@ -469,75 +655,31 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           _id: 1,
           userId: 1,
           autoDetectLocation: 1,
+          picCities: 1,
+          picState: 1,
           truckDetails: { $arrayElemAt: ['$truckDetails', 0] },
-          isVerifyDriverNid: 1,
-          isReadyToDrive: 1,
+          'geoMetrics.distanceInMeters': 1,
         },
       },
-    ]);
+    ]).toArray();
 
-    if (!drivers.length) return [];
+    // Return empty array if no drivers found
+    if (!drivers.length) {
+      return [];
+    }
 
-    // ✅ Constants
-    const FLAT_RATE = 50;
-    const EXTRA_KM_THRESHOLD = 20;
-    const EXTRA_RATE_PER_KM = 2.5;
-    const MAX_DISTANCE_KM = 30;
+    // Enrich each driver with calculated metrics
+    const enrichedDrivers = drivers.map((driver) =>
+      enrichDriverWithMetrics(driver, userOriginCoords, userAddress)
+    );
 
-    const enrichedDrivers = drivers.map((driver: any) => {
-      const [lng, lat] = driver.autoDetectLocation;
-      const driverCoords = {
-        longitude: parseFloat(lng.toString()),
-        latitude: parseFloat(lat.toString()),
-      };
-
-      const destinationCoords = { longitude: destLong, latitude: destLat };
-
-      const distanceInMeters = geolib.getDistance(driverCoords, destinationCoords);
-      const distanceKm = Number((distanceInMeters / 1000).toFixed(2));
-
-      const bearingDegrees = Number(
-        geolib.getRhumbLineBearing(driverCoords, destinationCoords).toFixed(1)
-      );
-
-      const estimatedDurationMin = Number((distanceKm * 1.2).toFixed(1));
-
-      const routeType = classifyRouteType(distanceKm);
-
-      // 💰 Pricing logic
-      let finalPrice = driver?.truckDetails?.price;
-      if (estimatedRoadKm > EXTRA_KM_THRESHOLD) {
-        const extraKm = estimatedRoadKm - EXTRA_KM_THRESHOLD;
-        const extraCharge = extraKm * EXTRA_RATE_PER_KM;
-        finalPrice += extraCharge;
-      }
-
-      const price = Number(finalPrice).toFixed(2);
-
-      return {
-        _id: driver._id.toString(),
-        driverId: driver.userId,
-        driverSelectedTruck: {
-          _id: driver.truckDetails._id.toString(),
-          truckcategories: driver.truckDetails.truckcategories,
-          photo: driver.truckDetails.photo,
-          price,
-        },
-        geoMetrics: {
-          distanceKm,
-          estimatedDurationMin,
-          bearingDegrees,
-          routeType,
-        },
-        userTripDistanceKm: estimatedRoadKm, // ✅ realistic driving distance
-      };
-    });
-
-    return enrichedDrivers
-      .filter(driver => driver.geoMetrics.distanceKm <= MAX_DISTANCE_KM)
-      .sort((a, b) => a.geoMetrics.distanceKm - b.geoMetrics.distanceKm)
-      .slice(0, 5);
+    // Sort by priority and distance
+    return sortDriversByPriorityAndDistance(enrichedDrivers);
   } catch (error: any) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
     throw new ApiError(
       httpStatus.SERVICE_UNAVAILABLE,
       'Error finding nearest available trip truck drivers',
@@ -545,9 +687,6 @@ const searching_for_available_trip_truck_listsWithMongo = async (
     );
   }
 };
-
-
-
 
 
 const verify_driver_admin_IntoDb = async (
@@ -590,44 +729,44 @@ const verify_driver_admin_IntoDb = async (
         '',
       );
     }
-    if(result.request_status === 'approved'){
+    if (result.request_status === 'approved') {
       // send email to driver that verification is approved
 
-     
-      const user = await User.findById(payload.driverId); 
 
-      if(user){
-         sendEmail(
+      const user = await User.findById(payload.driverId);
+
+      if (user) {
+        sendEmail(
           user.email,
           emailcontext.sendDriverVerificationStatus(
             user.name,
             0,
             'Driver Verification Approved',
             "approved"
-            ),
+          ),
           'Driver Verification Approved',
-          
+
         );
       }
-    } else if (result.request_status === 'rejected'){
+    } else if (result.request_status === 'rejected') {
       // send email to driver that verification is rejected
 
       const user = await User.findById(payload.driverId);
 
-      if(user){
-         sendEmail(
+      if (user) {
+        sendEmail(
           user.email,
           emailcontext.sendDriverVerificationStatus(
             user.name,
             0,
             'Driver Verification Request Rejected',
             "rejected"
-            ),
+          ),
           'Driver Verification Request Rejected',
         );
       }
     }
-  
+
 
     return {
       status: true,
@@ -648,11 +787,11 @@ const delete_driver_verification_request_IntoDb = async (id: string, userId: str
       try {
         return await fn();
       } catch {
-        return await fn(); 
+        return await fn();
       }
     };
 
-   await driververifications.deleteOne({ _id: id });
+    await driververifications.deleteOne({ _id: id });
 
     await Promise.all([
       retry(() =>
