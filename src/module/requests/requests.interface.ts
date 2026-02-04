@@ -7,6 +7,7 @@ export interface TRequest {
   selectedProduct: [];
   trucktripeTime: string;
   isAccepted: Boolean;
+  isDriverOnTheWay: Boolean;
   isDriverArrived: Boolean;
   isDriverStartTrip: Boolean;
   isDriverEndTrip: Boolean;

@@ -34,6 +34,11 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [false, 'isAccepted is not required'],
       default: false,
     },
+    isDriverOnTheWay: {
+      type: Boolean,
+      required: [false, 'isDriverOnTheWay is not required'],
+      default: false,
+    },
     isDriverArrived: {
       type: Boolean,
       required: [false, 'isDriverArrived is not required'],
@@ -59,6 +64,8 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       required: [false, 'isCompleted is not required'],
       default: false,
     },
+
+
     isCanceled: {
       type: Boolean,
       required: [false, ' isCanceled is not required'],
