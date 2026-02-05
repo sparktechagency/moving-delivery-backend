@@ -319,10 +319,13 @@ const cancelRequestIntoDb = async (
         isDelete: false,
         isAccepted: false,
         isCompleted: false,
+        isDriverOnTheWay: false
       },
       { _id: 1, driverVerificationsId: 1, userId: 1 },
       { session },
     );
+
+    console.log(isExistRequest)
 
     if (!isExistRequest) {
       throw new ApiError(
@@ -1135,6 +1138,7 @@ const user_cancel_tripe_request_IntoDb = async (
       .findOne({
         _id: requestId,
         isAccepted: true,
+        isDriverOnTheWay: false,
         isCompleted: false,
         isCanceled: false,
         isDelete: false,
