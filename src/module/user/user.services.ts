@@ -604,22 +604,14 @@ const handleUpdateLocation = async (socket: Socket, userId: string, location: { 
     if (!result) {
 
       socket.emit('location-update-failed', { message: 'location update failed' });
-      throw new ApiError(
-        httpStatus.FORBIDDEN,
-        'location update database error',
-        '',
-      );
+      
     }
 
     socket.emit('location-update-success', { message: 'location update success' });
     return result;
   } catch (error: any) {
     socket.emit('location-update-failed', { message: 'location update failed' });
-    throw new ApiError(
-      httpStatus.SERVICE_UNAVAILABLE,
-      'location update failed',
-      error,
-    );
+    console.log(error)
   }
 };
 
@@ -633,22 +625,14 @@ const handleGetLocation = async (socket: Socket, userId: string) => {
     if (!result) {
 
       socket.emit('location-get-failed', { message: 'location get failed' });
-      throw new ApiError(
-        httpStatus.FORBIDDEN,
-        'location get database error',
-        '',
-      );
+      
     }
 
     socket.emit('driver-location', { data: result });
     return result;
   } catch (error: any) {
     socket.emit('driver-location-failed', { message: 'location get failed' });
-    throw new ApiError(
-      httpStatus.SERVICE_UNAVAILABLE,
-      'location get failed',
-      error,
-    );
+   
   }
 };
 
