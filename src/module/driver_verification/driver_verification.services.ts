@@ -152,7 +152,6 @@ const recordDriverVerificationIntoDb = async (
       );
     }
 
-
     return {
       status: true,
       message: 'Driver verification data successfully recorded. Now waiting for admin approval.',
@@ -208,10 +207,8 @@ const findByDriverVerifictionAdminIntoDb = async (
       .paginate()
       .fields();
 
-
-
     const all_driver_verification = await allDriverVerificationQuery.modelQuery;
-    console.log("all_driver_verification", all_driver_verification)
+
     const meta = await allDriverVerificationQuery.countTotal();
 
     return { meta, all_driver_verification };
@@ -628,6 +625,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
           near: { type: 'Point', coordinates: [fromLong, fromLat] },
           distanceField: 'geoMetrics.distanceInMeters',
           maxDistance: SEARCH_RADIUS_METERS,
+
           query: {
             isVerifyDriverNid: true,
             isVerifyDriverLicense: true,
