@@ -613,7 +613,7 @@ const searching_for_available_trip_truck_listsWithMongo = async (
     const userOriginCoords = { longitude: fromLong, latitude: fromLat };
 
     // Search radius: 30 kilometers
-    const SEARCH_RADIUS_KM = 30;
+    const SEARCH_RADIUS_KM = 20;
     const SEARCH_RADIUS_METERS = SEARCH_RADIUS_KM * 1000;
 
     // Find verified drivers within radius using geospatial query

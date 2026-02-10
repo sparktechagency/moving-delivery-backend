@@ -19,7 +19,7 @@ const TRequestSchema = new Schema<TRequest, RequestModel>(
       type: Schema.Types.ObjectId,
       ref: 'driververifications',
       required: [true, 'driverVerificationsId is required'],
-    },
+    }, 
     selectedProduct: {
       type: [String],
       required: [true, 'selected product is required'],
